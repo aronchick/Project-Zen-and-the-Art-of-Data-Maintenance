@@ -2,7 +2,7 @@
 
 ## Part I: The Foundation of Data-Centric AI
 
-### [Chapter 1: The Data-Centric AI Revolution](https://www.notion.so/Chapter-1-The-Data-Centric-AI-Revolution-26e269bb894d810180d3db2fcfb46984?pvs=21)
+### [Chapter 1: The Data-Centric AI Revolution](https://github.com/aronchick/Project-Zen-and-the-Art-of-Data-Maintenance/blob/main/Chapter_000000001/content.md)
 
 - 1.1 Andrew Ng's Paradigm Shift: Why "Good Data Beats Big Data"
 - 1.2 The "Garbage In, Garbage Out" Principle: Modern Interpretation and Case Studies
