@@ -1,0 +1,255 @@
+# macOS
+.DS_Store
+
+# Python
+*__pycache__*
+**/.ipynb_checkpoints/
+*.py[cod]
+*$py.class
+.venv
+VENV/
+venv/
+ENV/
+env/
+
+# .NET build outputs
+bin/
+obj/
+*.dll
+*.pdb
+*.exe
+*.cache
+*.CopyComplete
+*.FileListAbsolute.txt
+[Dd]ebug/
+[Rr]elease/
+x64/
+x86/
+[Aa][Rr][Mm]/
+[Aa][Rr][Mm]64/
+bld/
+[Bb]in/
+[Oo]bj/
+
+# IDE and editor files
+.vs/
+.vscode/
+*.user
+*.suo
+*.userprefs
+*.sln.docstates
+.idea/
+.aider*
+.cursor/
+.ruff_cache/
+.mypy_cache/
+.specstory/
+
+# Environment and configuration files
+.env
+!.env.example
+.envrc
+*.env.production
+*.env.local
+*.env.staging
+-e 
+config.yaml
+*config.yaml
+local.settings.json
+appsettings.Development.json
+*.Development.json
+.env.json
+
+# Project-specific files
+.databrickscfg
+.current-project-name
+debug.sh
+set-environment.sh
+additional-commands.sh
+
+# Logs and data
+*.log
+*debug.log*
+logs/
+data/
+data/*
+archive/
+output/
+sample-sensor/
+rendered
+**/volumes/
+**/shards/
+**/stdout
+**/stderr
+**/results/
+state/*
+uploader-state/*
+
+# Database files
+*.db
+*.db-shm
+*.db-wal
+pipeline_config.db
+
+# Dependencies
+packages/
+*.nuget.props
+*.nuget.targets
+project.lock.json
+project.assets.json
+*.nuget.cache
+node_modules/
+**/vendor/**
+
+# Runtime files
+*.dll.config
+*.exe.config
+*.json.user
+*.runtimeconfig.json
+*.deps.json
+
+# Archive and backup files
+*.zip
+*.tar.gz
+*.7z
+*.rar
+backup.bundle
+*~
+*.bak
+*.backup
+*.orig
+*.original
+
+# Security: Exclude all credential and sensitive files
+credentials/*
+!credentials/.keep
+!credentials/README.md
+!credentials/*.sample
+*.pem
+*.key
+*.p12
+*.pfx
+*.pub
+*-credentials
+*-production.env
+*-production-config.json
+*-production.docker.env
+aws-credentials
+!aws-credentials.sample
+.aws/credentials
+.aws/config
+.aws/cli/cache/
+.aws/sso/cache/
+.aws_cache
+*secret*
+*token*
+ansible.cfg
+
+# Test environments with sensitive data
+test-bacalhau-env/
+test-bacalhau-env/**/credentials
+test-bacalhau-env/**/.aws/
+
+# Instance files with real credentials
+spot/instance-files/etc/aws/credentials/aws-credentials
+spot/instance-files/etc/aws/credentials/expanso-*
+!spot/instance-files/etc/aws/credentials/.keep
+!spot/instance-files/etc/aws/credentials/README.md
+!spot/instance-files/etc/aws/credentials/*.sample
+
+# Bacalhau real credentials - exclude real files but keep placeholders for deployment
+# These files need to exist for deployment to work, but contain placeholder values
+# Real values should be injected during deployment process
+
+# Bacalhau data with credentials
+**/bacalhau_data/credentials/
+!**/bacalhau_data/credentials/.keep
+
+# Instance configuration files
+spot/instances.json
+
+# Cosmos DB specific
+cosmos-uploader/**/bin/
+cosmos-uploader/**/obj/
+cosmos-uploader-old/
+cosmos-uploader/.cspell/
+cosmos-uploader/bin/
+cosmos-uploader/obj/
+cosmos-uploader/cosmos-config.yaml
+demo-network/files/cosmos-config.yaml
+config/cosmos-config.yaml
+*cosmos-with-bacalhau
+
+# Databricks and cloud specific
+docker-compose.yaml
+sample-sensor/*
+
+# Generated and temporary files
+latest-tag
+.latest-*
+test-*.yaml
+test-*.py
+test-*.sh
+debug-*.py
+diagnose-*.py
+fix-*.py
+simple-cleanup.py
+show-upload-status.py
+quick-*.sh
+temp
+job_id.txt
+
+# Terraform
+.terraform/
+terraform.tfstate.d/
+.terraform.lock.hcl
+tf/.terraform/*
+*.tfstate*
+tf/.terraform/environment
+tf.out
+plan.out
+
+# Bacalhau specific
+bacalhau
+bacalhau.run
+job-[0-9a-z]*
+!job-one-zone.yaml
+
+# Documentation and study materials
+docs.bacalhau.org/
+todo/eurec4a/how_to_eurec4a
+NOTES.md
+
+# Machine configurations
+**/MACHINES.json
+
+# Data files
+**/*.h5
+scripts.zip
+*.specstory*
+
+# Local development specific
+.minio*
+tools/local-lakehouse/spark-delta-jars/
+tools/local-lakehouse/minio-data/
+
+# Flox environments
+**/.flox/**
+queuing/job/.flox
+
+# Event and JSON files (specific to some services)
+event-puller/*.json
+event-pusher/*.json
+
+# Large media files
+model-inference/object-detection-yolo5/videos/video2.mp4
+
+# Specific service logs
+queuing/agent-container/bacalhau_v1.3.2_linux_amd64.tar.gz
+data-engineering/postgres-with-bacalhau/postgres-uploader/logs/access.log
+data-engineering/bigquery-with-bacalhau/logs/access.log
+
+# Large data files
+todo/socat/input/sst.mnmean.nc
+
+LLM.txt
