@@ -16,9 +16,7 @@ Guess which team shipped a working product that actually made money?
 
 If you're new to ML, you probably guessed Team B, because it's obvious that's where this story is going. If you've been around the block, you guessed Team B because you've *been* on Team A, and you still have the emotional scars (and the unused ArXiv bookmarks) to prove it.
 
-Welcome to the Data-Centric AI revolution. Population: not enough people yet, but we have physics and the real world on our side. And more importantly, we are the bridge between the science and the thing that actually affects people's lives.
-
-As an aside, I should stress (!), There's nothing wrong with Team A. They're doing everything that we need to move the industry forward. But more often than not, there's a big gap between the latest research and actually using those breakthroughs.
+As an aside, I should stress (!), there's nothing wrong with Team A. They're doing everything that we need to move the industry forward. But more often than not, there's a big gap between the latest research and actually using those breakthroughs. And that gap? It's filled with data problems.
 
 ## 1.1 Andrew Ng's Paradigm Shift: Why "Good Data Beats Big Data"
 
@@ -36,13 +34,11 @@ I keep waiting for a book or pamphlet or a sky-writing announcement that helps p
 
 ### The Numbers That Should Scare You Straight
 
-Let me throw some numbers at you:
+Here's what I've seen across dozens of projects:
 
 - **Model architecture improvements**: 1-2% accuracy gain (if you're lucky and the moon is in the right phase)
 - **Cleaning your data**: 5-10% accuracy gain
 - **Actually understanding your data**: 20-30% accuracy gain (I've seen this with my own eyes, multiple times)
-
-But wait, there's more!
 
 > **Visual Note**: *[Diagram opportunity: Bar chart comparing improvement sources - Model Architecture (1-2%), Data Cleaning (5-10%), Data Understanding (20-30%)]*
 
@@ -54,23 +50,17 @@ Think of it like cooking. You can't make a bad ingredient good by using more of 
 
 Here's what I've learned the hard way (so you don't have to):
 
-**1. Quality compounds, quantity plateaus**
-
-You know that feeling when you're debugging code and you fix one thing and suddenly five other things start working? Data quality is like that, but in reverse for bad data. One mislabeled example teaches your model wrong. Or breaks your pipeline. Or remains hidden for months and months until finally something goes wrong and you go back and question how this ever worked.
+**Quality compounds, quantity plateaus.** You know that feeling when you're debugging code and you fix one thing and suddenly five other things start working? Data quality is like that, but in reverse for bad data. One mislabeled example teaches your model wrong. Or breaks your pipeline. Or remains hidden for months and months until finally something goes wrong and you go back and question how this ever worked.
 
 Those wrong outcomes affect how it interprets other examples. Those misinterpretations affect your confidence scores. Those confidence scores affect your active learning. Before you know it, you're in what I call "ML debt spiral," and you're explaining to your VP why the model thinks all dogs are cats on Tuesdays.
 
 > **Visual Note**: *[Diagram opportunity: ML Debt Spiral flowchart showing how one bad label cascades into multiple problems]*
 
-**2. Small datasets are your friends (really!)**
-
-I worked with a team that was producing 600,000 readings every second. You know what they actually needed? About 10,000 single data points, every 10 minutes. The rest was basically very expensive random noise that took forever to process and made their cloud bill look like a phone number.
+**Small datasets are your friends (really!).** I worked with a team that was producing 600,000 readings every second. You know what they actually needed? About 10,000 single data points, every 10 minutes. The rest was basically very expensive random noise that took forever to process and made their cloud bill look like a phone number.
 
 A great summary on exactly how impactful this can be is Google's paper ["Data Scaling Laws in NLP"](https://arxiv.org/abs/2001.08361) showing that careful data curation beats massive scale. Or don't trust me, do the math yourself and save yourself the storage and network costs.
 
-**3. Debugging is actually possible**
-
-With 10,000 examples, when something goes wrong, you can actually look at the data. With 10 billion? Good luck. You'll be sampling and praying, which is basically the ML equivalent of "thoughts and prayers" - heartfelt but ineffective.
+**Debugging is actually possible.** With 10,000 examples, when something goes wrong, you can actually look at the data. With 10 billion? Good luck. You'll be sampling and praying, which is basically the ML equivalent of "thoughts and prayers" - heartfelt but ineffective.
 
 ### A Real Story That Still Makes Me Laugh (And Cry)
 
@@ -168,7 +158,7 @@ ImageNet, the dataset that launched a thousand papers, is kind of a mess. [North
 - ~10% are "ambiguous" (academic speak for "we're not sure either")
 - The "basketball" category is basically "NBA players holding round objects"
 
-Every model trained on ImageNet inherited these problems. If you fine-tuned your models using those data sources as inputs, you'll just be compounding the problem. It's turtles all the way down. The ONLY way to break this cycle is to actually look at your data, understand its flaws, and either fix them or explicitly account for them in your model design (we'll cover both approaches in Chapter 9).
+Every model trained on ImageNet inherited these problems. If you fine-tuned your models using those data sources as inputs, you'll just be compounding the problem. It's turtles all the way down. The ONLY way to break this cycle is to actually look at your data, understand its flaws, and either fix them or explicitly account for them in your model design (we'll cover both approaches in Chapter 10).
 
 ## 1.3 Data-Centric vs Model-Centric: The Middle Path
 
@@ -223,265 +213,81 @@ while accuracy < target:
 
 Here's what actually works in practice:
 
-1. **Start by becoming one with your data**. I mean really get to know it. Take it out for coffee. Ask about its hopes and dreams. Look at random samples until your eyes bleed. (We'll dive deep into this in Chapter 5: Exploratory Data Analysis)
+**Start by becoming one with your data.** I mean really get to know it. Take it out for coffee. Ask about its hopes and dreams. Look at random samples until your eyes bleed. (We'll dive deep into this in Chapter 6: Exploratory Data Analysis)
 
-2. **Use boring, proven models**. ResNet for images and BERT for text are perfectly fine starting points. Use known data and known models and try to reproduce published results. THEN and ONLY THEN expand into your own data. This by itself will often reveal a number of issues with your pipeline.
+**Use boring, proven models.** ResNet for images and BERT for text are perfectly fine starting points. Use known data and known models and try to reproduce published results. THEN and ONLY THEN expand into your own data. This by itself will often reveal a number of issues with your pipeline.
 
-3. **Let data guide architecture choices**. If your error analysis shows the model can't handle long-range dependencies, *then* consider attention mechanisms. Don't start with a solution looking for a problem.
+**Let data guide architecture choices.** If your error analysis shows the model can't handle long-range dependencies, *then* consider attention mechanisms. Don't start with a solution looking for a problem.
 
-4. **Iterate on both, but maintain a 1:4 ratio**. For every hour of model fiddling, spend four hours on data. It's like the golden ratio, but for ML.
+**Iterate on both, but maintain a 1:4 ratio.** For every hour of model fiddling, spend four hours on data. It's like the golden ratio, but for ML.
 
-## 1.4 The Ten Fundamentals of Data-Centric AI
+## 1.4 What Data-Centric Actually Means in Practice
 
-After years of watching projects succeed and fail, I've distilled the real fundamentals - the ones that separate working systems from expensive failures. These aren't your basic "know your data source" platitudes. These are battle-tested principles that will save your project (and possibly your job).
+I've watched a lot of projects succeed and a lot more fail. The difference isn't frameworks or tools or how many GPUs you can requisition. It's a handful of habits that separate the teams who ship from the teams who pivot.
 
-### Fundamental 1: Design for Failure, Not Success
+### The Pipeline That Ran for 847 Days (And Then Didn't)
 
-Everything will break. The network will fail during transfers. The schema will change without warning. That "reliable" upstream system will send you nulls where you expected integers. Your fundamental architecture should assume failure is the default state.
+I learned about defensive design the hard way. A data pipeline at a company I was consulting for had been running successfully for 847 days. Every single day, data flowed in, got processed, and fed the models. 847 days of green checkmarks.
 
-Here's what this looks like in practice:
+On day 848, an upstream system changed their date format from `YYYY-MM-DD` to `MM/DD/YYYY`. The pipeline didn't crash - that would have been merciful. Instead, it silently started interpreting dates wrong. March 4th became April 3rd. The model started making predictions about events that hadn't happened yet.
 
-```python
-# BAD: Optimistic pipeline
-def process_data(data):
-    transformed = transform(data)  # What if this fails?
-    validated = validate(transformed)  # Now what?
-    return save(validated)  # Hope for the best!
+By the time anyone noticed, the system had generated $340,000 worth of incorrect inventory predictions. The "fix" took 6 hours. Finding the bug took 3 weeks.
 
-# GOOD: Defensive pipeline
-def process_data(data, retry_count=0):
-    try:
-        # Save raw data first - always
-        save_raw(data, versioned=True)
-        
-        # Transform with rollback capability
-        transformed = transform_with_checkpoint(data)
-        
-        # Validate with detailed logging
-        validated, issues = validate_with_report(transformed)
-        if issues:
-            log_issues(issues)
-            
-        # Save with idempotency check
-        result = save_if_not_exists(validated)
-        return result
-        
-    except Exception as e:
-        if retry_count < MAX_RETRIES:
-            return process_data(data, retry_count + 1)
-        else:
-            quarantine_data(data, error=e)
-            alert_on_call_engineer(e)
-            raise
-```
+The lesson isn't "validate your date formats" (though yes, do that). The lesson is that 847 days of success created a false sense of security. The pipeline had been tested against the data that existed when it was built. Nobody thought to ask: "What happens when something upstream changes?"
 
-"But we're running in the cloud! Nothing ever goes wrong in the cloud!" Oh sweet summer child. If you have an ethernet cable, congratulations, you have a distributed system that WILL fail. It's not "mean-time-between-stays-up-forever", it's "mean-time-between-FAILURE." Plan for it.
+**Design for failure, not success.** Every piece of data should be treated as potentially hostile. Save the raw input before you transform it. Add checksums. Build rollback capabilities. Assume that if something CAN go wrong, it eventually WILL - and your job is to make sure you can recover when it does.
 
-### Fundamental 2: Lineage is Sacred
+### "I Don't Know Where This Number Came From"
 
-Every piece of data should carry its birth certificate, medical history, and family tree. You should be able to answer "Why does this value exist?" for any data point in your system.
+The most terrifying sentence in data engineering is: "I don't know where this number came from."
 
-This isn't just about debugging (though it makes debugging SO much easier). It's about trust. When the CEO asks why the model made a particular decision, "I don't know, the data went through some transformations" is not an acceptable answer.
+I heard it from a VP at a financial services company. They were being audited. The auditor asked why a particular customer was flagged as high-risk. The model said so, but nobody could explain why. The training data that led to that classification had been through seventeen different transformations across three different systems. The original source? Unknown. The transformation logic? Partially documented in a Confluence page from 2019 that referenced code that had since been deleted.
 
-What to track:
+The audit did not go well.
 
-```json
-{
-  "value": 42.7,
-  "lineage": {
-    "source": "sensor_7",
-    "raw_values": [41.2, 44.1, 42.8, ...],
-    "transformation": "median_after_outlier_removal",
-    "version": "normalization_v2.3.0",
-    "timestamp": "2024-03-15T10:30:00Z",
-    "machine": "pipeline-worker-03",
-    "git_sha": "363e5f7faff8dffaf40482ff7ffcbe4ff98f0f9c",
-    "operator": "sarah@company.com",
-    "reason": "Outliers detected > 3 std devs",
-    "confidence": 0.92
-  }
-}
-```
+**Every piece of data should carry its own history.** Not just "what is this value?" but "where did it come from, what happened to it, and why?" This isn't bureaucratic overhead - it's survival. When (not if) something goes wrong, lineage is the difference between a 3-hour fix and a 3-week archaeological expedition.
 
-I have seen folks discover their predictions were off by 30%. With proper lineage, they traced it back to a timezone conversion bug introduced 3 months earlier. Without it? They would have blamed the model architecture forever.
+### The Schema That Grew Organically
 
-### Fundamental 3: Schema Evolution, Not Schema Perfection
+Early in my career, I built a data pipeline with a beautifully strict schema. Every field was typed, validated, and documented. It was a work of art.
 
-The world isn't strongly typed, and neither should your initial pipeline be. But chaos isn't sustainable either.
+It lasted two weeks.
 
-Start simple:
+Then the business needed a new field. And another. And a nullable version of an existing field "just for now." And a JSON blob for "miscellaneous attributes we might need later." Within six months, my beautiful schema was a Frankenstein's monster of required fields that weren't really required, optional fields that were actually mandatory, and that JSON blob had become a dumping ground for everything that didn't fit anywhere else.
 
-```json
-{
-  "data": "<whatever mess you get>",
-  "metadata": {
-    "source": "system_x",
-    "timestamp": "2024-03-15T10:30:00Z",
-    "schema_version": "0.1-chaos",
-    "raw_backup_location": "s3://bucket/raw/2024/03/15/..."
-  }
-}
-```
+The opposite approach - no schema at all - is equally disastrous. I've seen teams drown in unstructured data, spending more time parsing than analyzing.
 
-Then gradually add structure where it provides value. Your schema should be a living thing that grows stronger, not a rigid skeleton that breaks.
+**The answer is schema evolution, not schema perfection.** Start simple. Accept messy data but quarantine it. Add structure incrementally, where it provides value. Your schema should grow like a plant - organically, in response to its environment - not like a building, designed upfront and then stuck with forever.
 
-Example evolution timeline:
-- Week 1-4: Just store everything as text
-- Week 5-8: Extract obvious numbers (prices, quantities)
-- Week 9-12: Identify and type categories
-- Week 13-16: Build structured attributes
-- Week 17+: Enforce constraints on critical fields only
+### The Dashboard Nobody Trusted
 
-You can start getting value immediately while building toward a robust system.
+A retail company I worked with had beautiful dashboards. Real-time data, gorgeous visualizations, automatic alerts. The problem? Nobody used them.
 
-### Fundamental 4: Observability Over Documentation
+The data scientists had learned not to trust the numbers. Too many times, the dashboard showed something alarming, they'd investigate, and discover it was a data quality issue, not a real problem. After enough false alarms, they started ignoring the dashboards entirely. When a real problem finally showed up, nobody noticed for three days.
 
-Documentation lies. Running systems tell the truth. Build pipelines that explain themselves through metrics, logs, and data quality reports.
+**Observability isn't about pretty dashboards - it's about trust.** Your monitoring should tell you not just what the numbers are, but whether you should believe them. Track data quality metrics alongside business metrics. Alert on anomalies in the data itself, not just anomalies in the results. Build confidence intervals. Show your work.
 
-Example metrics that actually matter:
+Documentation helps, but running systems tell the truth in a way that documentation can't. The best pipelines I've seen are self-describing: you can look at the metrics and understand not just what happened, but why.
 
-```python
-# Emit these continuously, not just on error
-emit_metric("input.mean", data.mean(), tags={"stage": "raw"})
-emit_metric("input.null_percentage", null_count/total, tags={"field": "price"})
-emit_metric("processing.path_taken", "path_a", tags={"reason": "price>100"})
-emit_metric("output.schema_version", "2.1.0")
-emit_metric("label.consistency_score", 0.87, alert_if_below=0.85)
-```
+### The Tuesday Bug
 
-Self-documenting pipelines let new engineers understand the system in hours, not weeks.
+One of my favorite debugging war stories involves a pipeline that produced different results on Tuesdays.
 
-NOTE: This is NOT an excuse to skip documentation. It's a both/and, not either/or.
+Not wrong results, exactly. Just... different. Slightly different distributions, slightly different model scores. Nobody could figure out why until someone noticed that the ingestion job ran at 2 AM, and on Tuesdays, it overlapped with a maintenance window that added 200ms of latency to database queries. The timeout logic was set to 150ms. On Tuesdays, some queries timed out. The fallback code path handled missing data by using last week's values.
 
-### Fundamental 5: Separate Concerns Ruthlessly
+The pipeline had been doing this for eight months.
 
-Each stage should do ONE thing:
+**Separate concerns ruthlessly.** Each stage of your pipeline should do exactly one thing. Ingestion gets data in - it doesn't transform. Validation checks quality - it doesn't fix. Transformation changes shape - it doesn't validate. When you mix these responsibilities, you create invisible dependencies that only manifest as bizarre bugs on specific days of the week.
 
-- **Ingestion** just gets data in (don't transform here)
-- **Validation** just checks quality (don't fix here)
-- **Transformation** just changes shape (don't validate here)
-- **Loading** just writes data (don't transform here)
+### The Audit That Saved the Company
 
-This seems pedantic until you're debugging why your pipeline produces different results on Tuesdays (spoiler: ingestion was doing timezone conversion only for certain sources).
+The best data teams I've worked with have a simple rule: never delete anything.
 
-### Fundamental 6: Make Invalid States Unrepresentable
+Storage is cheap. Debugging production issues without historical data is expensive. I know a company that avoided a $2M lawsuit because they could prove, from their audit logs, exactly what data was used to train a model that was being challenged. Another company found a subtle bug that had been introduced six months earlier - they could only fix it because they had the original data to compare against.
 
-This is borrowed from functional programming but applies perfectly to data pipelines.
+**Keep everything, but keep it organized.** Raw data goes to cold storage after 90 days. Processed data keeps the last 10 versions. Failed processing attempts get logged forever with full error details. Every access, every transformation, every decision gets recorded somewhere.
 
-```python
-# BAD: Age and birthdate can be inconsistent
-{
-  "age": 25,
-  "birthdate": "1990-01-01"  # Math doesn't work in 2024!
-}
-
-# GOOD: Single source of truth
-{
-  "birthdate": "1990-01-01"  # Calculate age when needed
-}
-```
-
-### Fundamental 7: Data Contracts as First-Class Citizens
-
-Treat the interface between systems as seriously as you'd treat an API contract. Here's what a real data contract looks like:
-
-```yaml
-# data_contract_v1.2.0.yaml
-contract:
-  version: 1.2.0
-  producer: user_service
-  consumer: recommendation_engine
-  
-schema:
-  type: record
-  fields:
-    - name: user_id
-      type: string
-      nullable: false
-    - name: timestamp
-      type: timestamp
-      format: ISO8601
-      nullable: false
-    - name: age
-      type: integer
-      min: 0
-      max: 150
-      nullable: true
-      
-quality:
-  completeness: 99.9%  # Percentage of non-null required fields
-  timeliness: 5min     # Max delay from event to availability
-  accuracy: 99.5%      # Validated against ground truth
-  
-breaking_changes:
-  notification: 30d    # Notice period
-  deprecation: 90d     # Deprecation period
-  
-contacts:
-  owner: data-platform-team@company.com
-  oncall: https://oncall.company.com/data-platform
-```
-
-### Fundamental 8: Test with Chaos
-
-Your test data should include:
-
-```python
-test_cases = {
-    "happy_path": "10%",
-    "edge_cases": "30%",
-    "malformed": "30%",
-    "adversarial": "30%"
-}
-
-chaos_examples = [
-    "",  # Empty file
-    "header1,header2,header3",  # Headers only
-    "a,b,c,d,e",  # Wrong column count
-    "😀,🎉,🎂",  # Unicode chaos
-    "2024-13-45",  # Impossible date
-    "-999999",  # Negative where positive expected
-    "'; DROP TABLE users; --",  # SQL injection attempt
-    shakespeare_complete_works,  # Size chaos
-]
-```
-
-And PLEASE read:
-- ["Falsehoods programmers believe about names"](https://www.kalzumeus.com/2010/06/17/falsehoods-programmers-believe-about-names/)
-- ["Falsehoods programmers believe about time"](https://gist.github.com/timvisee/fcda9bbdff88d45cc9061606b4b923ca)
-
-### Fundamental 9: Audit Everything, Delete Nothing
-
-Storage is cheap. Debugging production issues without historical data is expensive.
-
-```python
-# Keep everything, but organized
-/data
-  /raw           # Never delete, cold storage after 90 days
-  /processed     # Keep last 10 versions
-  /failed        # Keep forever with error details
-  /audit         # Every access, transformation, decision
-  /schemas       # Every version that ever existed
-```
-
-A well-meaning engineer "fixed" a data cleaning pipeline 2 months ago. With audit logs, you can find exactly what changed. Without them, you're doing archaeology.
-
-### Fundamental 10: Build for the Next Person
-
-That next person might be you in six months. Every pipeline should answer these questions in < 5 minutes:
-
-- What does this pipeline do?
-- What are its inputs and outputs?
-- How do I run it locally?
-- How do I debug when it fails?
-- Who do I contact for help?
-- Where are the tests?
-
-If answering these requires reading code, you've already failed.
-
-### The Meta-Fundamental
-
-**Your data pipeline is a distributed system, not a series of scripts**. Treat it with the same respect you'd give to any critical production system. This means version control, CI/CD, monitoring, alerting, SLAs, runbooks, and disaster recovery drills.
+The next person to debug your pipeline might be you, six months from now, having forgotten everything. Build for that person.
 
 ## 1.5 Learning from Failures: The Hall of Shame (And Fame)
 
@@ -528,7 +334,7 @@ Timeline of disaster:
 **Day 90**: Project "paused indefinitely"
 
 **Root Cause Analysis:**
-- Class imbalance of 1:100,000 not handled (needed SMOTE or similar, covered in Chapter 20)
+- Class imbalance of 1:100,000 not handled (needed SMOTE or similar, covered in Chapter 21)
 - Only trained on caught fraud (selection bias)
 - Time zones not normalized (3am in Tokyo ≠ suspicious)
 - No feedback loop built in
@@ -560,83 +366,37 @@ def get_sensor_data():
     return data, quality_score, metadata
 ```
 
-## 1.6 The Economics of Data Quality (Or: How to Justify This to Your Boss)
+## 1.6 What's Next: The Price of Getting This Wrong
 
-### The Hidden Costs Nobody Talks About
+Here's what I haven't told you yet: all these failures have price tags.
 
-Let's talk money, because that's what gets projects approved.
+The recommendation engine that recommended everything? $50M in development costs for a fancy sorting algorithm. The fraud detection system with 40% false positives? Estimated $12M in lost customer lifetime value from people who got their cards declined and never came back. The predictive maintenance system that predicted the past? $8M in "prevented" failures that had already happened.
 
-**The Visible Costs** (what you put in the budget):
-- Compute: $100K for GPUs
-- People: $500K for data scientists
-- Tools: $50K for platforms
+These aren't edge cases. They're Tuesday.
 
-**The Hidden Costs** (what actually kills you):
-- Debugging bad data: $1M (10x compute from reruns)
-- Fixing production failures: $5M (engineering time + opportunity cost)
-- Lost trust from bad predictions: Priceless (and not in a good way)
+In Chapter 4, we're going to rip the cover off the economics of data quality. Not the theoretical "data is valuable" hand-waving, but the actual numbers: what bad data costs, what good data saves, and how to make the business case to your CFO. We'll calculate ROI, identify where to spend your limited budget, and build the financial argument for why that "boring" data cleaning project should jump to the front of the queue.
 
-> **Visual Note**: *[Diagram opportunity: Iceberg diagram showing visible vs hidden costs]*
-
-### A Real ROI Calculation That Made the CFO Cry (Happy Tears)
-
-**Project**: Customer churn prediction
-
-| Stage | Time | Cost | Accuracy | Business Value |
-|-------|------|------|----------|----------------|
-| Initial model | 2 weeks | $50K | 72% | Baseline |
-| Data cleaning | 4 weeks | $100K | 81% | +$4.5M/year |
-| Feature engineering | 2 weeks | $50K | 84% | +$1.5M/year |
-| **Total** | **8 weeks** | **$200K** | **84%** | **+$6M/year** |
-
-**ROI**: 2,900% in year one
-
-Your CFO will name their firstborn after you.
-
-### Where to Spend Your Data Dollars
-
-**High ROI** (Do immediately):
-1. Auditing and versioning (prevent disasters)
-2. Lineage tracking (debug 10x faster)
-3. Label consistency (instant 5-10% improvement)
-4. Train/test leakage removal (stop fooling yourself)
-5. Missing data handling (stop pretending nulls don't exist)
-
-**Medium ROI** (Do next quarter):
-1. Feature engineering
-2. Outlier handling  
-3. Smart augmentation
-4. Class balancing
-
-**Low ROI** (Do when bored):
-1. Exotic imputation methods
-2. Complex feature interactions beyond quadratic
-3. That thing you saw at NeurIPS
+But first, we need to understand what data actually *is*. That sounds obvious until you realize that your model thinks a ZIP code is a really big number and that "false" is True.
 
 ## Quick Wins Box: Do These TODAY
 
 **Got an hour? Here are immediate actions that will pay dividends:**
 
-1. **Label Consistency Check** (30 min)
-   ```python
-   sample = data.sample(100)
-   relabeled = manually_label(sample)
-   agreement = (sample.label == relabeled).mean()
-   print(f"Agreement: {agreement:.2%}")
-   if agreement < 0.90:
-       print("You have a problem")
-   ```
+**Label Consistency Check (30 min)**
+```python
+sample = data.sample(100)
+relabeled = manually_label(sample)
+agreement = (sample.label == relabeled).mean()
+print(f"Agreement: {agreement:.2%}")
+if agreement < 0.90:
+    print("You have a problem")
+```
 
-2. **Calculate True Data Costs** (15 min)
-   - Storage: `aws s3 ls --summarize --recursive s3://your-bucket`
-   - Compute: Check last month's cloud bill
-   - Engineer time: Hours spent debugging × hourly rate
-   - If total > $10K/month, you need optimization
+**Document One Unknown (15 min)**
+Find one undocumented transformation in your pipeline. Write 3 sentences about what it does. Save future-you from suffering.
 
-3. **Document One Unknown** (15 min)
-   - Find one undocumented transformation
-   - Write 3 sentences about what it does
-   - Save future-you from suffering
+**The Five-Minute Data Stare (5 min)**
+Open a Jupyter notebook. Load 10 random examples from your dataset. Actually look at them. I guarantee you'll find something surprising.
 
 ## Your Homework (Yes, There's Homework)
 
@@ -657,13 +417,12 @@ Your CFO will name their firstborn after you.
 4. If it's below 90%, you have work to do
 5. If it's above 90%, check another 50 (trust but verify)
 
-### Exercise 3: The Executive Summary (Time: ~30 minutes)
+### Exercise 3: The Lineage Trace (Time: ~30 minutes)
 
-1. Calculate your current model's business value
-2. Estimate what 5% improvement is worth
-3. Compare to one week of your team's salaries
-4. Use this to justify data quality work
-5. Buy me coffee with your raise
+1. Pick any number in your production system
+2. Try to trace it back to its original source
+3. Write down every transformation it went through
+4. If you can't complete this exercise, you've identified a problem
 
 ## Parting Thoughts
 
@@ -671,7 +430,7 @@ Look, I know data work isn't sexy. It doesn't get you papers at NeurIPS. It does
 
 But you know what? It works. It ships. It makes money. It actually solves problems.
 
-In the next chapter (Chapter 2: Understanding Data Types and Structures), we're going to dive deep into the fundamental building blocks of data. We'll explore why treating text like numbers is a bad idea, why timestamps are secretly the hardest data type, and why "categorical" doesn't mean what you think it means.
+In Chapter 2, we're going to dive into data types - the fundamental building blocks that determine whether your model thinks a ZIP code is a really big number or a categorical variable. We'll explore why "structured" data lies to you, why timestamps are secretly the hardest data type, and why your Boolean field contains the string "false" (which evaluates to True).
 
 Until then, stop reading blogs about the latest architecture and go look at your actual data. Yes, right now. Open a Jupyter notebook, load a random batch, and really LOOK at it. I guarantee you'll find something surprising.
 
