@@ -1,6 +1,23 @@
 # macOS
 .DS_Store
 
+# Book working files - NEVER check in temporary/in-progress versions
+# Only content.md and Outline.md (without suffixes) should be committed
+*_REVISED*
+*_revised*
+*_RAW*
+*_raw*
+*_BACKUP*
+*_backup*
+*_OLD*
+*_old*
+*_DRAFT*
+*_draft*
+*_WIP*
+*_wip*
+Outline_REVISED.md
+Outline_revised.md
+
 # Python
 *__pycache__*
 **/.ipynb_checkpoints/

@@ -1,0 +1,6 @@
+[submodule "data-mgmt-ed-research-book"]
+	path = data-mgmt-ed-research-book
+	url = https://github.com/Cghlewis/data-mgmt-ed-research-book
+[submodule "claudecode-writer"]
+	path = claudecode-writer
+	url = https://github.com/WomenDefiningAI/claudecode-writer
