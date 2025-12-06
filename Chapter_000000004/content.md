@@ -2,11 +2,11 @@
 
 ## Or: Why That "Quick Fix" Costs $50K/Month
 
-**In 2019, a fintech startup discovered that their "free" data pipeline was costing $340,000 per month in engineer time alone. The actual cloud bill was $12K. The debugging, maintenance, and firefighting? That was the real number.**
+**In 2019, a fintech startup discovered that their "free" data pipeline was costing $340,000 per month in engineer time alone. The actual cloud bill was $12K. The debugging, maintenance, and firefighting was the real number.**
 
-Welcome to the economics chapter. The one your CFO needs to read, your engineering manager needs to quote, and you need to internalize before your next "quick fix" becomes a permanent fixture in your production system.
+Welcome to the economics chapter. This is the one you can hand to your CFO (or if you ARE a CFO, welcome!), your engineering manager needs to quote, and you need to internalize before your next "quick fix" becomes a permanent fixture in your production system.
 
-I'm going to show you where money actually goes in data systems, because the visible costs—the ones that show up on your AWS bill—are like the tip of an iceberg. The part that sinks ships is underwater.
+Normally, in an engineering heavy book like this, money is the last thing people think about. But money == resources == human beings being able to work on cool things instead of debugging the same problem for the thousandth time because you didn't have the time to fix the last one properly. And, worst of all, the bill you see (the line items on your hyperscale cloud bill) are the tip of an iceberg. The part that sinks ships is underwater.
 
 ## 4.1 The Iceberg of Data Costs
 
@@ -34,11 +34,13 @@ What actually shows up (if you're counting properly):
 | Customer churn from bad predictions | $??? |
 | **Total Actual Cost** | **$280,000+** |
 
-That's a 12x multiplier. And I'm being conservative.
+> **Figure 4.1**: *The Data Cost Iceberg. The $23K visible budget hides $280K+ in actual costs—a 12x multiplier that doesn't show up until you start counting engineer time.*
+
+That's a 12x multiplier. And that's being conservative.
 
 ### The 10x Rule of Data Problems
 
-Here's something I've observed across dozens of companies: for every dollar you spend on cloud infrastructure for data, you spend ten dollars on the humans dealing with data problems.
+For every dollar you spend on cloud infrastructure for data, you spend ten dollars on the humans dealing with data problems.
 
 Why? Because:
 - **Data problems are debugging problems**, and debugging is expensive
@@ -46,13 +48,14 @@ Why? Because:
 - **Data problems are invisible** until something breaks spectacularly
 - **Data problems require domain expertise**, not just engineering skill
 
-A senior data engineer costs $200K+/year fully loaded. If they spend half their time fighting fires instead of building features, you're burning $100K annually on invisible costs. Multiply that by your team size.
+If a senior data engineer costs $200K+/year fully loaded, and they spend half their time fighting fires instead of building features, you're burning $100K annually on invisible costs. Multiply that by your team size.
 
 ### The Compounding Effect
 
-Bad data decisions compound like credit card debt. Here's a real example from a Series B startup I advised:
+Bad data decisions compound like credit card debt. Here's a real example from a variety of a companies I have advised:
 
 **Quarter 1**: "Let's just store everything as strings, we'll fix it later"
+
 - Engineering time: 0 hours
 - Technical debt created: Unknown
 
@@ -143,6 +146,8 @@ Just from interrupted sleep. And this doesn't count the engineer burnout and eve
 ### The Storage Explosion Problem
 
 Data grows. That's not news. What IS news is how fast, and how much of it you actually need.
+
+Remember Netflix's 7x storage reduction from Chapter 3? That's $50M annually at their scale. Format choice isn't academic—it's line-item budgetary. But format is only half the battle. The other half is figuring out what you're storing and whether anyone will ever look at it again.
 
 A media company I worked with had this storage profile:
 
@@ -294,6 +299,8 @@ Raw Data → Clean → Transform → Aggregate → Feature → Model → Serve
             API        API        API
 ```
 
+> **Figure 4.2**: *A "simple" pipeline with 14 single points of failure. When the currency API went down for 4 hours, the cascade reached 4 systems deep and cost $180K in lost conversions.*
+
 Total single points of failure: 14
 Probability of at least one failure per day: 73%
 Average cascade depth when failure occurs: 3.2 systems
@@ -366,6 +373,8 @@ Code technical debt is bad. Data technical debt is worse. Here's why:
 **Code debt**: You can see it. You can grep for it. It's in version control. It has tests (hopefully). One person can understand it.
 
 **Data debt**: It's invisible until it's not. It's distributed across systems. It has no tests. It requires domain expertise to identify. It affects every model and decision built on top of it.
+
+The Four Horsemen from Chapter 2 have different price tags. The Structural Lie (parsing failures) costs you hours. The Type Trap costs you weeks. The Semantic Sinkhole costs you months. And the Schema Mirage? That's the one that costs you quarters—by the time you realize you've been throwing away data, you've been doing it for a long time.
 
 The compound interest on data debt:
 
@@ -442,7 +451,7 @@ Monthly value = 1,400 × 84% × 52% × $8,500 = **$5.2M protected revenue**
 **Annual improvement: $22.8M**
 **ROI: 11,300%**
 
-Yes, eleven thousand percent. Data quality work has absurd returns when done right.
+Yes, eleven thousand percent. This is a real case, and no, it's not typical—it's what happens when data quality work directly affects a high-value business metric (churn prevention for enterprise SaaS). Most ROI calculations are more modest but still compelling: 200-500% is common for foundational work like lineage and quality checks.
 
 ### The Measurement Framework
 
@@ -535,14 +544,17 @@ These look shiny but wait until fundamentals are solid:
 **1. Exotic Imputation Methods**
 - Simple methods work for 90% of cases
 - Complex methods require clean meta-data to be effective
+- (We'll cover when to graduate from simple imputation in Chapter 9)
 
 **2. AutoML Platforms**
 - Garbage in, automated garbage out
 - Fix data first, automate second
+- (Chapter 15 covers when AutoML actually makes sense)
 
 **3. Real-time Everything**
 - Most use cases don't need sub-second latency
 - Batch processing is 10x cheaper and often sufficient
+- (Chapter 12 will help you decide if you really need real-time)
 
 **4. Custom ML Hardware**
 - Until your data is clean, faster training just gives you wrong answers quicker
@@ -638,7 +650,7 @@ But you know what? This is where the money is. Not in the algorithms. Not in the
 
 Every dollar you spend on data quality saves you ten dollars in debugging, reprocessing, and bad decisions. Every hour invested in lineage saves you ten hours of archaeology. Every label you fix improves every model you'll ever train on that data.
 
-The next chapter starts Part II of this book, where we'll get into the mechanics of actually acquiring and validating data. Now that you understand WHY this work matters (and how to justify the budget), we'll show you HOW to do it right.
+Part I gave you the philosophy (Chapter 1), the types that lie (Chapter 2), the formats that betray (Chapter 3), and now the costs of ignoring all of it. Part II is where we get tactical. Chapter 5 starts with the hardest question: where does your data actually come from, and should you trust any of it?
 
 But first, go calculate your debugging tax. I'll wait.
 
