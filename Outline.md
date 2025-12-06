@@ -15,6 +15,8 @@
 
 ### Chapter 2: Data Types and the Structure Spectrum
 
+**[Read Chapter 2](Chapter_000000002/content.md)**
+
 *The fundamental building blocks: what data actually is, how it lies to you, and how to catch it.*
 
 - 2.1 The Great Data Type Disaster (ZIP codes, product IDs, and other numerical lies)
@@ -25,6 +27,8 @@
 - 2.6 The Type Safety Checklist (practical validation)
 
 ### Chapter 3: File Formats: Choosing Your Poison
+
+**[Read Chapter 3](Chapter_000000003/content.md)**
 
 *How data gets stored and moved: JSON's lies, Parquet's promises, and Arrow's revolution.*
 

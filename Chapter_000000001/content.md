@@ -40,7 +40,7 @@ Here's what I've seen across dozens of projects:
 - **Cleaning your data**: 5-10% accuracy gain
 - **Actually understanding your data**: 20-30% accuracy gain (I've seen this with my own eyes, multiple times)
 
-> **Visual Note**: *[Diagram opportunity: Bar chart comparing improvement sources - Model Architecture (1-2%), Data Cleaning (5-10%), Data Understanding (20-30%)]*
+> **Figure 1.1**: *Improvement sources compared. Model architecture changes typically yield 1-2% gains; data cleaning delivers 5-10%; truly understanding your data can unlock 20-30% improvements.*
 
 ### Why Small and Clean Beats Big and Messy
 
@@ -54,7 +54,7 @@ Here's what I've learned the hard way (so you don't have to):
 
 Those wrong outcomes affect how it interprets other examples. Those misinterpretations affect your confidence scores. Those confidence scores affect your active learning. Before you know it, you're in what I call "ML debt spiral," and you're explaining to your VP why the model thinks all dogs are cats on Tuesdays.
 
-> **Visual Note**: *[Diagram opportunity: ML Debt Spiral flowchart showing how one bad label cascades into multiple problems]*
+> **Figure 1.2**: *The ML Debt Spiral. One mislabeled example teaches wrong patterns → affects confidence scores → corrupts active learning → compounds into systemic bias. Breaking the cycle requires going back to the source.*
 
 **Small datasets are your friends (really!).** I worked with a team that was producing 600,000 readings every second. You know what they actually needed? About 10,000 single data points, every 10 minutes. The rest was basically very expensive random noise that took forever to process and made their cloud bill look like a phone number.
 
@@ -81,9 +81,9 @@ Result? 89% accuracy.
 
 The CTO asked what magic we'd used. I told him: "Excel and common sense." He didn't believe me. I showed him the Git history. He still didn't believe me. Some people just want to believe in magic.
 
-### A 2024 Update: The LLM Data Quality Crisis
+### The LLM Data Quality Crisis
 
-Here's a fresh example from the GenAI gold rush. In late 2024, a major tech company discovered their customer service LLM was hallucinating product features that didn't exist. Customers were getting excited about capabilities that were pure fiction.
+Here's a fresh example from the GenAI gold rush. In late 2025, a major tech company discovered their customer service LLM was hallucinating product features that didn't exist. Customers were getting excited about capabilities that were pure fiction.
 
 The investigation revealed:
 - Training data included speculative forum posts marked as "official documentation"
@@ -188,7 +188,7 @@ while accuracy < target:
     sanity += 1  # Yes, plus!
 ```
 
-> **Visual Note**: *[Diagram opportunity: Side-by-side flowchart comparing the two approaches]*
+> **Figure 1.3**: *Two paths diverge. Model-centric: complexity increases, GPU hours climb, sanity decreases. Data-centric: understanding deepens, documentation grows, sanity actually improves.*
 
 ### When to Care About What: A Decision Framework
 

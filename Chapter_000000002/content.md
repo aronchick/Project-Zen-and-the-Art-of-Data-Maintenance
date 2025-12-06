@@ -20,6 +20,8 @@ The model started making predictions like "If we run out of product 5000, we sho
 
 Mathematically sound. And insane.
 
+This isn't the label quality problem from Chapter 1—those shoes were at least correctly identified as footwear. This is a *structure* problem: the model treated identifiers as quantities.
+
 Because the model had been performing so well on validation data, no one thought to triple-check. One week later, they discovered they'd auto-ordered 50,000 units of toilet paper for their jewelry department.
 
 What's the failure here? In many ways, this is a "happy case" - at least the pipeline didn't crash, the system didn't error out, and nobody woke up at 3 AM to figure out why the website was down.
@@ -41,7 +43,7 @@ Perfectly Structured                                                  Complete C
                   (the DMZ of data)
 ```
 
-> **Visual Note**: *[Diagram opportunity: The Data Structure Spectrum with real examples placed along it]*
+> **Figure 2.1**: *The Data Structure Spectrum. From perfectly structured SQL on the left to complete chaos (your nephew's crayon drawings) on the right, with the dangerous "semi-structured" DMZ in the middle where JSON and XML pretend to be organized.*
 
 The key insight isn't where your data sits on this spectrum - it's understanding that **structure is a promise that can be broken**.
 
@@ -52,6 +54,8 @@ That CSV file? It promises columns will align. That promise gets broken every ti
 Data doesn't just fail; it actively conspires against you. The obviously unstructured mess? That's honest. Respectable, even. It walks in looking like a dumpster fire and delivers exactly the dumpster fire you expected. 
 
 No, it's the *clean* data. The data that shows up in a pressed suit, shakes your hand, passes every validation check, and then three months later you discover it's been counting 'California' and 'CA' as two different states THE ENTIRE TIME.
+
+When do these horsemen attack? They strike at every stage of your ML pipeline: during feature engineering (when bad types silently corrupt your transformations), during training (when impossible values teach your model impossible relationships), and during inference (when schema drift causes silent failures in production). Part IV will show you how to build defenses at each stage. For now, learn to recognize the enemy.
 
 ### Horseman 1: The Structural Lie (Syntactic Failure)
 
@@ -108,7 +112,7 @@ And yet, your data pipeline still delivers garbage. Why? Because while the types
 | user_id | birth_date | signup_date | sessions_last_month | age |
 | :--- | :--- | :--- | :--- | :--- |
 | 201 | 1990-05-15 | 1988-01-20 | 15 | 35 |
-| 202 | 1985-11-02 | 2024-03-10 | -5 | 39 |
+| 202 | 1985-11-02 | 2025-03-10 | -5 | 39 |
 | 203 | 1900-01-01 | 2023-09-01 | 12 | 999 |
 
 Everything is correctly typed (`datetime`, `int`), but the data is a logical nightmare:
@@ -198,7 +202,7 @@ event:
   # Structured fields - explicitly needed for reporting
   structured:
     event_type: "purchase"           # Enum: purchase, view, cart_add, cart_remove
-    timestamp: "2024-03-15T10:30:00Z" # ISO 8601 format, always UTC
+    timestamp: "2025-03-15T10:30:00Z" # ISO 8601 format, always UTC
     user_id: "usr_123456"             # Validated format: usr_[0-9]{6}
     
     # Purchase-specific structured data
@@ -206,27 +210,12 @@ event:
       amount_cents: 4999              # Integer, validated range: 0-10000000
       currency: "USD"                 # Enum: USD, EUR, GBP, JPY
       product_category: "electronics"  # Enum from defined taxonomy
-      payment_method: "credit_card"    # Enum: credit_card, paypal, apple_pay
     
   # Unstructured fields - kept raw for future use
   metadata:
-    # Everything else goes here as-is, no validation or structure imposed
-    device_info:
-      raw_user_agent: "Mozilla/5.0 (iPhone; CPU iPhone OS 16_0 like Mac OS X)..."
-      screen_resolution: "1170x2532"
-      connection_type: "4g"
-    
-    session_context:
-      referrer: "https://google.com/search?q=wireless+headphones"
-      campaign_params: "utm_source=google&utm_medium=cpc&utm_campaign=spring_sale"
-      ab_test_variants: ["checkout_v2", "recommendation_algo_b", "nav_redesign"]
-    
-    product_details:
-      sku: "WH-1000XM5-BLK"
-      brand: "Sony"
-      model_year: "2023"
-      warehouse_location: "NJ-03"
-      supplier_batch: "2023Q4-1847"
+    raw_user_agent: "Mozilla/5.0 (iPhone; CPU iPhone OS 16_0...)"  # No validation
+    referrer: "https://google.com/search?q=wireless+headphones"    # No validation
+    ab_test_variants: ["checkout_v2", "recommendation_algo_b"]     # No validation
 ```
 
 **Structured fields** are those we need immediately for financial reporting, conversion funnel analysis, payment processing. These have strict validation rules, defined enumerations, and clear data types.
@@ -261,7 +250,7 @@ Your fraud detection model just learned that "is_fraud = false" means definitely
 
 ### The Date That Broke Everything
 
-Dates are a special hell because the same string can mean completely different things. "01/02/2024" is January 2nd in the US and February 1st everywhere else. "2024-01-15" is unambiguous ISO 8601, but it lives alongside "Jan 15, 2024", "20240115", Unix timestamps, Excel serial dates, and my personal favorite: "Monday."
+Dates are a special hell because the same string can mean completely different things. "01/02/2025" is January 2nd in the US and February 1st everywhere else. "2025-01-15" is unambiguous ISO 8601, but it lives alongside "Jan 15, 2025", "20250115", Unix timestamps, Excel serial dates, and my personal favorite: "Monday."
 
 The failure mode: your parser tries to be helpful by guessing formats. It guesses wrong on 3% of records. Those 3% silently become NULL or, worse, get parsed as the WRONG date. You don't notice until someone asks why all your European customers appear to have signed up on impossible dates.
 
@@ -305,7 +294,7 @@ This happens constantly with data imported from CSVs or JSON where everything co
 
 ### Step 3: Identify Dates Stored as Strings
 
-Scan your string columns for date patterns. Look for formats like "2024-01-15", "01/15/2024", or "Jan 15, 2024". If you find them, those columns need to be converted to proper datetime types.
+Scan your string columns for date patterns. Look for formats like "2025-01-15", "01/15/2025", or "Jan 15, 2025". If you find them, those columns need to be converted to proper datetime types.
 
 Dates stored as strings can't be sorted chronologically, can't have durations calculated, and will silently fail any time-based analysis.
 
@@ -408,6 +397,6 @@ I guarantee you'll find at least two.
 
 Data types seem boring until they're not. The difference between a ZIP code as a number and a ZIP code as a category is the difference between a working model and a $50M toilet paper order.
 
-In Chapter 3, we'll dive into file formats - JSON's lies, Parquet's promises, and Arrow's revolution. We'll explore why that "simple CSV" is anything but, and why the format you store data in matters almost as much as the data itself.
+You now understand that a ZIP code isn't a number and a date isn't a string. But here's the next layer of betrayal: even when your types are *perfect*, the *format* you store them in can lie about what's inside. Chapter 3 is about how JSON pretends numbers are numbers (they're not), why that "simple CSV" is anything but, and why Parquet might save your analytics team's sanity.
 
 Until then, go audit your data types. Yes, right now. I promise you'll find something that makes you question everything.
