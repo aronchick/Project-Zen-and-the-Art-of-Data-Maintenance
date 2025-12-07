@@ -48,11 +48,11 @@ Why? Because:
 - **Data problems are invisible** until something breaks spectacularly
 - **Data problems require domain expertise**, not just engineering skill
 
-If a senior data engineer costs $200K+/year fully loaded, and they spend half their time fighting fires instead of building features, you're burning $100K annually on invisible costs. Multiply that by your team size.
+If a senior data engineer costs $200K+/year (fully loaded, including benefits, insurance, fancy cups of coffee in the break room, etc etc), and they spend half their time fighting fires instead of building features, you're burning $100K annually on invisible costs. Multiply that by your team size.
 
 ### The Compounding Effect
 
-Bad data decisions compound like credit card debt. Here's a real example from a variety of a companies I have advised:
+Bad data decisions compound like credit card debt. Here's examples from a variety of a companies:
 
 **Quarter 1**: "Let's just store everything as strings, we'll fix it later"
 
@@ -83,7 +83,7 @@ That's a 21x multiplier for procrastination.
 
 ### The Debugging Tax
 
-I ran a survey across my network last year. Question: "What percentage of your time do you spend debugging data issues vs. building new features?"
+In a recent survey, when Question: "What percentage of your time do you spend debugging data issues vs. building new features?"
 
 Results from 147 data engineers and ML engineers:
 
