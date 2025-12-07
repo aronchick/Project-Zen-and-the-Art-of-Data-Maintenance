@@ -4,6 +4,8 @@
 
 ### Chapter 1: The Data-Centric AI Revolution
 
+**[Read Chapter 1](Chapter_000000001/content.md)**
+
 *The mindset shift: why data beats algorithms, and what that means for how you work.*
 
 - 1.1 Andrew Ng's Paradigm Shift: Why "Good Data Beats Big Data"
@@ -39,6 +41,8 @@
 - 3.5 Format Selection: A Decision Framework (without the template bullshit)
 
 ### Chapter 4: The Hidden Costs of Data
+
+**[Read Chapter 4](Chapter_000000004/content.md)**
 
 *The economics nobody talks about: why that "quick fix" costs $50K/month.*
 
