@@ -181,10 +181,9 @@ JSON succeeded not despite its flaws but because of them. Its looseness allows g
 As Martin Kleppmann notes in "Designing Data-Intensive Applications," JSON's popularity is evidence that ease of use matters more than efficiency for many applications. The format won because it shipped, not because it was perfect.
 
 ## 3.2 Parquet: When You Need Speed and Have Trust Issues
+Apache Parquet emerged in 2013 from a collaboration between [Twitter and Cloudera engineers](https://en.wikipedia.org/wiki/Apache_Parquet) who were tired of exactly this problem. Google's Dremel paper inspired the format—the project was originally called "Red Elm," [an anagram of Dremel](https://sympathetic.ink/2024/01/24/Chapter-1-The-birth-of-Parquet.html), because Twitter named everything after birds and birds live in trees. (Engineers.) The format represents what happens when database people get tired of data scientists using CSVs.
 
-In 2012, Netflix engineers watched their data scientists try to load CSV files into memory. Then they watched their servers catch fire. Then they built Parquet.
-
-Apache Parquet emerged in 2013 from a collaboration between Twitter and Cloudera engineers who were tired of exactly this problem. The format was inspired by Google's Dremel paper and represents what happens when database people get tired of data scientists using CSVs.
+The [first-hand account from Julien Le Dem](https://sympathetic.ink/2024/01/24/Chapter-1-The-birth-of-Parquet.html) (Parquet's co-creator) is worth reading if you want more color. He was prototyping on his shuttle ride to work, found an error in one of the Dremel paper's figures, tweeted about it, and that's how he connected with the Cloudera team who were building something similar. Classic open-source origin story.
 
 ### The Problem with CSV
 
@@ -247,9 +246,24 @@ feb_data = pq.read_table(
 
 ## Real-World Performance: What Actually Changed
 
-Netflix's migration to Parquet cut their storage costs by 7x—which sounds impressive until you realize what that means at their scale: roughly $50 million annually in S3 bills alone. The 10-100x query performance improvement? That's the difference between analysts waiting 45 minutes for a dashboard to load versus getting results before their coffee cools. Their ETL compute costs dropped 90% because columnar storage means Spark stops dragging entire rows across the network just to sum one column.
+Based on my research, **both paragraphs contain fabricated or unsourced statistics**. Here's what I actually found:
 
-Uber processes over 100 petabytes daily. At that volume, their 60% storage reduction versus JSON isn't a nice-to-have—it's the difference between infrastructure costs that scale linearly with growth and costs that threaten the business model. Their 5x Presto improvement comes from the same columnar magic: reading 3 columns from a 200-column dataset means touching 1.5% of the data instead of all of it.
+**Netflix:**
+I couldn't find any source for the specific claims about "7x storage reduction," "$50 million in S3 bills," "10-100x query improvement," or "90% ETL cost reduction." Netflix does use Parquet extensively in their S3 data warehouse, but those specific numbers don't appear in their tech blog or conference presentations.
+
+**Uber:**
+The real numbers are different:
+- Uber keeps "256 petabytes of data in store and processes 35 petabytes of data every day"—not 100 PB daily
+- Their Parquet reader improvement was "2-10x faster compared to when we used the original open source reader"—but this was their *new* Parquet reader vs. the *old* Parquet reader, not JSON vs. Parquet
+- They did transition "from JSON to Parquet to store schema and data together" but I found no "60% storage reduction" figure
+
+---
+
+**Here's a rewritten version using only verified claims:**
+
+Uber's analytics infrastructure shows what Parquet enables at scale. Their platform stores [256 petabytes of data](https://www.ibm.com/think/news/uber-presto) and processes 35 petabytes daily, supporting over 500,000 queries per day from 12,000 monthly active users. When they transitioned [from JSON to Parquet](https://www.uber.com/blog/uber-big-data-platform/) to store schema and data together, they eliminated the vulnerability to upstream data format changes that plagued their first-generation platform. Their custom Parquet reader delivers [2-10x speedup](https://www.uber.com/blog/presto/) over the original open-source reader—the difference between analysts waiting for results and getting them before their coffee cools.
+
+The columnar magic works because reading 3 columns from a 200-column dataset means touching 1.5% of the data instead of all of it. As one [industry analysis notes](https://edgedelta.com/company/blog/parquet-data-format), Parquet's efficiency can cut query costs by up to 90%—less data read means more money saved. Storage typically runs 2x to 5x smaller than JSON or CSV equivalents, with some workloads seeing 75-90% compression versus CSV.
 
 ## When Parquet Saves Your Ass (and When It Doesn't)
 Parquet shines when you're reading specific columns across millions of rows—the classic analytics pattern. Data warehouses, cloud-native workflows, anything where you write once and query endlessly. The compression alone can cut your S3 bill in half.
@@ -258,9 +272,9 @@ But Parquet is immutable. You can't append a row; you rewrite the whole file. St
 
 ## Parquet Optimization Tips
 
-Parquet, like SO MANY projects, have a litany of configuration options. 
+Parquet, like SO MANY projects, has a litany of configuration options. 
 
-Compression choice is a speed-versus-size tradeoff. Snappy decompresses fast but compresses modestly—use it when query latency matters more than storage cost. Zstd at level 9 achieves 30-50% smaller files but takes longer to write and read. For cold storage you'll query rarely, zstd wins. For hot analytics tables, snappy keeps your dashboards snappy.
+Compression choice is a speed-versus-size tradeoff. Snappy decompresses fast but compresses modestly—use it when query latency matters more than storage cost. Zstd at level 9 achieves 30-50% smaller files but takes longer to write and read. For cold storage, which you'll query rarely, zstd wins. For hot analytics tables, snappy keeps your dashboards snappy.
 
 Row group size determines your query's minimum read unit. The default (usually 64MB or ~1 million rows) works for most analytics, but if your typical query touches only recent data, smaller row groups (50,000 rows) let Parquet skip more aggressively. The tradeoff: smaller groups mean more metadata overhead and less compression efficiency. Tune based on your actual query patterns, not theoretical optimization.
 
@@ -268,7 +282,7 @@ Sorting before writing is free performance. When you sort by your most-filtered 
 
 Partitioning splits one logical dataset into physical subdirectories. A `year=2025/month=01/` structure means queries filtered by time never touch irrelevant months. But partition only on low-cardinality columns you actually filter by. Partitioning by user_id when you have millions of users creates millions of tiny files—the opposite of what you want.
 
-Below show some of these options and decent defaults, but YOUR MILEAGE MAY VERY!
+Below shows some of these options and decent defaults, but YOUR MILEAGE MAY VERY!
 
 ```python
 import pyarrow.parquet as pq
@@ -291,9 +305,16 @@ df.to_parquet(
 )
 ```
 
+**The short version:**
+
+- **Compression:** Snappy for hot tables where query speed matters; Zstd level 9 for cold storage where size matters
+- **Row group size:** Default (64MB/~1M rows) works for most; smaller groups (50K rows) if you're filtering to narrow time ranges
+- **Sort before writing:** Order by your most-filtered column (usually timestamp) so min/max statistics actually help
+- **Partition wisely:** Only on low-cardinality columns you filter by; never on high-cardinality fields like user_id
+
 ## 3.3 Apache Arrow: From Conversion Hell to Zero-Copy Bliss
 
-Before Apache Arrow, the data science ecosystem resembled a Tower of Babel where every tool spoke its own language. Pandas had one memory layout, Spark had another, R had a third, Julia a fourth. Sharing data between tools required expensive serialization and deserialization.
+Before Apache Arrow, the data science ecosystem resembled a Tower of Babel where every tool spoke its own language. Pandas had one memory layout, Spark had another, R had a third, Julia had a fourth. Sharing data between tools required expensive serialization and deserialization.
 
 ```python
 # The old way: A cascade of conversions
@@ -312,7 +333,7 @@ table = pa.parquet.read_table("data.parquet")
 # Everything can read Arrow directly. No conversion. Magic.
 ```
 
-### The Zero-Copy Revolution
+### 3.3.1 The Zero-Copy Revolution
 
 Arrow's most important feature is zero-copy reads. When different processes or languages need to access the same data:
 
@@ -322,7 +343,7 @@ Arrow's most important feature is zero-copy reads. When different processes or l
 
 This is possible because Arrow defines not just a logical format, but the exact memory layout down to the byte level.
 
-### Integration with Modern Tools
+### 3.3.2 Integration with Modern Tools
 
 Today, Arrow has become the de facto standard for analytical workloads:
 
@@ -332,7 +353,7 @@ Today, Arrow has become the de facto standard for analytical workloads:
 - **Apache Spark 3.0+**: Uses Arrow for efficient data exchange with Python
 - **Ray**: Leverages Arrow for distributed data processing
 
-### The Performance Impact
+### 3.3.3 The Performance Impact
 
 According to Apache Arrow benchmarks:
 - **100x faster** data interchange between systems
@@ -358,23 +379,21 @@ spark_df = spark.createDataFrame(arrow_table)  # 0 seconds (zero-copy!)
 
 The industry has spent the last decade learning an expensive lesson: no single data format wins all battles. The future isn't about picking the perfect format - it's about systems that can work with all of them.
 
-### Lakehouse Architecture: The Best of Both Worlds
+### 3.4.1 Lakehouse Architecture: The Best of Both Worlds
 
-Data warehouses (Snowflake, BigQuery) and data lakes (S3, ADLS) are merging into "lakehouses" that provide structured queries over unstructured storage. This isn't a marketing trend—it's a survival response to an architectural contradiction that's been bleeding companies dry for a decade.
+Data warehouses (Snowflake, BigQuery) and data lakes (S3, ADLS) are merging into "lakehouses" that provide structured queries over unstructured storage. This isn't a marketing trend; it's a survival response to an architectural contradiction that's been bleeding companies dry for a decade.
 
-The problem: warehouses give you fast, governed queries but charge by the byte. At scale, Snowflake bills hit $50K/month and keep climbing. So companies dump raw data into cheap object storage instead—but then need armies of engineers to make that data queryable, reliable, and not a governance nightmare. Most enterprises ended up running both: a warehouse for the data people actually trusted, a lake for everything else, and a fragile pipeline stitching them together. Double the infrastructure, double the engineering burden, and analysts still couldn't get answers without a three-week ETL request.
+The problem: warehouses give you fast, governed queries but charge by the byte. At scale, bills can hit $50K/month and keep climbing without even breaking a sweat. So companies dump raw data into cheap object storage instead, but then need armies of engineers to make that data queryable, reliable, and not a governance nightmare. Most enterprises ended up running both: a warehouse for the data people actually trusted, a lake for everything else, and a fragile pipeline stitching them together. Double the infrastructure, double the engineering burden, and analysts still couldn't get answers without a three-week ETL request.
 
 Lakehouses collapse this into one layer. Open formats like Iceberg and Hudi add ACID transactions, schema enforcement, and time travel directly on top of S3-priced storage. You get warehouse semantics at lake economics.
 
-### **What This Looks Like in Practice**
+### 3.4.2 What This Looks Like in Practice
 
-When Uber migrated to Apache Hudi in 2022, their storage costs dropped from $2M to $200K annually—a 90% reduction. But the cost savings weren't the real win. They eliminated 10,000 lines of ETL code, which means 10,000 fewer lines that could break at 3am, 10,000 fewer lines for new engineers to understand, and probably two full-time engineers who could stop babysitting pipelines and build something useful instead.
+Airbnb's migration to Iceberg tells the real story. They [cut compute costs by 50% and reduced data ingestion time by 40%](https://medium.com/airbnb-engineering/upgrading-data-warehouse-infrastructure-at-airbnb-a4e18f09b6d5)—processing 35 billion Kafka events daily across more than a thousand tables. But the cost savings weren't the headline. Iceberg eliminated their Hive Metastore bottleneck, which meant engineers stopped debugging partition overloads at 2am and started building features that actually shipped. Schema changes that used to require costly table rewrites now happen at the metadata level. That's the pattern you see across the industry: the table format migration pays for itself in infrastructure savings, but the real ROI is engineering hours redirected from babysitting pipelines to building product.
 
-Netflix's Iceberg adoption tells a similar story. They now manage 300 petabytes with 10 engineers—down from 50. That's not a staffing cut; those 40 engineers moved to product work. Time-to-insight dropped from days to minutes, which sounds like a benchmark statistic until you realize it means analysts stopped queuing requests and started answering their own questions. The $10M annual infrastructure savings was almost incidental.
+### 3.4.3 Lance: An Emerging Format for the AI Era
 
-### Lance: An Emerging Format for the AI Era
-
-*Note: Lance is a newer format (first released in 2023) that's still maturing. I'm including it because it represents where the industry is heading, but verify production-readiness for your use case.*
+*Note: Lance is a newer format (first released in 2023) that's still maturing. I'm including it because I believe it represents where the industry is heading, but verify production-readiness for your use case.*
 
 Lance combines columnar storage (like Parquet) with native vector indexing for AI workloads. The problem it solves is real: every company now has embeddings (from OpenAI, Cohere, etc.), and storing vectors in Parquet requires a separate vector database (Pinecone, Weaviate) at significant cost. You end up with your metadata in one system and your embeddings in another, stitched together by application code that inevitably drifts.
 
@@ -397,7 +416,7 @@ dataset = lance.write_dataset(
 
 Consider Lance if you're building RAG applications, semantic search, or recommendation systems where you need both traditional filtering ("products under $50") and vector similarity ("products similar to this image"). For pure analytics without embeddings, Parquet remains the safer choice.
 
-### The Polyglot Persistence Pattern
+### 3.5 The Polyglot Persistence Pattern
 
 Different access patterns need different storage:
 
@@ -410,16 +429,13 @@ Different access patterns need different storage:
 | Stream Processing | Kafka + Flink | Batch ETL | 3000x slower |
 | Graph Traversal | Neo4j | SQL with CTEs | 2000x slower |
 
-In the real world (for example)Shopify's architecture looks like this:
-- **Checkout Events**: Apache Kafka (100 brokers, 7-day retention)
-- **Product Catalog**: MySQL with Vitess sharding (50 shards)
-- **Analytics Rollups**: ClickHouse (20 nodes)
-- **ML Training Data**: Parquet on S3
-- **User Sessions**: Redis Cluster (50 nodes)
+Here's the corrected version with only verified claims and proper sourcing:
 
-Total monthly cost with polyglot approach: $240K
+---
 
-If using only MySQL: $2.4M/month (10x more expensive)
+Shopify's architecture demonstrates polyglot persistence at scale. Their data platform combines [Apache Kafka](https://shopify.engineering/running-apache-kafka-on-kubernetes-at-shopify) for event streaming (handling 66 million messages per second at peak), [Vitess-sharded MySQL](https://shopify.engineering/capturing-every-change-shopify-sharded-monolith) across 100+ database shards for transactional data, and Redis clusters isolated per pod for caching. Each technology handles what it's optimized for: Kafka buffers high-volume events without blocking producers, MySQL with Vitess provides ACID transactions with horizontal scaling, and Redis delivers sub-millisecond lookups for session data.
+
+The alternative—forcing MySQL to handle event streaming, caching, and OLAP queries—would require either vertical scaling to increasingly expensive hardware or accepting degraded performance across all workloads. Polyglot architectures trade operational complexity for the ability to match each data access pattern to purpose-built infrastructure.
 
 ## 3.5 Format Selection: A Decision Framework
 
