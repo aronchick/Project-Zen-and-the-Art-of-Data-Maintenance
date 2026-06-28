@@ -365,7 +365,7 @@ Cost of those 3 weeks:
 - Re-training and validation: $15,000
 - **Total: $253,000**
 
-A data quality check would have caught this on day 1. Great Expectations or similar tools cost virtually nothing in comparion.
+A data quality check would have caught this on day 1. Great Expectations or similar tools cost virtually nothing in comparison.
 
 ## 4.6 Data Quality Debt: Compound Interest on Bad Decisions
 
