@@ -158,7 +158,7 @@ ImageNet, the dataset that launched a thousand papers, is kind of a mess. [North
 - ~10% are "ambiguous" (academic speak for "we're not sure either")
 - The "basketball" category is basically "NBA players holding round objects"
 
-Every model trained on ImageNet inherited these problems. If you fine-tuned your models using those data sources as inputs, you'll just be compounding the problem. It's turtles all the way down. The ONLY way to break this cycle is to actually look at your data, understand its flaws, and either fix them or explicitly account for them in your model design (we'll cover both approaches in Chapter 10).
+Every model trained on ImageNet inherited these problems. If you fine-tuned your models using those data sources as inputs, you'll just be compounding the problem. It's turtles all the way down. The ONLY way to break this cycle is to actually look at your data, understand its flaws, and either fix them or explicitly account for them in your model design (we'll cover both approaches in Chapter 7).
 
 ## 1.3 Data-Centric vs Model-Centric: The Middle Path
 

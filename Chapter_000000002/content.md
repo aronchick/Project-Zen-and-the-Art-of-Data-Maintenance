@@ -26,7 +26,7 @@ Because the model had been performing so well on validation data, no one thought
 
 What's the failure here? In many ways, this is a "happy case" - at least the pipeline didn't crash, the system didn't error out, and nobody woke up at 3 AM to figure out why the website was down.
 
-On the other hand, this is the worst of all possible worlds. The error went through ALL the systems with no warnings. You're going to spend hours (days? months?>o&7?FSK!) debugging it because you're not getting ANY signal about what to do next.
+On the other hand, this is the worst of all possible worlds. The error went through ALL the systems with no warnings. You're going to spend hours (days? months?!) debugging it because you're not getting ANY signal about what to do next.
 
 ## 2.2 Structured vs Unstructured: The Real Trade-offs
 
@@ -246,7 +246,7 @@ When you cast these to boolean in most languages, you get chaos. The string "fal
 
 Your fraud detection model just learned that "is_fraud = false" means definitely fraud.
 
-**The prevention:** Avoid casting, particularly with limited categories, to ANYTHING without explicit mapping, and VERY sanes defaults. For boolean, for example, build a lookup table that handles every representation in your data: true/false, t/f, yes/no, y/n, 1/0, and their various capitalizations - do NOT rely on upstream to handle this (e.g. "don't worry, we're only going to get handed lower case"). Anything not in your lookup should raise an error, not silently convert. And check your data often on errors!
+**The prevention:** Avoid casting, particularly with limited categories, to ANYTHING without explicit mapping, and VERY sane defaults. For boolean, for example, build a lookup table that handles every representation in your data: true/false, t/f, yes/no, y/n, 1/0, and their various capitalizations - do NOT rely on upstream to handle this (e.g. "don't worry, we're only going to get handed lower case"). Anything not in your lookup should raise an error, not silently convert. And check your data often on errors!
 
 ### The Date That Broke Everything
 

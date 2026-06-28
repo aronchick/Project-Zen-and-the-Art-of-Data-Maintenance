@@ -2,7 +2,7 @@
 
 ## Or: Why That "Quick Fix" Costs $50K/Month
 
-**In 2019, a fintech startup discovered that their "free" data pipeline was costing $340,000 per month in engineer time alone. The actual cloud bill was $12K. The debugging, maintenance, and firefighting were the real number.**
+**In 2019, a fintech startup discovered that their "free" data pipeline was costing $290,000 per month in engineer time alone. The actual cloud bill was $12K. The debugging, maintenance, and firefighting were the real number.**
 
 Welcome to the economics chapter. This is the one you can hand to your CFO (or if you ARE a CFO, welcome!), your engineering manager needs to quote, and you need to internalize before your next "quick fix" becomes a permanent fixture in your production system.
 
@@ -176,7 +176,7 @@ Annual savings: **$70,000**. Implementation time: one afternoon writing lifecycl
 
 ### The Bandwidth Nobody Budgets
 
-Cloud egress fees are where dreams go to die. But the dollar cost isn't even the real problem. It's the latency tax on every decision your system makes.
+Cloud egress fees are a tax you never see coming. But the dollar cost isn't even the real problem. It's the latency tax on every decision your system makes.
 
 Standard pattern I see:
 
@@ -215,7 +215,7 @@ This is why sampling strategies matter (Chapter 5). Do you really need to store 
 
 ### The Cost of Lost Context
 
-Imagine this conversation (I've had it approximately 847 times):
+Imagine this conversation (I've had it approximately 500 times):
 
 **Me**: "Why does this column exist?"
 **Engineer**: "I don't know, it was here when I joined."
@@ -539,17 +539,17 @@ These look shiny, but wait until fundamentals are solid:
 **1. Exotic Imputation Methods**
 - Simple methods work for 90% of cases
 - Complex methods require clean metadata to be effective
-- (We'll cover when to graduate from simple imputation in Chapter 9)
+- (We'll cover when to graduate from simple imputation in Chapter 10)
 
 **2. AutoML Platforms**
 - Garbage in, automated garbage out
 - Fix data first, automate second
-- (Chapter 15 covers when AutoML actually makes sense)
+- (Chapter 28 covers when AutoML actually makes sense)
 
 **3. Real-time Everything**
 - Most use cases don't need sub-second latency
 - Batch processing is 10x cheaper and often sufficient
-- (Chapter 12 will help you decide if you really need real-time)
+- (Chapter 24 will help you decide if you really need real-time)
 
 **4. Custom ML Hardware**
 - Until your data is clean, faster training just gives you wrong answers quicker

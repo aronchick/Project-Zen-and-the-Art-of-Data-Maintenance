@@ -100,7 +100,7 @@ JSON.parse('{"value": 9007199254740993}')  // Returns: 9007199254740992 (off by 
 Number.MAX_SAFE_INTEGER  // 9007199254740991
 
 // This breaks Twitter IDs, database primary keys, and cryptocurrency values
-JSON.parse('{"bitcoin_satoshis": 2100000000000000}')  // Loss of precision!
+JSON.parse('{"tweet_id": 1457299976568098816}')  // Loss of precision!
 
 // The "solution" many APIs use
 {
@@ -181,6 +181,7 @@ JSON succeeded not despite its flaws but because of them. Its looseness allows g
 As Martin Kleppmann notes in "Designing Data-Intensive Applications," JSON's popularity is evidence that ease of use matters more than efficiency for many applications. The format won because it shipped, not because it was perfect.
 
 ## 3.2 Parquet: When You Need Speed and Have Trust Issues
+
 Apache Parquet emerged in 2013 from a collaboration between [Twitter and Cloudera engineers](https://en.wikipedia.org/wiki/Apache_Parquet) who were tired of exactly this problem. Google's Dremel paper inspired the format—the project was originally called "Red Elm," [an anagram of Dremel](https://sympathetic.ink/2024/01/24/Chapter-1-The-birth-of-Parquet.html), because Twitter named everything after birds and birds live in trees. (Engineers.) The format represents what happens when database people get tired of data scientists using CSVs.
 
 The [first-hand account from Julien Le Dem](https://sympathetic.ink/2024/01/24/Chapter-1-The-birth-of-Parquet.html) (Parquet's co-creator) is worth reading if you want more color. He was prototyping on his shuttle ride to work, found an error in one of the Dremel paper's figures, tweeted about it, and that's how he connected with the Cloudera team who were building something similar. Classic open-source origin story.
@@ -245,21 +246,6 @@ feb_data = pq.read_table(
 ```
 
 ## Real-World Performance: What Actually Changed
-
-Based on my research, **both paragraphs contain fabricated or unsourced statistics**. Here's what I actually found:
-
-**Netflix:**
-I couldn't find any source for the specific claims about "7x storage reduction," "$50 million in S3 bills," "10-100x query improvement," or "90% ETL cost reduction." Netflix does use Parquet extensively in their S3 data warehouse, but those specific numbers don't appear in their tech blog or conference presentations.
-
-**Uber:**
-The real numbers are different:
-- Uber keeps "256 petabytes of data in store and processes 35 petabytes of data every day"—not 100 PB daily
-- Their Parquet reader improvement was "2-10x faster compared to when we used the original open source reader"—but this was their *new* Parquet reader vs. the *old* Parquet reader, not JSON vs. Parquet
-- They did transition "from JSON to Parquet to store schema and data together" but I found no "60% storage reduction" figure
-
----
-
-**Here's a rewritten version using only verified claims:**
 
 Uber's analytics infrastructure shows what Parquet enables at scale. Their platform stores [256 petabytes of data](https://www.ibm.com/think/news/uber-presto) and processes 35 petabytes daily, supporting over 500,000 queries per day from 12,000 monthly active users. When they transitioned [from JSON to Parquet](https://www.uber.com/blog/uber-big-data-platform/) to store schema and data together, they eliminated the vulnerability to upstream data format changes that plagued their first-generation platform. Their custom Parquet reader delivers [2-10x speedup](https://www.uber.com/blog/presto/) over the original open-source reader—the difference between analysts waiting for results and getting them before their coffee cools.
 
@@ -416,7 +402,7 @@ dataset = lance.write_dataset(
 
 Consider Lance if you're building RAG applications, semantic search, or recommendation systems where you need both traditional filtering ("products under $50") and vector similarity ("products similar to this image"). For pure analytics without embeddings, Parquet remains the safer choice.
 
-### 3.5 The Polyglot Persistence Pattern
+### The Polyglot Persistence Pattern
 
 Different access patterns need different storage:
 
@@ -428,10 +414,6 @@ Different access patterns need different storage:
 | Full-Text Search | Elasticsearch | Postgres LIKE | 600x slower |
 | Stream Processing | Kafka + Flink | Batch ETL | 3000x slower |
 | Graph Traversal | Neo4j | SQL with CTEs | 2000x slower |
-
-Here's the corrected version with only verified claims and proper sourcing:
-
----
 
 Shopify's architecture demonstrates polyglot persistence at scale. Their data platform combines [Apache Kafka](https://shopify.engineering/running-apache-kafka-on-kubernetes-at-shopify) for event streaming (handling 66 million messages per second at peak), [Vitess-sharded MySQL](https://shopify.engineering/capturing-every-change-shopify-sharded-monolith) across 100+ database shards for transactional data, and Redis clusters isolated per pod for caching. Each technology handles what it's optimized for: Kafka buffers high-volume events without blocking producers, MySQL with Vitess provides ACID transactions with horizontal scaling, and Redis delivers sub-millisecond lookups for session data.
 

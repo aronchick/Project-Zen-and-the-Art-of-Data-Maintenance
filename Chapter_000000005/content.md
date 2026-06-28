@@ -42,7 +42,7 @@ The hidden cost of first-party data is instrumentation debt. You can't analyze w
 
 Second-party data comes from direct data-sharing agreements with partners. Your retail partner shares their customer purchase data. Your ad network shares their attribution data. Your logistics provider shares their delivery timing data. In theory, this extends your data universe without the overhead of collection.
 
-In practice, partnership data is where schemas go to die.
+In practice, partnership data is where schema discipline quietly falls apart.
 
 The promise is always compelling: "Our partner will give us their customer data, and we'll combine it with our product data, and together we'll have this complete picture of the customer journey!" The reality involves months of negotiation over data formats, quarterly fire drills when the partner changes their schema without telling you, liability nightmares when someone's personal information ends up somewhere it shouldn't be, and endless meetings about whose definition of "active customer" is correct.
 

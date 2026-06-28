@@ -112,7 +112,7 @@ If the answer is yes, the case studies all rhyme: define once, serve consistentl
 
 ## Quick Wins: Before You Build or Buy Anything
 
-**Audit one feature for skew (30 min).** Take your most important production feature. Find where it's computed for training and where it's computed for serving. If those are two different pieces of code, recompute the same feature for the same entity both ways and compare. If they disagree, you just found your version of the $4-million bug—and you found it on purpose, which is the only good way to find it.
+**Audit one feature for skew (30 min).** Take your most important production feature. Find where it's computed for training and where it's computed for serving. If those are two different pieces of code, recompute the same feature for the same entity both ways and compare. If they disagree, you just found your version of the multimillion-dollar bug—and you found it on purpose, which is the only good way to find it.
 
 **Check your feature freshness (15 min).** For every feature your live model consumes, answer one question: when was this value last updated, and what happens if the job that updates it dies? If you can't answer, your monitoring has a hole exactly the size of a silent materialization failure.
 
