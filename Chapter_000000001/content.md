@@ -64,7 +64,7 @@ A great summary on exactly how impactful this can be is Google's paper ["Data Sc
 
 ### A Real Story That Still Makes Me Laugh (And Cry)
 
-In one experience I had when helping a customer at Microsoft, I was talking to a retailer who was having a product classification model stuck at poor accuracy. If I recall correctly, they needed it to be above 75% because otherwise what was the point of using a model, you could just hire poorly paid interns to manually classify. They'd tried everything - ResNet, EfficientNet, even Vision Transformers (because who doesn't love transformers for everything these days?).
+I once worked with a retailer whose product classification model was stuck at poor accuracy. If I recall correctly, they needed it to be above 75% because otherwise what was the point of using a model, you could just hire poorly paid interns to manually classify. They'd tried everything - ResNet, EfficientNet, even Vision Transformers (because who doesn't love transformers for everything these days?).
 
 I asked to see the data. They looked at me like I'd asked to see their childhood photos. "The data? But... we need a better model!"
 
