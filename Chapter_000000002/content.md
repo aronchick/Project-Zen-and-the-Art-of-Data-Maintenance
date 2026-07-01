@@ -2,7 +2,7 @@
 
 ## Or: Why Your Model Thinks a ZIP Code is a Really Big Number
 
-**A model in production started predicting that everyone in Beverly Hills (90210) was exactly 902.1 times more likely to default on loans than people in Anchorage (99501). Turns out, someone forgot to tell the model that ZIP codes aren't actually quantities you can multiply.**
+**A model in production started predicting that everyone in Beverly Hills (90210) was exactly 9.02 times more likely to default on loans than people in Manhattan (10001). Turns out, someone forgot to tell the model that ZIP codes aren't actually quantities you can multiply.**
 
 Chapter 1 was philosophy and principles. This chapter is about what data actually *is* - the nuts and bolts that determine whether your pipeline processes information or generates expensive nonsense.
 
@@ -10,7 +10,7 @@ Data types are like ingredients. You can have the best recipe in the world, but 
 
 ## 2.1 The Great Data Type Disaster
 
-A major retailer built a demand forecasting model. It was beautiful. ResNet backbone, attention layers, the works. It could predict next month's toothpaste sales in Kissimmee, FL at 10 am on Tuesday, down to the tube.
+A major retailer built a demand forecasting model. It was beautiful. A deep transformer, attention layers, the works. It could predict next month's toothpaste sales in Kissimmee, FL at 10 am on Tuesday, down to the tube.
 
 One tiny problem.
 
@@ -232,7 +232,7 @@ Every type conversion failure I've witnessed follows one of five patterns. Learn
 
 The fundamental error: treating identifiers as quantities.
 
-When you load a ZIP code column and let pandas infer the type, it sees five digits and thinks "integer." Mathematically, 90210 is now a number you can add, subtract, multiply, and divide. The model learns that Beverly Hills is 9.02 times "more" than Anchorage (99501). More what? Doesn't matter. The math works, so the model uses it.
+When you load a ZIP code column and let pandas infer the type, it sees five digits and thinks "integer." Mathematically, 90210 is now a number you can add, subtract, multiply, and divide. The model learns that Beverly Hills is 9.02 times "more" than Manhattan (10001). More what? Doesn't matter. The math works, so the model uses it.
 
 The fix requires understanding what ZIP codes actually ARE: categorical labels that happen to be written with digits. They have no quantitative relationship to each other. 90210 isn't "bigger" than 10001 in any meaningful sense.
 
@@ -340,7 +340,7 @@ Before you convince yourself that your edge cases are handled, please read:
 
 Your confidence will be appropriately destroyed.
 
-## Quick Wins Box: Type Fixes That Save Your Sanity
+## Quick Wins: Type Fixes That Save Your Sanity
 
 **1. Never Trust File Extensions (2 minutes)**
 
@@ -395,8 +395,12 @@ I guarantee you'll find at least two.
 
 ## Parting Thoughts
 
-Data types seem boring until they're not. The difference between a ZIP code as a number and a ZIP code as a category is the difference between a working model and a $50M toilet paper order.
+Data types seem boring until they're not. The difference between a ZIP code as a number and a ZIP code as a category is the difference between a working model and a $4.2M toilet paper order.
 
 You now understand that a ZIP code isn't a number and a date isn't a string. But here's the next layer of betrayal: even when your types are *perfect*, the *format* you store them in can lie about what's inside. Chapter 3 is about how JSON pretends numbers are numbers (they're not), why that "simple CSV" is anything but, and why Parquet might save your analytics team's sanity.
 
 Until then, go audit your data types. Yes, right now. I promise you'll find something that makes you question everything.
+
+---
+
+*P.S. — Somewhere a ZIP code is being multiplied by a customer ID right now, and a model is quietly concluding that Beverly Hills is nine times whatever a customer ID is. The math checks out. Nothing else does. Go declare your types.*

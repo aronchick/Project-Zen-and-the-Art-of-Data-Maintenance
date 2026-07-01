@@ -34,7 +34,7 @@ In practice, first-party data comes with its own special category of lies.
 
 The most common lie is "we have all this data!" No, you have all this raw exhaust with no schema, no documentation, no consistency guarantees, and no clear ownership. I've watched engineering teams proudly point to petabytes of event logs that, upon inspection, contained seventeen different JSON structures for the "same" event type, timestamps in four different time zones, and user IDs that mysteriously changed format after a platform migration three years ago that nobody documented.
 
-Stripe's approach to turning payment metadata into ML features is instructive here. They don't just log transactions—they've built an entire instrumentation framework that enforces schema at write time, attaches context automatically, and versions every change to their event structure. When they train fraud detection models, they know exactly what each field means, when the definition changed, and how to handle historical data that predates current schemas. This isn't free. It's expensive upfront investment in instrumentation infrastructure. But it's why their models actually work.
+The best payments and fraud teams treat this as gospel. They don't just log transactions—they build an instrumentation framework that enforces schema at write time, attaches context automatically, and versions every change to the event structure. When they train fraud-detection models, they know exactly what each field means, when the definition changed, and how to handle historical data that predates current schemas. This isn't free. It's expensive upfront investment in instrumentation infrastructure. But it's why their models actually work.
 
 The hidden cost of first-party data is instrumentation debt. You can't analyze what you didn't log. And by the time you realize you should have been logging the user's session context alongside their purchase events, you've got eighteen months of historical data that's permanently incomplete. Every "quick ship" that skipped proper event logging is a hole in your future training data. Every schema change that wasn't versioned is a discontinuity your models will have to paper over—or fail on.
 
@@ -82,9 +82,9 @@ The danger is subtle and fundamental: when you train on synthetic data, you're t
 
 Synthetic data generation requires a model of what "realistic" data looks like. That model embeds assumptions—about distributions, correlations, edge cases, temporal patterns. When those assumptions match reality, synthetic data works beautifully. When they don't, you've built a model that's exquisitely calibrated to a world that doesn't exist.
 
-Waymo's approach to autonomous vehicle development illustrates both the power and the limits of synthetic data. They've built sophisticated simulation environments that generate billions of synthetic driving miles—edge cases, adverse weather, unusual scenarios that would take decades to encounter in real-world driving. Their Waymax simulation engine, running on the same TPU infrastructure that powers Gemini, can validate safety in new cities before they deploy physical vehicles.
+Autonomous-vehicle development illustrates both the power and the limits of synthetic data. The serious programs build sophisticated simulation environments that generate billions of synthetic driving miles—edge cases, adverse weather, unusual scenarios that would take decades to encounter on real roads. Simulation lets them validate safety in a new city before a single physical vehicle rolls onto its streets.
 
-But Waymo also emphasizes that simulation supplements, never replaces, real-world autonomous driving data. As their co-CEO Dmitri Dolgov has noted, there's no substitute for the volume of actual autonomous experience their vehicles accumulate. The synthetic scenarios are valuable precisely because they're informed by, and validated against, real-world data. They use synthetic data to explore edge cases, augment rare scenarios, and stress-test safety systems. They don't use it as a replacement for understanding how humans and vehicles actually behave on actual roads.
+But those same programs are emphatic that simulation supplements, never replaces, real-world driving data. There's no substitute for the sheer volume of actual road experience the vehicles accumulate. The synthetic scenarios are valuable precisely because they're informed by, and validated against, real-world data. They're used to explore edge cases, augment rare scenarios, and stress-test safety systems—not to replace understanding of how humans and vehicles actually behave on real roads.
 
 Synthetic data is a tool for augmentation and edge case exploration, not a replacement for primary training data. If you're using synthetic data because you can't acquire real data, you're probably building a model that will fail in exactly the ways reality differs from your simulation.
 
@@ -170,7 +170,7 @@ Most data quality scorecards fail because they track vanity metrics disconnected
 
 Effective scorecards tie quality dimensions to business outcomes. Not "what's our completeness rate?" but "what's the completeness rate for the fields that drive our top three revenue-impacting models?" Not "are our schemas enforced?" but "how many production incidents last quarter were caused by schema violations?"
 
-The scorecard needs teeth. If quality drops below a threshold, what happens? If the answer is "someone sends an email" or "we discuss it in the weekly meeting," you don't have a scorecard—you have a dashboard that people ignore. Effective scorecards trigger automated alerts, block deployments, escalate to on-call engineers. They're integrated into operational workflows, not presented in monthly review meetings.
+The scorecard needs teeth. If quality drops below a threshold, what happens? If the answer is "someone sends an email" or "we discuss it in the weekly meeting," congratulations: you've built a dashboard people have already learned to scroll past. Effective scorecards trigger automated alerts, block deployments, escalate to on-call engineers. They're integrated into operational workflows, not presented in monthly review meetings.
 
 ### 5.3.2 Automated Profiling: Know Your Data Before It Knows You
 
@@ -190,7 +190,7 @@ Gates should exist at multiple points in your data pipeline. At the source: vali
 
 The distinction between hard gates and soft gates matters. A hard gate blocks data that fails quality checks—it won't proceed until the issue is resolved. A soft gate flags data that fails checks but allows it to proceed, typically with an alert or annotation. The choice depends on the severity of the quality issue and the tolerance of your downstream consumers. Blocked transactions are expensive for a payment system; blocked recommendations are annoying but survivable for a content platform.
 
-The override problem is real. Business pressure will push for exceptions: "We need this data in production for the board meeting tomorrow. Can we just bypass the quality gate this once?" Every bypass is technical debt. Every bypass is a precedent that makes the next bypass easier. If your gates can be overridden without approval workflows and documented justification, they aren't gates. They're suggestions.
+The override problem is real. Business pressure will push for exceptions: "We need this data in production for the board meeting tomorrow. Can we just bypass the quality gate this once?" Every bypass is technical debt. Every bypass is a precedent that makes the next bypass easier. If your gates can be overridden without approval workflows and documented justification, they're gates in name only—a latch on a door that never actually closes.
 
 ### 5.3.4 Quality SLAs: Making Quality Measurable
 
@@ -228,7 +228,7 @@ Contract testing extends the schema registry concept with active validation. Con
 
 Versioning strategies distinguish breaking from non-breaking changes. Adding a new optional field is typically non-breaking—existing consumers can ignore it. Removing a field, changing a type, or modifying semantics is breaking—existing consumers may fail. Contracts should specify versioning policies: how much notice is given before breaking changes, how long deprecated versions are supported, what the upgrade path looks like.
 
-Spotify's approach to data contracts across their 200+ teams is worth studying. They treat data products like API products, with explicit versioning, documentation requirements, and deprecation policies. Producers can't just change their outputs without following the contract process. Consumers can rely on stability guarantees that let them build without constantly chasing upstream changes.
+The companies that make data contracts work at scale—across hundreds of internal teams—treat data products like API products, with explicit versioning, documentation requirements, and deprecation policies. Producers can't just change their outputs without following the contract process. Consumers can rely on stability guarantees that let them build without constantly chasing upstream changes.
 
 ---
 
@@ -366,24 +366,12 @@ Run a lineage trace for one report back to its sources. Pick a dashboard metric,
 
 ---
 
-## Chapter Summary
-
-Data acquisition strategy determines your data quality ceiling. You can't clean your way out of fundamentally bad sources. The work you do before data enters your system—selecting sources, validating at ingestion, enforcing contracts—matters more than any amount of downstream data cleansing.
-
-The six quality dimensions—accuracy, completeness, consistency, timeliness, validity, and uniqueness—are the six ways data will betray you. Each dimension has its own failure modes, its own measurement challenges, and its own remediation strategies. Know which dimensions matter most for your use case and build your quality framework around them.
-
-Quality frameworks need teeth. Scorecards that produce reports nobody reads, gates that can be bypassed without justification, SLAs that aren't enforced—these create the illusion of governance while providing no actual protection. Effective frameworks trigger action: alerts, blocks, escalations, incidents.
-
-Data contracts formalize the relationship between producers and consumers. They move implicit assumptions into explicit agreements. They require cultural change alongside technical infrastructure, but they're the mechanism that makes sustainable data quality possible in organizations with multiple teams producing and consuming data.
-
-Metadata solves discovery, interpretation, and trust problems—but only if people actually use it. The key is workflow integration: embed metadata into the tools people already use rather than expecting them to visit a separate catalog.
-
-Versioning and lineage enable reproducibility, debugging, and compliance. You can't rebuild yesterday's model without knowing what data it used. You can't debug data quality issues without knowing where data came from. You can't satisfy audit requirements without version history. These aren't nice-to-haves; they're operational necessities.
-
----
-
 ## Bridge to Chapter 6
 
 You now know where data comes from and how to assess whether it's any good. But assessment requires investigation—you need to actually look at your data, understand its distributions, find its anomalies, and develop intuition about what's normal and what's broken.
 
 That's exploratory data analysis: the art of asking your data questions before you start making demands. And it's harder than it sounds—because data is remarkably good at lying when you ask the wrong questions. The next chapter is about asking the right ones.
+
+---
+
+*P.S. — Somewhere out there is a data vendor still charging six figures a year for a feed that's 30% bounced emails and addresses that never existed. Nobody's audited it, because auditing it is somebody else's job and somebody else is on vacation. Be the one who runs the audit. Worst case, the data's fine and you've lost an afternoon. Best case, you just found the six figures.*

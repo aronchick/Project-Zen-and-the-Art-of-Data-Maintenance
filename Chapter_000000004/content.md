@@ -54,7 +54,7 @@ If a senior data engineer costs $200K+/year (fully loaded, including benefits, i
 
 Bad data decisions compound like credit card debt. Here are examples from a variety of companies:
 
-**Quarter 1**: "Let's just store everything as strings, we'll fix it later.”
+**Quarter 1**: "Let's just store everything as strings, we'll fix it later."
 
 - Engineering time: 0 hours
 - Technical debt created: Unknown
@@ -68,7 +68,7 @@ Bad data decisions compound like credit card debt. Here are examples from a vari
 - Production incidents: 7
 - Customer complaints: 12
 
-**Quarter 4**: "We need to rewrite the whole pipeline.”
+**Quarter 4**: "We need to rewrite the whole pipeline."
 - Engineering time: 800 hours
 - Production incidents during migration: 15
 - Customers lost: 3 enterprise accounts ($180K ARR)
@@ -111,7 +111,7 @@ If you are a mid-size e-commerce company:
 - Monthly cost of reprocessing: $216,000
 - vs total cloud bill: $37k
 
-If you were a consultant hired to "optimize their cloud costs” and found a problem that was 5x their bill, they’d be over the moon. Yet many companies aren’t even aware of the pain.
+If you were a consultant hired to "optimize their cloud costs" and found a problem that was 5x their bill, they'd be over the moon. Yet many companies aren't even aware of the pain.
 
 ### The Context-Switching Cost
 
@@ -190,7 +190,7 @@ But what doesn't show up on any invoice is the 70-150ms latency penalty every ti
 
 The bandwidth costs are a rounding error compared to the decisions you're making with stale data. Or worse, the decisions you're not making at all because the latency budget doesn't allow for the enrichment that would actually matter.
 
-This is why data locality isn't a performance optimization. It's an architectural requirement. The question isn't "how do we afford to move this data?" It's “Why are we moving this data at all?" Every cross-region transfer is a confession that you put your compute in the wrong place. The cheapest byte to transfer is the one that never leaves the region where it was created.
+This is why data locality isn't a performance optimization. It's an architectural requirement. The question isn't "how do we afford to move this data?" It's "Why are we moving this data at all?" Every cross-region transfer is a confession that you put your compute in the wrong place. The cheapest byte to transfer is the one that never leaves the region where it was created.
 
 ### Video and Audio: The Special Hell
 
@@ -400,10 +400,10 @@ One bad label in training data
     → Production predictions slightly off
       → Feedback loop reinforces bad predictions
         → Retraining perpetuates the error
-          → Years later: "Why does the model hate blue products?"
+          → Years later: "Why does the model hate green products?"
 ```
 
-A retail company discovered its recommendation engine systematically avoided blue products. Investigation revealed: 4 years earlier, a batch of blue products had wrong category labels. The model learned "blue = wrong category = don't recommend." Nobody knew why until a new data scientist ran a color analysis.
+A retail company discovered its recommendation engine systematically avoided green products. Investigation revealed: 4 years earlier, a batch of green products had wrong category labels. The model learned "green = wrong category = don't recommend." Nobody knew why until a new data scientist ran a color analysis.
 
 Cost to discover: $50,000 (investigation)
 Cost to fix: $120,000 (relabeling + retraining + validation)
@@ -454,7 +454,7 @@ Monthly value = 1,400 × 84% × 52% × $8,500 = **$5.2M protected revenue**
 **Annual improvement: $22.8M**
 **ROI: 11,300%**
 
-Yes, eleven thousand percent. While the name of the company that inspired this will remain anonymous, the data is backed by things I’ve seen over and over. No, THIS example is not typical, but it IS what happens when data quality work directly affects a high-value business metric (churn prevention for enterprise SaaS). Most ROI calculations are more modest but still compelling: 200-500% is common for foundational work like lineage and quality checks.
+Yes, eleven thousand percent. While the name of the company that inspired this will remain anonymous, the data is backed by things I've seen over and over. No, THIS example is not typical, but it IS what happens when data quality work directly affects a high-value business metric (churn prevention for enterprise SaaS). Most ROI calculations are more modest but still compelling: 200-500% is common for foundational work like lineage and quality checks.
 
 ### The Measurement Framework
 
@@ -527,7 +527,7 @@ Spend here once the basics are covered:
 - Requires clean data to be effective
 
 **2. ML Infrastructure Upgrades**
-- Only valuable if data quality supports it (and often unnecessary once you evaluate what you’re actually using)
+- Only valuable if data quality supports it (and often unnecessary once you evaluate what you're actually using)
 
 **3. Real-time Processing Capabilities**
 - Often over-engineered; batch is usually fine
@@ -606,3 +606,7 @@ Every dollar you spend on data quality saves you ten dollars in debugging, repro
 Part I gave you the philosophy (Chapter 1), the types that lie (Chapter 2), the formats that betray (Chapter 3), and now the costs of ignoring all of it. Part II is where we get tactical. Chapter 5 starts with the hardest question: where does your data actually come from, and should you trust any of it?
 
 But first, go calculate your debugging tax. I'll wait.
+
+---
+
+*P.S. — Your cloud bill is the price of the ticket. The debugging, the reprocessing, the 2 a.m. pages, the features you never shipped—that's the price of the trip. Nobody reads the fine print until the trip is over. Go read the fine print.*

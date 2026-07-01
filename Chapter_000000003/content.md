@@ -363,7 +363,7 @@ spark_df = spark.createDataFrame(arrow_table)  # 0 seconds (zero-copy!)
 
 ## 3.4 The Format Wars: Lakehouse, Lance, and What's Coming
 
-The industry has spent the last decade learning an expensive lesson: no single data format wins all battles. The future isn't about picking the perfect format - it's about systems that can work with all of them.
+The industry has spent the last decade learning an expensive lesson: no single data format wins all battles. The winners stopped chasing the perfect format and built systems that work with all of them.
 
 ### 3.4.1 Lakehouse Architecture: The Best of Both Worlds
 
@@ -462,7 +462,7 @@ Schema evolution matters more than most teams realize until it's too late. Your 
 - Time-range queries → Parquet sorted by timestamp
 - Real-time → Arrow or streaming format
 
-## Quick Wins Box: Format Fixes
+## Quick Wins: Format Fixes
 
 **1. Validate JSON before parsing:**
 
@@ -552,3 +552,7 @@ The format wars aren't going away. New formats will emerge, old formats will per
 Remember that 1:4 ratio from Chapter 1? One hour of model fiddling, four hours on data? Here's the uncomfortable truth: most teams get this backwards, and the cost isn't theoretical. Chapter 4 is where your CFO either cries happy tears or starts asking pointed questions about why you've been doing it wrong. We're finally talking about money—the hidden costs of bad data decisions, the ROI of getting this right, and how to make the business case for all the infrastructure work we've been discussing.
 
 Until then, go check how your data is actually stored. I promise you'll find at least one format decision that makes you question your predecessors' sanity.
+
+---
+
+*P.S. — CSV will outlive us all. Not because it's good, but because it's the cockroach of data formats: nobody loves it, nothing kills it, and it'll still be there in the rubble parsing itself wrong long after the servers go dark. Store your data in something with types. Please.*

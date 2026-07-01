@@ -24,7 +24,7 @@ As an aside, I should stress (!), there's nothing wrong with Team A. They're doi
 
 In March 2021, [Andrew Ng](https://www.andrewng.org/) gave [a talk](https://www.youtube.com/watch?v=06-AZXmwHjo) that should have been as obvious as "don't eat yellow snow" but somehow wasn't. His message? We've been doing this whole ML thing backwards.
 
-Here's the thing - and I'm going to be super honest with you - we (the ML community) got drunk on model architectures. It's like we were teenagers who just discovered guitar effects pedals and microphone distortion. "Sure, I can barely play three chords, but check out this SICK SOUND!" Meanwhile, the data - the actual music - sounds like a cat walking across a piano.
+And I'm going to be super honest with you: we (the ML community) got drunk on model architectures. It's like we were teenagers who just discovered guitar effects pedals and microphone distortion. "Sure, I can barely play three chords, but check out this SICK SOUND!" Meanwhile, the data - the actual music - sounds like a cat walking across a piano.
 
 Ng's revolutionary insight was basically: "Hey folks, maybe we should tune the guitar first?"
 
@@ -378,7 +378,7 @@ In Chapter 4, we're going to rip the cover off the economics of data quality. No
 
 But first, we need to understand what data actually *is*. That sounds obvious until you realize that your model thinks a ZIP code is a really big number and that "false" is True.
 
-## Quick Wins Box: Do These TODAY
+## Quick Wins: Do These TODAY
 
 **Got an hour? Here are immediate actions that will pay dividends:**
 
@@ -434,7 +434,7 @@ In Chapter 2, we're going to dive into data types - the fundamental building blo
 
 Until then, stop reading blogs about the latest architecture and go look at your actual data. Yes, right now. Open a Jupyter notebook, load a random batch, and really LOOK at it. I guarantee you'll find something surprising.
 
-And remember: every hour you spend improving your data is worth ten hours of model tuning. That's not a motivational poster; that's math.
+And remember the leverage: an hour spent making your data better pays back many times over in model tuning you never have to do. That's not a motivational poster; that's math.
 
 Now go forth and clean your data. The ML gods (and your future self) will thank you.
 

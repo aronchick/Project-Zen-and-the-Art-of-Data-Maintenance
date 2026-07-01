@@ -1,4 +1,4 @@
-# Chapter 18: Time-Series and Streaming Data
+# Chapter 18: Audio and Time-Series Data
 
 ## Or: The Fourth Dimension of Pain
 
@@ -253,3 +253,25 @@ def temporal_split(df, time_col, train_end, test_start=None):
 ---
 
 **Code Repository Note**: All code examples from this chapter are available at `https://github.com/aronchick/zen-and-the-art-of-data-maintenance/tree/main/Chapter_000000018`
+
+---
+
+## 18.11 Audio Representations: Waveforms to Spectrograms
+
+> *Relocated from the media chapter — audio is a temporal signal and belongs with time-series. To be integrated into the section flow (per the outline, audio sits around 18.3–18.4) when this chapter is written out in full.*
+
+Audio seems simple, just samples over time. Then you discover why audio engineers drink.
+
+### The Frequency Massacre
+
+The Nyquist theorem says you need to sample at twice the highest frequency you want to capture. Humans hear up to 20kHz, so 40kHz sampling should work. That's why CDs use 44.1kHz. So why does your emotion detection model think everyone is calm?
+
+Because someone "optimized" your pipeline by downsampling to 8kHz to save storage. They just threw away everything above 4kHz - all the sharp consonants that indicate anger, the breath patterns that show stress, the overtones that convey sarcasm. Your customer service emotion detection model went from 87% accurate to 52% (coin flip) because an intern wanted to save $50/month on S3 storage.
+
+Different sample rates actually mean:
+
+- 8kHz: Phone quality. Goodbye emotional nuance.
+- 16kHz: "Wideband" speech. Barely acceptable for speech recognition.
+- 44.1kHz: CD quality. Why 44.1? Because it divides evenly into video frame rates.
+- 48kHz: Professional standard.
+- 192kHz: Audiophile snake oil that your dog might appreciate.

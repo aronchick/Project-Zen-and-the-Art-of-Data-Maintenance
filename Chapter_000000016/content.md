@@ -1,6 +1,6 @@
-# Chapter 16: Multimedia Data Preparation
+# Chapter 16: Image and Video Data Preparation
 
-## Or: A Deep Dive into the Chaos of Pixels, Waves, and Frames
+## Or: A Deep Dive into the Chaos of Pixels and Frames
 
 **A Fortune 500 company decided to build a "state-of-the-art" video analytics platform. They had the budget, they had the team, they had six months. What they didn't have was an understanding of what video files actually are.**
 
@@ -105,27 +105,7 @@ A video that plays perfectly on one system might be a black screen on another, n
 
 ---
 
-## 16.4 Audio: The Forgotten Dimension
-
-Audio seems simple, just samples over time. Then you discover why audio engineers drink.
-
-### 16.4.1 The Frequency Massacre
-
-The Nyquist theorem says you need to sample at twice the highest frequency you want to capture. Humans hear up to 20kHz, so 40kHz sampling should work. That's why CDs use 44.1kHz. So why does your emotion detection model think everyone is calm?
-
-Because someone "optimized" your pipeline by downsampling to 8kHz to save storage. They just threw away everything above 4kHz - all the sharp consonants that indicate anger, the breath patterns that show stress, the overtones that convey sarcasm. Your customer service emotion detection model went from 87% accurate to 52% (coin flip) because an intern wanted to save $50/month on S3 storage.
-
-Different sample rates actually mean:
-
-- 8kHz: Phone quality. Goodbye emotional nuance.
-- 16kHz: "Wideband" speech. Barely acceptable for speech recognition.
-- 44.1kHz: CD quality. Why 44.1? Because it divides evenly into video frame rates.
-- 48kHz: Professional standard.
-- 192kHz: Audiophile snake oil that your dog might appreciate.
-
----
-
-## 16.5 The Storage Reality Check
+## 16.4 The Storage Reality Check
 
 You have 1TB of images. Your real storage breakdown:
 
@@ -168,7 +148,7 @@ When you add it all up, your "small data" is anything but small when it comes to
 
 ---
 
-## 16.6 The Hard-Won Lessons
+## 16.5 The Hard-Won Lessons
 
 After years of multimedia pipeline disasters, the non-negotiable rules:
 
@@ -188,7 +168,7 @@ Understanding these complexities is the difference between a proof of concept th
 
 ---
 
-## 16.7 Multimodal Integration
+## 16.6 Multimodal Integration
 
 [TODO: Expand with content on combining image/video/audio with other modalities]
 
@@ -220,7 +200,7 @@ Save yourself pain and avoid multimodal when:
 
 ---
 
-## 16.8 Practical Toolkit
+## 16.7 Practical Toolkit
 
 [TODO: Add preprocessing pipelines, validation scripts, and format detection utilities]
 

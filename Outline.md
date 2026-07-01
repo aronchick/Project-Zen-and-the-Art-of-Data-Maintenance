@@ -10,8 +10,8 @@
 
 - 1.1 Andrew Ng's Paradigm Shift: Why "Good Data Beats Big Data"
 - 1.2 The "Garbage In, Garbage Out" Principle: Modern Horror Stories
-- 1.3 Data-Centric vs Model-Centric Approaches: Finding the Right Balance
-- 1.4 Core Principles of Data-Centric AI (war stories, not listicles)
+- 1.3 Data-Centric vs Model-Centric: The Middle Path
+- 1.4 What Data-Centric Actually Means in Practice
 - 1.5 Learning from Failures: The Hall of Shame (and Fame)
 - 1.6 What's Next: The Economics of Getting This Wrong (bridge to Chapter 4)
 
