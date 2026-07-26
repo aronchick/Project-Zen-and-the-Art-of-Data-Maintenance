@@ -88,11 +88,11 @@
 
 ### Chapter 8: Data Architecture Patterns
 
-- 8.1 Architectural Evolution: Warehouses vs Lakes vs Lakehouses
-- 8.2 Lambda vs Kappa Architecture: Real-time Processing Patterns
-- 8.3 Column-Oriented Storage and Apache Arrow: Performance at Scale
-- 8.4 Cloud-Native Data Platforms: AWS, GCP, Azure Comparisons
-- 8.5 Industry Examples: Netflix, Uber, Airbnb Engineering Patterns
+- 8.1 Warehouses vs Lakes vs Lakehouses
+- 8.2 Lambda vs Kappa: The Two-Codebases Tax
+- 8.3 Column-Oriented Storage at the Architecture Level
+- 8.4 Cloud-Native Platforms: AWS, GCP, Azure
+- 8.5 What the Giants Actually Did
 - 8.6 Choosing the Right Architecture for Your Scale
 
 ### Chapter 9: Feature Stores and Data Platforms
@@ -103,7 +103,7 @@
 - 9.4 Feature Discovery and Reusability Patterns
 - 9.5 Feature Monitoring and Drift Detection
 - 9.6 Integration with ML Platforms and Workflows
-- 9.7 Case Studies from Industry Leaders
+- 9.7 Where This Pattern Came From
 
 ## Part IV: Core Data Cleaning and Transformation
 
