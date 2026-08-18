@@ -2,11 +2,11 @@
 
 ## Or: The Hole Is the Message
 
-A hospital system I worked with—eleven facilities, a bit under 400,000 admissions a year—built a thirty-day readmission risk model. The purpose was concrete and the budget was real: a care-management program with twelve nurses who called discharged patients, walked through their medications, and made sure someone had actually booked the follow-up appointment. Nurses are expensive and there were twelve of them. The model's entire job was to decide who got the call.
+A hospital system has eleven facilities, a bit under 400,000 admissions a year, and has built a thirty-day readmission risk model. The purpose is a a care-management program with twelve nurses who call discharged patients, walk through their medications, and made sure someone had actually booked the follow-up appointment. Nurses are expensive and there were twelve of them. So, like so many things nowadays, they decided to use a model to decide who got the call.
 
-They built it on the EHR. Demographics, diagnosis codes, length of stay, prior admission history, and about sixty lab values. It validated respectably—AUC 0.72, which for readmission is a perfectly credible number, because readmission is hard to predict. They shipped it. The nurses started working the list every morning.
+With a metric ton of data, they built it. Everything - EHR. Demographics, diagnosis codes, length of stay, prior admission history, and about sixty lab values - all went in, and it all validated respectably. Area under the curve (AUC) was 0.72, which for readmission is a perfectly credible number (readmission is really hard to predict). Then they shipped it, and nurses started working the list every morning.
 
-Eight months later, readmissions had not moved. Not modestly. Not within noise. Not at all. The program came up for renewal and the CFO asked a reasonable question about what $1.4 million of nursing salary had purchased.
+Eight months later, readmissions had not moved... at all. The program came up for renewal and the CFO asked a reasonable question about what $1.4 million of nursing salary had purchased.
 
 The answer was one line in the preprocessing script:
 
@@ -14,21 +14,25 @@ The answer was one line in the preprocessing script:
 df = df.fillna(df.median())
 ```
 
-Roughly 40% of the lab values were missing. Not missing because a pipeline broke—missing because nobody ordered the test. And in a hospital, nobody orders a test at random. A serum albumin gets drawn when a clinician is worried about nutrition. A lactate gets drawn when someone is worried about sepsis. The *existence* of that test is a physician's judgment about a patient, written into the record, for free.
+For those that don't know python, what this meant was that a whole lot of content in the data was being excluded because it was empty. But just that ENTRY was empty, the patient had everything else there. In most cases, this is the exact right thing to do! But in a medical scenario, they're missing a ton of information.
+
+In this case, roughly 40% of the lab values were missing because nobody ordered the test. Which is not at all uncommon because in a hospital, nobody orders a test at random. A serum albumin gets drawn when a clinician is worried about nutrition. A lactate gets drawn when someone is worried about sepsis. The *existence* of that test is a physician's judgment about a patient, written into the record, for free.
 
 So the null in that column was not an absence of information. It was a doctor saying "I looked at this person and I wasn't concerned." That is one of the most informative things in the entire chart, and `fillna(median)` painted over it with the lab value of an average sick person.
 
-It broke in both directions at once. Patients with no labs drawn—the well ones—were assigned median-sick values, which shoved their risk scores upward. Patients who *did* have labs drawn had real values, but those real values now sat in a distribution containing an enormous artificial spike right at the center, which flattened the model's ability to tell them apart. For eight months the model confidently ranked a population it had been lied to about, and twelve nurses spent their days calling the wrong people.
+As a result, it broke in both directions at once. Patients with no labs drawn (the well ones) were assigned median-sick values, which pushed their risk scores upward. Patients who *did* have labs drawn had real values, but those real values now sat in a distribution containing an enormous artificial spike right at the center, which flattened the model's ability to tell them apart. All this means that the model confidently ranked a population it had been lied to about, and twelve nurses spent their days calling the wrong people.
 
-The fix was embarrassing. They dropped the median fill, let the gradient-boosted model handle nulls natively, and added one binary column per lab: was this test ordered, yes or no. AUC went from 0.72 to 0.79. The strongest single predictor in the new model was not any lab *value*. It was whether a lactate had been drawn at all.
+After dropping the median fill, let the gradient-boosted model handle nulls natively, and added one binary column per lab: was this test ordered, yes or no. AUC went from 0.72 to 0.79. The strongest single predictor in the new model was not any lab *value*; it was whether a lactate had been drawn at all.
 
-The missingness was the most predictive signal in the dataset. The preprocessing step deleted it.
+The missing data was the most predictive signal in the dataset, and yet the preprocessing step deleted it.
 
 ---
 
-Missing data is data. Every null in your table got there through a process, that process has a shape, and the shape is sometimes the answer to the exact question you're asking. Sometimes it's boring—a sensor dropped a packet, a form field was optional, a join didn't match. Sometimes it's the whole story.
+Missing data is data. I know that sounds counter intuitive, but it's true.
 
-The entire discipline comes down to working out which one you're holding *before* you fill anything in. Every imputation method in existence is a bet about the mechanism that created the gap. Bet wrong and you don't get an exception, a warning, or a failed test. You get a model that validates beautifully and is quietly useless, which is the most expensive failure mode in this book because it takes eight months and a CFO to detect.
+Every null in your table got there through a process, that process has a shape, and the shape is sometimes the answer to the exact question you're asking. Sometimes it's boring like a sensor dropping a packet, a form field that was optional, a join that doesn't match. But, sometimes it's the whole story.
+
+Much of the discipline of using data comes down to working out which one you're holding *before* you fill anything in. Every imputation method in existence is a bet about the mechanism that created the gap. Bet wrong and you don't get an exception, a warning, or a failed test. You get a model that validates beautifully and is quietly useless, which is the most expensive failure mode in this book because it takes eight months and a CFO to detect.
 
 ---
 

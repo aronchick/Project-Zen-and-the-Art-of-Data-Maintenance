@@ -270,3 +270,8 @@ data-engineering/bigquery-with-bacalhau/logs/access.log
 todo/socat/input/sst.mnmean.nc
 
 LLM.txt
+
+# Third-party reference repos cloned in for research; each has its own
+# remote and is pushed separately. Committing them here writes a broken gitlink.
+claudecode-writer/
+data-mgmt-ed-research-book/
