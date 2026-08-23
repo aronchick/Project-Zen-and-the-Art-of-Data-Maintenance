@@ -4,9 +4,11 @@
 
 In November 2021, Zillow announced it was shutting down Zillow Offers, its algorithmic home-buying business—and laying off 25% of its workforce. Two thousand people lost their jobs. The company took an $881 million loss. Rich Barton, Zillow's CEO, stood before investors and admitted what everyone in data science already knew: their algorithms had been systematically overpaying for houses, sometimes by tens of thousands of dollars, across 25 metropolitan markets.
 
-Zillow had purchased approximately 7,000 homes based on its Zestimate algorithm's predictions of future value. When they tried to resell these properties, they discovered the gap between algorithm-predicted values and actual market prices was catastrophic. In Phoenix, Atlanta, and other supposedly "hot" markets, the algorithm couldn't adjust to cooling demand. They were left holding thousands of overvalued properties they couldn't profitably sell.
+Over the life of the program Zillow bought more than 30,000 homes on the strength of its Zestimate algorithm's predictions of future value, and was still holding roughly 7,000 of them when it pulled the plug. When they tried to resell, the gap between algorithm-predicted values and actual market prices was catastrophic. In Phoenix, Atlanta, and other supposedly "hot" markets, the algorithm couldn't adjust to cooling demand. They were left holding thousands of overvalued properties they couldn't profitably sell.
 
-Their models were excellent. Seriously. The Zestimate had been refined for years, achieving a median error rate of around 7.5% for on-market homes. That's an impressive statistical performance, by any measure. The data scientists at Zillow were some of the best in the industry, working with sophisticated machine learning systems trained on millions of transactions.
+Their models were excellent. Seriously. The Zestimate had been refined for years, and Zillow published a nationwide median error rate of about 1.9% for homes actively listed for sale. That is genuinely impressive.
+
+Note which number that is, though. For homes *not* currently on the market—which is every home Zillow Offers had to price before making an offer—the published median error runs around 7%. On a $400,000 house that's a $28,000 coin flip, taken tens of thousands of times. The data scientists at Zillow were some of the best in the industry, working with sophisticated machine learning systems trained on millions of transactions.
 
 The problem wasn't the models. The problem was the data feeding those models.
 
@@ -32,7 +34,7 @@ First-party data is data you generate through your own operations. Event logs, u
 
 In practice, first-party data comes with its own special category of lies.
 
-The most common lie is "we have all this data!" No, you have all this raw exhaust with no schema, no documentation, no consistency guarantees, and no clear ownership. I've watched engineering teams proudly point to petabytes of event logs that, upon inspection, contained seventeen different JSON structures for the "same" event type, timestamps in four different time zones, and user IDs that mysteriously changed format after a platform migration three years ago that nobody documented.
+The most common lie is "we have all this data!" No, you have all this raw exhaust with no schema, no documentation, no consistency guarantees, and no clear ownership. The petabytes of event logs a team points to proudly turn out, on inspection, to hold seventeen different JSON structures for the "same" event type, timestamps in four different time zones, and user IDs that changed format after a platform migration three years ago that nobody wrote down.
 
 The best payments and fraud teams treat this as gospel. They don't just log transactions—they build an instrumentation framework that enforces schema at write time, attaches context automatically, and versions every change to the event structure. When they train fraud-detection models, they know exactly what each field means, when the definition changed, and how to handle historical data that predates current schemas. This isn't free. It's expensive upfront investment in instrumentation infrastructure. But it's why their models actually work.
 
@@ -46,7 +48,7 @@ In practice, partnership data is where schema discipline quietly falls apart.
 
 The promise is always compelling: "Our partner will give us their customer data, and we'll combine it with our product data, and together we'll have this complete picture of the customer journey!" The reality involves months of negotiation over data formats, quarterly fire drills when the partner changes their schema without telling you, liability nightmares when someone's personal information ends up somewhere it shouldn't be, and endless meetings about whose definition of "active customer" is correct.
 
-I've watched a major retail co-op's data sharing initiative collapse not because of technical challenges but because the partners couldn't agree on update cadence. One partner pushed daily updates; another pushed weekly. Some partners sent full snapshots; others sent only deltas. By the time the data engineering team built a system to reconcile all of this, the underlying business reality had drifted so far from the harmonized dataset that the models trained on it were worse than models trained on single-partner data alone.
+Data-sharing consortia collapse over this constantly, and rarely for technical reasons. A retail co-op's initiative dies because the partners cannot agree on update cadence. One partner pushed daily updates; another pushed weekly. Some partners sent full snapshots; others sent only deltas. By the time the data engineering team built a system to reconcile all of this, the underlying business reality had drifted so far from the harmonized dataset that the models trained on it were worse than models trained on single-partner data alone.
 
 Second-party data works when you have clear contracts, genuinely shared incentives, technical alignment on formats and cadence, and—this is crucial—explicit ownership of what happens when things go wrong. If your partnership agreement doesn't include an SLA for schema change notification, you don't have a data partnership. You have a ticking time bomb.
 
@@ -54,9 +56,9 @@ Second-party data works when you have clear contracts, genuinely shared incentiv
 
 Third-party data is purchased from aggregators—companies whose entire business is collecting data from various sources and reselling it. Marketing databases, credit data, demographic data, firmographic data. The pitch is always impressive: "We have 300 million consumer profiles with 2,000 attributes each!"
 
-The reality is typically 40% stale, 20% duplicates, 15% fabricated, and the remaining percentage is accurate at an unknown rate.
+The reality is some mix of stale, duplicated, inferred, and outright fabricated, in proportions the vendor will not tell you and has usually never measured.
 
-That's not hyperbole. When a Fortune 500 company I worked with actually audited their primary third-party marketing data vendor, they found that 23% of the email addresses bounced immediately, 31% of the phone numbers were disconnected or wrong numbers, and 18% of the mailing addresses didn't exist. This was data they'd been paying six figures annually to license. Data they'd been using to train customer lifetime value models. Data they'd been feeding into their marketing automation systems to send millions of dollars in targeted communications.
+That's not hyperbole. When a Fortune 500 company finally audited its primary third-party marketing data vendor, 23% of the email addresses bounced immediately, 31% of the phone numbers were disconnected or wrong, and 18% of the mailing addresses didn't exist. This was data they'd been paying six figures a year to license. Data they'd been using to train customer lifetime value models. Data they'd been feeding into their marketing automation systems to send millions of dollars in targeted communications.
 
 The vendor's response? "Well, data decays over time." As if that absolved them of selling a product that was broken on delivery.
 
@@ -100,7 +102,7 @@ Accuracy is the most intuitive quality dimension: does the data reflect reality?
 
 The measurement problem is that ground truth is expensive. You can't verify every address by sending a letter and waiting for it to bounce. You can't validate every timestamp against an atomic clock. So you sample—and your sampling strategy determines what you can actually know about accuracy.
 
-Medical imaging labels illustrate this challenge vividly. When you train a model to detect tumors in radiology images, your ground truth is typically radiologist annotations. But radiologists disagree. Studies have found inter-reader disagreement rates of 10-30% for many diagnostic tasks. So what's the "true" label for a contested image? You can use consensus voting, but that biases toward common interpretations. You can use pathology confirmation, but that's only available for a subset of cases. You can use follow-up imaging, but that adds temporal lag and selection bias.
+Medical imaging labels illustrate this challenge vividly. When you train a model to detect tumors in radiology images, your ground truth is typically radiologist annotations. But radiologists disagree. Radiologists disagree with each other at rates that would alarm most consumers of their output, and disagree with their own prior readings often enough that intra-reader variability is its own field of study. So what's the "true" label for a contested image? You can use consensus voting, but that biases toward common interpretations. You can use pathology confirmation, but that's only available for a subset of cases. You can use follow-up imaging, but that adds temporal lag and selection bias.
 
 The practical question isn't "is this data perfectly accurate?" The practical question is "what accuracy do I actually need, and can I verify that this dataset meets that threshold?" A recommendation system probably doesn't need to know exact addresses—ZIP code accuracy might be sufficient. A fraud detection system probably needs timestamp accuracy to the second. Define your requirements before you start measuring, or you'll measure everything and learn nothing actionable.
 
@@ -122,7 +124,7 @@ Consistency means the same entity has the same representation everywhere. This s
 
 The canonical example is the customer who exists in your CRM, your billing system, your support ticketing system, and your product analytics. In the CRM, they're "John Smith." In billing, they're "J. Smith Jr." In support, they're "John A. Smith (Enterprise)." In product analytics, they're user_id_847291. Are these the same person? Probably. Can you prove it programmatically? Often not without heroic entity resolution efforts.
 
-Temporal consistency adds another layer of complexity. What does "active user" mean? If the definition changed six months ago—maybe you went from "logged in within 30 days" to "performed a meaningful action within 14 days"—your historical analysis will show a discontinuity that has nothing to do with actual user behavior. I've seen teams spend weeks investigating why engagement "dropped" at a specific date, only to discover it was a definition change that nobody documented.
+Temporal consistency adds another layer of complexity. What does "active user" mean? If the definition changed six months ago—maybe you went from "logged in within 30 days" to "performed a meaningful action within 14 days"—your historical analysis will show a discontinuity that has nothing to do with actual user behavior. Teams lose weeks investigating why engagement "dropped" on a specific date, and find a definition change nobody documented.
 
 The solution is canonical definitions, enforced at write time. Agree on what "customer" means, what "active" means, what "transaction" means—and enforce those definitions when data is created, not when it's queried. Schema enforcement, not schema inference. Write-time validation, not read-time discovery.
 
@@ -132,7 +134,7 @@ Timeliness measures data age relative to decision requirements. A real-time frau
 
 The latency spectrum runs from real-time streaming (sub-second) through near-real-time (seconds to minutes) to batch (hours to days) to historical analysis (weeks to months). Each point on this spectrum has radically different infrastructure requirements, costs, and failure modes.
 
-The over-engineering trap is assuming everything needs to be real-time. I've watched teams build elaborate streaming pipelines—Kafka clusters, Flink jobs, real-time feature stores—for data that ultimately feeds a weekly dashboard nobody looks at until Tuesday. The operational overhead of maintaining that real-time infrastructure vastly exceeded any value it provided. They could have run a simple batch job on Sunday night and achieved the same business outcome at a fraction of the cost and complexity.
+The over-engineering trap is assuming everything needs to be real-time. Teams build elaborate streaming pipelines—Kafka clusters, Flink jobs, real-time feature stores—for data that ultimately feeds a weekly dashboard nobody opens until Tuesday. The operational overhead of maintaining that real-time infrastructure vastly exceeded any value it provided. They could have run a simple batch job on Sunday night and achieved the same business outcome at a fraction of the cost and complexity.
 
 Match freshness requirements to actual decision cadence. If your business process runs weekly, daily freshness is probably sufficient. If your model is retrained monthly, real-time features are overkill for training—though you might still need them for inference. Be honest about what your use case actually requires, not what sounds impressive in a design document.
 
@@ -140,11 +142,11 @@ Match freshness requirements to actual decision cadence. If your business proces
 
 Validity means data conforms to defined formats and constraints. Dates are actual dates. Phone numbers have the right number of digits. Foreign keys reference records that actually exist. Amounts are within plausible ranges.
 
-The lie I hear constantly is "we have a schema!" The question is: is it enforced? Is it current? Is it complete?
+The standard lie is "we have a schema!" The questions that matter: is it enforced? Is it current? Is it complete?
 
 Schemas that exist only in documentation are not schemas—they're aspirations. Data producers will violate undocumented constraints constantly, because they don't know the constraints exist. Even documented schemas get violated when enforcement happens at read time rather than write time, because by then it's too late. The bad data is already in your system, propagating through downstream transformations, corrupting model training runs, producing predictions based on garbage inputs.
 
-Here's a pattern I've seen repeatedly: a phone number field that "passes validation" because it matches a regex, but the number doesn't actually belong to anyone. The format is valid. The content is garbage. Validity checking is a necessary but insufficient condition for data quality. It catches obvious structural errors but can't tell you whether the structurally-correct data actually corresponds to reality.
+Here is the pattern that repeats everywhere: a phone number field that "passes validation" because it matches a regex, but the number belongs to nobody. The format is valid. The content is garbage. Validity checking is a necessary but insufficient condition for data quality. It catches obvious structural errors but can't tell you whether the structurally-correct data actually corresponds to reality.
 
 Validate at ingestion, not at discovery. Reject or quarantine non-conforming records before they enter your data lake. Make schema enforcement a gate, not a report.
 
@@ -152,7 +154,7 @@ Validate at ingestion, not at discovery. Reject or quarantine non-conforming rec
 
 Uniqueness means no unintended duplicates. This sounds simple until you try to implement it in a distributed system with multiple data sources, eventual consistency, and entity resolution challenges.
 
-The join explosion is a classic failure mode. You join two tables with a one-to-many relationship, forgetting that each parent record will match multiple child records. Suddenly your aggregation is overcounting by 3x, and your marketing attribution model thinks you have three times the conversions you actually have. I've seen multi-million dollar budget decisions based on dashboards that were systematically overcounting due to uncaught join explosions.
+The join explosion is a classic failure mode. You join two tables with a one-to-many relationship, forgetting that each parent record will match multiple child records. Suddenly your aggregation is overcounting by 3x, and your marketing attribution model thinks you have three times the conversions you actually have. Multi-million dollar budget decisions get made on dashboards that were systematically overcounting because nobody caught a join explosion.
 
 Entity resolution—determining whether two records represent the same real-world entity—is genuinely hard. Is "John Smith" at "123 Main Street" the same person as "J. Smith" at "123 Main St"? Probably. Maybe. The challenge is distinguishing true matches from false matches at scale, with acceptable precision and recall, in a way that doesn't require manual review of millions of potential match pairs.
 
@@ -218,7 +220,7 @@ The social contract problem is that technical enforcement only works when there'
 
 A complete data contract includes several layers. The schema definition covers fields, types, nullability, and structural constraints—the stuff traditional schemas handle. The semantic definition explains what fields actually mean in business terms. What is a "customer"? What counts as an "active session"? What time zone are timestamps in? This is the hard part, because it requires producers and consumers to agree on definitions that often weren't explicit before.
 
-Quality expectations specify freshness (how old can data be?), completeness (what's the acceptable null rate?), and accuracy (how do we verify correctness?). Ownership and support information tells consumers who's responsible for this data and how to get help when it breaks. This seems obvious, but I've seen data assets with no documented owner, where consumers had to reverse-engineer the org chart to figure out who to page during an outage.
+Quality expectations specify freshness (how old can data be?), completeness (what's the acceptable null rate?), and accuracy (how do we verify correctness?). Ownership and support information tells consumers who's responsible for this data and how to get help when it breaks. This seems obvious right up until you meet a production-critical data asset with no documented owner, where consumers reverse-engineer the org chart to work out who to page during an outage.
 
 ### 5.4.3 Implementation Approaches
 

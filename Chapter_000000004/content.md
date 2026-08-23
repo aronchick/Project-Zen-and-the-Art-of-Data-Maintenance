@@ -73,11 +73,11 @@ Bad data decisions compound like credit card debt. Here are examples from a vari
 - Production incidents during migration: 15
 - Customers lost: 3 enterprise accounts ($180K ARR)
 
-Total cost of "we'll fix it later": **$450,000** (engineering time) + **$180,000** (lost revenue) = **$630,000**
+Add it up: 920 engineering hours at $150/hour is **$138,000**, plus **$180,000** in lost ARR, for **$318,000**.
 
-Original cost to do it right: Maybe $30,000 in upfront engineering time.
+Original cost to do it right: maybe $30,000 in upfront engineering time.
 
-That's a 21x multiplier for procrastination.
+That's better than a 10x multiplier for procrastination, and it prices none of the twenty-five production incidents.
 
 ## 4.2 Developer Time: The Most Expensive Resource You're Wasting
 
@@ -92,11 +92,11 @@ The [2022 State of Data Quality survey](https://www.montecarlodata.com/blog-2022
 - **793 engineering hours monthly** per company spent firefighting
 - **58% said incidents increased** over the prior year as pipelines grew more complex
 
-The business impact extends beyond wasted engineering time. Survey respondents estimated that poor data quality affects 26% of their company's revenue—a figure that climbed to 31% in the 2023 follow-up survey. Perhaps most damning: 74% reported that business stakeholders identify data issues before the data team does, "all or most of the time." Your CFO shouldn't be your primary data quality monitoring system.
+The business impact extends beyond wasted engineering time. Survey respondents estimated that poor data quality affects 26% of their company's revenue—a figure that climbed to 31% in the 2023 follow-up survey. Perhaps most damning: nearly half reported that business stakeholders get hit by issues the data team never caught, most or all of the time. Your CFO shouldn't be your primary data quality monitoring system.
 
 The cost math is straightforward and brutal. At a fully-loaded cost of $150/hour for a senior engineer, a 10-person data team spending 40% of their time on debugging burns $1.2 million annually. 
 
-Not on new features, not on ML models, not on analytics that drive decisions, but on asking "why doesn't this number match that number?" That's six full-time-equivalent engineers doing nothing but chasing data fires.
+Not on new features, not on ML models, not on analytics that drive decisions, but on asking "why doesn't this number match that number?" That's four full-time-equivalent engineers doing nothing but chasing data fires.
 
 ### The Reprocessing Spiral
 
@@ -117,22 +117,24 @@ If you were a consultant hired to "optimize their cloud costs" and found a probl
 
 Even worse are the truly *hidden* costs: the cognitive load of context switching.
 
-[Gloria Mark's research at UC Irvine](https://www.ics.uci.edu/~gmark/chi08-mark.pdf) quantified what every engineer feels intuitively: it takes an average of 23 minutes and 15 seconds to fully regain focus after an interruption. Not "get back to work"—*regain focus*. Carnegie Mellon found that for complex cognitive tasks like debugging distributed systems, that recovery time extends to 45 minutes. Every time someone pings your data engineer with "hey, these numbers look wrong," you're not just stealing an hour of their time. You're stealing the hour before and the hour after.
+You have heard the number: 23 minutes and 15 seconds to regain focus after an interruption. It is worth knowing where it actually comes from, because the answer is instructive. Gloria Mark did the underlying work at UC Irvine, but that specific figure comes from an interview she gave in 2006, not from [the paper it usually gets cited to](https://www.ics.uci.edu/~gmark/chi08-mark.pdf)—which found something more surprising, namely that interrupted workers finish their tasks *faster* and pay for it in stress. Her 2005 study is the one with the durable result: people took roughly 25 minutes to get back to an interrupted task, and touched an average of 2.3 other tasks on the way.
 
-The math gets worse when you realize what context switching actually destroys. When an engineer is deep in building a new feature—holding the data model, the edge cases, the integration points all in working memory—a Slack message about a data discrepancy doesn't just interrupt them. It *evicts* that entire mental model. They have to rebuild it from scratch when they return, assuming they return at all. Mark's research found that interrupted workers visited an average of 2.3 other tasks before getting back to their original work, if they got back at all.
+Treat that as a live demonstration of this book's argument. A number gets repeated enough times that it stops needing a source, and then it turns up in your slide deck. Every time someone pings your data engineer with "hey, these numbers look wrong," you're not just stealing an hour. You're stealing the hour before and the hour after.
+
+The math gets worse when you realize what context switching actually destroys. When an engineer is deep in building a new feature—holding the data model, the edge cases, the integration points all in working memory—a Slack message about a data discrepancy doesn't just interrupt them. It *evicts* that entire mental model. They have to rebuild it from scratch when they return, assuming they return at all.
 
 Here's what a single "quick question" about data quality actually costs:
 
 - Investigation time: 30-60 min
-- Context switch penalty: 23-45 min to regain focus
+- Context switch penalty: roughly 25 min to get back to the task
 - Residual distraction: 15-30 min of degraded performance
-- **Total per interruption: 1.5-2 hours of productive work**
+- **Total per interruption: 1.25-2 hours of productive work**
 
 If your data team fields three "the numbers look wrong" questions per day (conservative for teams without proper data quality tooling):
 
-- Daily cost: 4.5-6 hours of lost deep work
-- Weekly cost: 22-30 hours across a 5-person team
-- Annual cost: 1,100-1,500 hours—equivalent to losing half a full-time engineer
+- Daily cost: 4-6 hours of lost deep work
+- Weekly cost: 20-30 hours across a 5-person team
+- Annual cost: 1,000-1,500 hours—between half and three-quarters of a full-time engineer
 
 And that's just the direct time loss. The compounding effect is worse: engineers who never get uninterrupted hours can't do the deep work on systems that would *prevent* these interruptions in the first place. You're paying senior engineer salaries for people to answer "why doesn't this number match that number?" instead of building the validation frameworks that would catch mismatches automatically.
 
@@ -144,7 +146,7 @@ This is why "we'll fix data quality issues as they come up" is such an expensive
 
 But format is only half the battle. The other half is figuring out what you're storing and whether anyone will ever look at it again.
 
-Industry research consistently finds that [80% of enterprise data is cold](https://cloudtweaks.com/2025/02/relief-from-data-storage-costs/), untouched for months or years, yet it sits on the same expensive storage as data accessed hourly. A media company I have seen had this exact problem:
+Industry research consistently finds that [80% of enterprise data is cold](https://cloudtweaks.com/2025/02/relief-from-data-storage-costs/), untouched for months or years, yet it sits on the same expensive storage as data accessed hourly. One media company had this exact problem:
 
 | Data Type | Size | Access Frequency | Monthly Cost (S3 Standard) |
 |-----------|------|------------------|----------------------------|
@@ -178,13 +180,13 @@ Annual savings: **$70,000**. Implementation time: one afternoon writing lifecycl
 
 Cloud egress fees are a tax you never see coming. But the dollar cost isn't even the real problem. It's the latency tax on every decision your system makes.
 
-Standard pattern I see:
+The standard pattern:
 
 1. Store data in us-east-1 (cheapest!)
 2. Run ML training in us-west-2 (GPUs available!)
 3. Serve predictions from eu-west-1 (users are there!)
 
-Every byte crossing regions costs money. AWS charges $0.02/GB for cross-region transfer. A company moving 500 GB daily for model training, syncing feature stores, and aggregating logs might burn $1,800/month in bandwidth nobody budgeted for.
+Every byte crossing regions costs money. AWS charges $0.02/GB for cross-region transfer. A company moving 3 TB daily for model training, syncing feature stores, and aggregating logs burns about $1,800 a month in bandwidth nobody budgeted for.
 
 But what doesn't show up on any invoice is the 70-150ms latency penalty every time data crosses regions. When your fraud detection model needs fresh features from a store 3,000 miles away, that round-trip isn't free. When your recommendation engine waits for user signals to traverse the Atlantic, that's not "network overhead." That's degraded predictions. When your real-time bidding system loses auctions because feature retrieval adds 100ms, that's revenue evaporating.
 
@@ -203,11 +205,13 @@ One minute of 4K video:
 - Total per minute: ~2 GB
 
 A platform ingesting 1,000 hours of video per day:
-- Raw storage per day: 90 TB
-- Monthly: 2.7 PB
-- Annual storage cost at S3 standard: **$750,000/year**
+- Raw storage added per day: 90 TB
+- Raw storage added per month: 2.7 PB
+- Cost to hold one month's ingest at S3 Standard: about **$59,000**
 
-Even with intelligent tiering (hot/cold/glacier), you're looking at $200K+/year.
+Here's the part people get wrong when they budget this. Storage accumulates. You don't pay $59,000 a year; you pay $59,000 in month one, $118,000 in month two, and roughly **$713,000 in month twelve**, because everything you ingested is still sitting there. The first-year total lands near **$4.6 million**, and year two *starts* at the number year one ended on.
+
+Aggressive tiering cuts that substantially, but it does not change the shape of the curve. Only a deletion policy changes the shape of the curve.
 
 This is why sampling strategies matter (Chapter 5). Do you really need to store every frame at full resolution forever?
 
@@ -215,13 +219,13 @@ This is why sampling strategies matter (Chapter 5). Do you really need to store 
 
 ### The Cost of Lost Context
 
-Imagine this conversation (I've had it approximately 500 times):
+This conversation happens in every company with more than three years of data behind it:
 
-**Me**: "Why does this column exist?"
+**Analyst**: "Why does this column exist?"
 **Engineer**: "I don't know, it was here when I joined."
-**Me**: "What does this transformation do?"
+**Analyst**: "What does this transformation do?"
 **Engineer**: "Something about normalization? The person who wrote it left."
-**Me**: "Can we remove it?"
+**Analyst**: "Can we remove it?"
 **Engineer**: "Probably not safe. Something might depend on it."
 
 Every undocumented transformation is a landmine. Every missing piece of metadata is future debugging time.
@@ -304,9 +308,9 @@ Raw Data → Clean → Transform → Aggregate → Feature → Model → Serve
 
 > **Figure 4.2**: *A "simple" pipeline with 14 single points of failure. When the currency API went down for 4 hours, the cascade reached 4 systems deep and cost $180K in lost conversions.*
 
-Total single points of failure: 14
-Probability of at least one failure per day: 73%
-Average cascade depth when failure occurs: 3.2 systems
+Count them: seven pipeline stages, seven joins and caches hanging off them, three external APIs. Seventeen single points of failure.
+
+Give each one a 99% daily success rate—generous for anything that depends on a third party—and the probability that all seventeen survive a given day is 0.99^17, or about 84%. So roughly one day in six, something in this picture breaks. That is not a pessimistic model. That is the arithmetic of having seventeen of anything.
 
 When the external API (for currency conversion) went down for 4 hours:
 - Direct impact: currency features unavailable
@@ -388,7 +392,7 @@ The compound interest on data debt:
 | 2 years | 10x |
 | 3+ years | Complete rewrite or live with it |
 
-I've seen companies that literally cannot fix their data problems. The cost of remediation exceeds the value of the data. They're stuck shipping known-bad predictions because fixing the root cause would cost more than the product makes.
+Some companies literally cannot fix their data problems. The cost of remediation exceeds the value of the data. They're stuck shipping known-bad predictions because fixing the root cause would cost more than the product makes.
 
 ### The Propagation Problem
 
@@ -403,13 +407,13 @@ One bad label in training data
           → Years later: "Why does the model hate green products?"
 ```
 
-A retail company discovered its recommendation engine systematically avoided green products. Investigation revealed: 4 years earlier, a batch of green products had wrong category labels. The model learned "green = wrong category = don't recommend." Nobody knew why until a new data scientist ran a color analysis.
+A retail company discovered its recommendation engine systematically avoided green products. Investigation revealed that four years earlier, a batch of green products had been given wrong category labels. The model learned "green = wrong category = don't recommend." Nobody knew why until a new data scientist ran a color analysis.
 
 Cost to discover: $50,000 (investigation)
 Cost to fix: $120,000 (relabeling + retraining + validation)
 Lost revenue over 4 years: estimated $2-3 million
 
-Root cause: 200 mislabeled products in 2019.
+Root cause: 200 products mislabeled in a single afternoon, four years earlier.
 
 ### Retraining Costs
 
@@ -431,7 +435,7 @@ Clean data that maintains distribution = fewer retrains = less cost.
 
 ## 4.7 ROI Calculations That Will Make Your CFO Cry (Happy Tears)
 
-### Case Study: The $6 Million Decision
+### Case Study: The $200,000 That Returned $23 Million
 
 **Project**: Customer churn prediction for a SaaS company
 
@@ -454,7 +458,7 @@ Monthly value = 1,400 × 84% × 52% × $8,500 = **$5.2M protected revenue**
 **Annual improvement: $22.8M**
 **ROI: 11,300%**
 
-Yes, eleven thousand percent. While the name of the company that inspired this will remain anonymous, the data is backed by things I've seen over and over. No, THIS example is not typical, but it IS what happens when data quality work directly affects a high-value business metric (churn prevention for enterprise SaaS). Most ROI calculations are more modest but still compelling: 200-500% is common for foundational work like lineage and quality checks.
+Yes, eleven thousand percent. No, this is not typical, and you should treat any vendor who leads with a number like this as a vendor. It is what happens in the specific case where data quality work lands directly on a high-value business metric—churn prevention for enterprise SaaS, where a single retained account is worth five figures. Most ROI calculations are more modest but still compelling: 200-500% is common for foundational work like lineage and quality checks.
 
 ### The Measurement Framework
 
@@ -490,7 +494,7 @@ Annual ROI = (New Business Value - Old Business Value) / Investment Cost
 
 Beyond direct ROI, data quality investments produce:
 
-**Engineer retention**: A survey by StackOverflow found that dealing with bad data is the #2 frustration for data professionals (after meetings). Clean data = happier engineers = lower turnover = $50K-$150K saved per engineer not replaced.
+**Engineer retention**: Nobody builds a career out of archaeology. There is no clean survey number to hang on this, and you should be suspicious of anyone who quotes you one, but the cost side prices easily: replacing a data engineer runs $50K-$150K once you count recruiting, ramp time, and the institutional knowledge that walks out the door. Ask your own team what fraction of last quarter they'd describe as building versus excavating.
 
 **Faster feature development**: When engineers trust the data, they build features faster. One company found that post-data-quality-investment, feature development time dropped by 40%.
 

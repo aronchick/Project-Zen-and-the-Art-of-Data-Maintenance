@@ -2,7 +2,7 @@
 
 ## Or: How to Ask Your Data Questions Before It Lies to Your Face
 
-A demand-forecasting team I worked with at an energy company had a model that worked. For two years it had forecast next-day electricity demand across a few hundred thousand metered customers, feeding a day-ahead procurement system that bought power on the wholesale market. When the forecast was right, the company bought roughly what it needed. When it was wrong, it either over-procured and ate the loss on resale, or under-procured and bought the shortfall at punitive real-time prices. For two years the forecast had been right often enough that nobody thought about it. Green dashboard. Boring MAPE. Life was good.
+A demand-forecasting team at an energy company had a model that worked. For two years it had forecast next-day electricity demand across a few hundred thousand metered customers, feeding a day-ahead procurement system that bought power on the wholesale market. When the forecast was right, the company bought roughly what it needed. When it was wrong, it either over-procured and ate the loss on resale, or under-procured and bought the shortfall at punitive real-time prices. For two years the forecast had been right often enough that nobody thought about it. Green dashboard. Boring MAPE. Life was good.
 
 Then the meter vendor changed. Not all at once—that would have been easy to catch. They did the responsible thing and ran a rolling migration: a few regions at a time, over about six weeks. The new meters reported consumption on a slightly different basis than the old ones, under the same field name, with the same plausible-looking numbers. The schema didn't change. Every unit test passed, because every value was a valid floating-point number in a sensible range. The ingestion pipeline didn't blink. The quality gates—and unlike most teams, this one actually *had* quality gates, null checks and range checks and the works—waved it right through.
 
@@ -22,7 +22,7 @@ Exploratory data analysis is the discipline of *thoughtfully* refusing that assu
 
 ## 6.1 The Philosophy and Methodology of EDA
 
-John Tukey coined "exploratory data analysis" in 1977, and the term has since been buried under a half-century of reverent textbook treatment that mostly misses the point. EDA is not a checklist of plots or a boilerplate `df.describe()` cell at the top of every notebook that everyone runs and nobody reads. It is an *adversarial* activity—the data equivalent of a security red team. You are not admiring your data; you are interrogating a suspect who has every incentive to lie to you.
+John Tukey had been arguing for this since the early 1960s and published the book that named it, *Exploratory Data Analysis*, in 1977. The term has since been buried under a half-century of reverent textbook treatment that mostly misses the point. EDA is not a checklist of plots or a boilerplate `df.describe()` cell at the top of every notebook that everyone runs and nobody reads. It is an *adversarial* activity—the data equivalent of a security red team. You are not admiring your data; you are interrogating a suspect who has every incentive to lie to you.
 
 If you think of EDA as decoration—pretty charts to put in the project kickoff deck—you'll generate a dozen seaborn defaults, nod at them, and move on. If you think of EDA as investigation, you'll ask: *what would this data look like if it were broken in a way I haven't noticed yet, and have I actually ruled that out?*
 
@@ -49,7 +49,7 @@ df.describe(include='all')    # ranges, and the first place numbers look insane
 df.duplicated().sum()         # how many rows are literally repeated?
 ```
 
-While these are pretty simple, I have found these six lines to give quite a bit of tell and to be quite reusable. The first thing YOU should do is form your own, for your datasets and your business. Build that into a repeatable runbook, and run them before you do anything else. Read them like a detective, because each one has a specific tell, and whether or not you decide to use mine, you should have a line or two that gets you up to speed on each of the below.
+Simple as they are, those six lines carry a lot of tell, and they're reusable across almost anything. The first thing YOU should do is build your own version, for your datasets and your business. Put it in a repeatable runbook and run it before you do anything else. Read the output like a detective, because each line has a specific tell. Whatever your own six lines end up being, you want something that gets you up to speed on each of the following.
 
 **Shape**: What is the actual shape of your data? You expected 4.2 million rows and got 12.6 million? You probably have a join explosion (more on that in a moment). You expected 200 columns and got 47? Somebody's export silently truncated. The number that's wrong by a suspicious *multiple*—exactly 2x, exactly 3x—is a join fanout until proven innocent.
 
@@ -57,7 +57,7 @@ While these are pretty simple, I have found these six lines to give quite a bit 
 
 **Null rates**: Are you seeing more holes in your data than you would be expecting? These are not interesting in aggregate; they're interesting in *pattern*. A column that's 4% null is a shrug. A column that's 4% null where the nulls are all concentrated in your highest-value customers is a catastrophe doing a convincing impression of a shrug—and triage won't tell you that, but it tells you *where to look*, which is the point. (The full taxonomy of missingness—MCAR, MAR, MNAR—is Chapter 10's job; right now you're just noticing that the holes exist.)
 
-**Cardinality**: Is your data falling into the distribution patterns you expect? Both extremes can be a sign to investigate further. A column with cardinality 1 is a column that contains exactly one value—it's dead weight, and worse, it's often the fingerprint of a filter you didn't know was applied ("oh, this extract is only the US region"). A column with cardinality equal to the row count is either a genuine unique key or, very often, *not* the unique key you think it is. Which brings us to the most common gotcha in this entire section: **the ID that isn't unique.** You assume `customer_id` is one row per customer. You build a pipeline on that assumption. You're wrong—there are 1.03 IDs per row because of a historical merge—and now every aggregation you do is subtly off. Check it. `df.customer_id.is_unique` is one line. The absence of that one line has cost more than I'd care to total up.
+**Cardinality**: Is your data falling into the distribution patterns you expect? Both extremes can be a sign to investigate further. A column with cardinality 1 is a column that contains exactly one value—it's dead weight, and worse, it's often the fingerprint of a filter you didn't know was applied ("oh, this extract is only the US region"). A column with cardinality equal to the row count is either a genuine unique key or, very often, *not* the unique key you think it is. Which brings us to the most common gotcha in this entire section: **the ID that isn't unique.** You assume `customer_id` is one row per customer. You build a pipeline on that assumption. You're wrong—a historical merge left you with 1.03 rows per customer—and now every aggregation you do is subtly off. Check it. `df.customer_id.is_unique` is one line. The absence of that one line has cost more than anyone has bothered to total up.
 
 The last two lines—descriptions and duplicates—are much more specific to your business, and fall into automated profiling. Tools like ydata-profiling (the library formerly known as pandas-profiling), or the lightweight `whylogs` we met in Chapter 5, will generate a gorgeous HTML report with every distribution, every correlation, every null pattern, all of it. Use them—they're genuinely a good accelerant. But understand where they lie. Automated profilers are *comprehensive*, which is exactly their weakness: a 500-column report that flags everything flags nothing, because no human reads 500 columns of warnings. They also choke or sample silently on large data, so the "distribution" you're admiring may be a distribution of the first 100,000 rows, sorted by upload date, which means it's January and you're missing the entire year. The report is a starting point for your attention, not a substitute for it. The profiler tells you *what's there*. Only you can decide *what matters*, and deciding what matters is the entire job.
 
@@ -150,7 +150,9 @@ for col in features:
         pass
 ```
 
-Any single column over 0.95 is guilty until proven innocent. The feature that looks like magic is the feature that's reading the answer key.
+One caveat on the code above: for unordered categorical columns, `cat.codes` imposes an arbitrary order, so a high AUC there tells you less than it does for a genuine numeric. Treat categoricals as a prompt to plot the target rate per category rather than as a verdict.
+
+Any single numeric column over 0.95 is guilty until proven innocent. The feature that looks like magic is the feature that's reading the answer key.
 
 ---
 
@@ -158,7 +160,7 @@ Any single column over 0.95 is guilty until proven innocent. The feature that lo
 
 ### Exercise 1: Profile a Dataset Cold (Time: ~45 minutes)
 
-Take a dataset you've *never* looked at—ideally one a colleague swears is clean. Run the 60-second triage and the three plots. Then write one paragraph: "Here's what's wrong with this data." I have never once seen this exercise come back empty. If yours does, you didn't look hard enough—go plot the histograms on a log scale.
+Take a dataset you've *never* looked at—ideally one a colleague swears is clean. Run the 60-second triage and the three plots. Then write one paragraph: "Here's what's wrong with this data." This exercise does not come back empty. If yours does, you didn't look hard enough—go plot the histograms on a log scale.
 
 ### Exercise 2: Catch a Statistic in a Lie (Time: ~30 minutes)
 
