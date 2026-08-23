@@ -9,11 +9,11 @@
 *The mindset shift: why data beats algorithms, and what that means for how you work.*
 
 - 1.1 Andrew Ng's Paradigm Shift: Why "Good Data Beats Big Data"
-- 1.2 The "Garbage In, Garbage Out" Principle: Modern Horror Stories
+- 1.2 The "Garbage In, Garbage Out" Principle: A Modern Horror Story
 - 1.3 Data-Centric vs Model-Centric: The Middle Path
 - 1.4 What Data-Centric Actually Means in Practice
-- 1.5 Learning from Failures: The Hall of Shame (and Fame)
-- 1.6 What's Next: The Economics of Getting This Wrong (bridge to Chapter 4)
+- 1.5 Learning from Failures: The Hall of Shame (And Fame)
+- 1.6 What's Next: The Price of Getting This Wrong
 
 ### Chapter 2: Data Types and the Structure Spectrum
 
@@ -21,12 +21,12 @@
 
 *The fundamental building blocks: what data actually is, how it lies to you, and how to catch it.*
 
-- 2.1 The Great Data Type Disaster (ZIP codes, product IDs, and other numerical lies)
-- 2.2 Structured vs Unstructured: The Real Trade-offs Nobody Tells You
+- 2.1 The Great Data Type Disaster
+- 2.2 Structured vs Unstructured: The Real Trade-offs
 - 2.3 The Four Horsemen of "Structured" Data Failure
-- 2.4 Making Peace with Unstructured Data (when NOT to structure)
-- 2.5 Type Conversion Disasters: A Cookbook of What Not to Do
-- 2.6 The Type Safety Checklist (practical validation)
+- 2.4 Making Peace with Unstructured Data
+- 2.5 Type Conversion Disasters: A Field Guide
+- 2.6 The Type Safety Checklist
 
 ### Chapter 3: File Formats: Choosing Your Poison
 
@@ -38,7 +38,7 @@
 - 3.2 Parquet: When You Need Speed and Have Trust Issues
 - 3.3 Apache Arrow: From Conversion Hell to Zero-Copy Bliss
 - 3.4 The Format Wars: Lakehouse, Lance, and What's Coming
-- 3.5 Format Selection: A Decision Framework (without the template bullshit)
+- 3.5 Format Selection: A Decision Framework
 
 ### Chapter 4: The Hidden Costs of Data
 
@@ -46,10 +46,10 @@
 
 *The economics nobody talks about: why that "quick fix" costs $50K/month.*
 
-- 4.1 The Iceberg of Data Costs (what you see vs. what kills you)
+- 4.1 The Iceberg of Data Costs
 - 4.2 Developer Time: The Most Expensive Resource You're Wasting
 - 4.3 Infrastructure and Storage: When Bytes Become Budgets
-- 4.4 The Metadata and Lineage Crisis (cost of lost context)
+- 4.4 The Metadata and Lineage Crisis
 - 4.5 Pipeline Stability: Brittle ETL and Cascading Failures
 - 4.6 Data Quality Debt: Compound Interest on Bad Decisions
 - 4.7 ROI Calculations That Will Make Your CFO Cry (Happy Tears)
@@ -59,34 +59,51 @@
 
 ### Chapter 5: Data Acquisition and Quality Frameworks
 
-- 5.1 Data Sourcing Strategies: APIs, Scraping, Partnerships, and Synthetic Data
-- 5.2 Synthetic Data Generation: GPT-4, Diffusion Models, and Privacy Preservation
-- 5.3 Data Quality Dimensions: Accuracy, Completeness, Consistency, Timeliness, Validity, Uniqueness
-- 5.4 Metadata Standards: Descriptive, Structural, and Administrative
-- 5.5 Data Versioning with DVC and MLflow: Reproducibility at Scale
-- 5.6 Data Lineage and Provenance: Apache Atlas and DataHub
+**[Read Chapter 5](Chapter_000000005/content.md)**
+
+*Where your data comes from, whether any of it can be trusted, and how to write that down before it matters.*
+
+- 5.1 The Acquisition Hierarchy: Where Data Actually Comes From
+- 5.2 The Six Dimensions of Data Quality
+- 5.3 Building a Quality Assessment Framework
+- 5.4 Data Contracts: The Missing Link
+- 5.5 Metadata: The Context That Makes Data Usable
+- 5.6 Data Versioning and Lineage
+- 5.7 The Acquisition Audit: A Practical Framework
 
 ### Chapter 6: Exploratory Data Analysis: The Art of Investigation
 
+**[Read Chapter 6](Chapter_000000006/content.md)**
+
+*Asking your data questions before you make demands of it—and catching the lies the summary statistics tell.*
+
 - 6.1 The Philosophy and Methodology of EDA
-- 6.2 Visual Learning Approaches: Interactive Visualizations with D3.js and Observable
-- 6.3 Data Profiling and Statistical Analysis
-- 6.4 Automated EDA Tools and Libraries
-- 6.5 Pattern Recognition and Anomaly Detection in EDA
-- 6.6 Documenting and Communicating Findings
+- 6.2 Profiling Before Plotting
+- 6.3 Distributions and the Lies of Summary Statistics
+- 6.4 Relationships, Leakage, and Anomalies
+- 6.5 EDA When the Data Won't Fit on Your Laptop
+- 6.6 Documenting and Communicating What You Found
 
 ### Chapter 7: Data Labeling and Annotation
 
+**[Read Chapter 7](Chapter_000000007/content.md)**
+
+*Your ground truth is somebody's opinion. The work is making it a consistent one.*
+
 - 7.1 Label Consistency: The Foundation of Model Performance
-- 7.2 Annotation Strategies: In-house, Crowdsourcing, and Programmatic
-- 7.3 Quality Control: Inter-annotator Agreement and Validation
+- 7.2 Annotation Strategies: In-House, Crowdsourcing, and Programmatic
+- 7.3 Quality Control: Inter-Annotator Agreement and Validation
 - 7.4 Active Learning and Smart Labeling Strategies
-- 7.5 Weak Supervision and Snorkel Framework
+- 7.5 Weak Supervision and the Snorkel Framework
 - 7.6 Edge Cases Documentation and Management
 
 ## Part III: Modern Data Architecture and Storage
 
 ### Chapter 8: Data Architecture Patterns
+
+**[Read Chapter 8](Chapter_000000008/content.md)**
+
+*Warehouses, lakes, and lakehouses—and why two correct pipelines hand you two different numbers.*
 
 - 8.1 Warehouses vs Lakes vs Lakehouses
 - 8.2 Lambda vs Kappa: The Two-Codebases Tax
@@ -96,6 +113,10 @@
 - 8.6 Choosing the Right Architecture for Your Scale
 
 ### Chapter 9: Feature Stores and Data Platforms
+
+**[Read Chapter 9](Chapter_000000009/content.md)**
+
+*Train/serve skew, and the whole category of infrastructure the industry built to stop it.*
 
 - 9.1 Feature Store Architecture: Offline and Online Serving
 - 9.2 Core Components: Feature Registry, Storage, and Serving Layers
@@ -109,6 +130,10 @@
 
 ### Chapter 10: Handling Missing Data and Imputation
 
+**[Read Chapter 10](Chapter_000000010/content.md)**
+
+*Nulls are evidence. What produced them decides whether you're allowed to fill them in.*
+
 - 10.1 Understanding Missingness Mechanisms: MCAR, MAR, MNAR
 - 10.2 Simple to Advanced Imputation Strategies
 - 10.3 Deep Learning Approaches to Missing Data
@@ -118,6 +143,10 @@
 
 ### Chapter 11: Outlier Detection and Treatment
 
+**[Read Chapter 11](Chapter_000000011/content.md)**
+
+*Telling the outlier that's a data error from the outlier that is the entire business.*
+
 - 11.1 Defining Outliers: Statistical vs Domain-Based Approaches
 - 11.2 Univariate and Multivariate Detection Methods
 - 11.3 Machine Learning-Based Anomaly Detection
@@ -126,6 +155,10 @@
 - 11.6 Real-time Outlier Detection Systems
 
 ### Chapter 12: Data Transformation and Scaling
+
+**[Read Chapter 12](Chapter_000000012/content.md)**
+
+*Scaling, skew, and the transformations that change what your model is predicting without telling you.*
 
 - 12.1 Feature Scaling: Algorithm Requirements and Performance Impact
 - 12.2 Core Scaling Techniques and When to Use Them

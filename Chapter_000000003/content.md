@@ -2,9 +2,9 @@
 
 ## Or: How JSON Became Everyone's Problem and Nobody's Solution
 
-**In 2020, the mpv media player discovered that YouTube's API would sometimes return the string "no" instead of null for missing values - but only for Norwegian users. Why? Because "no" is the Norwegian language code, and somewhere deep in Google's stack, a helpful library was "localizing" null values.**
+**In 2020, the mpv media player discovered that YouTube's API would sometimes return the string "no" instead of null for missing values—but only for Norwegian users. Why? Because "no" is the Norwegian language code, and somewhere deep in Google's stack, a helpful library was "localizing" null values.**
 
-Chapter 2 was about data types - the conceptual lie that a ZIP code is a number. This chapter is about file formats - the *mechanical* lies that determine how data gets stored, moved, and inevitably corrupted.
+Chapter 2 was about data types—the conceptual lie that a ZIP code is a number. This chapter is about file formats—the *mechanical* lies that determine how data gets stored, moved, and inevitably corrupted.
 
 File formats are the shipping containers of the data world. You can have perfect cargo, but put it in the wrong container and it arrives damaged. Put it in the right container with the wrong manifest and nobody knows what they've got. The best data in the world is worthless if it's stored in a format that lies about its contents.
 
@@ -44,7 +44,7 @@ The irony? JSON was supposed to be the simple alternative to XML. Crockford's de
 }
 ```
 
-Which of these is the actual price? Trick question - they're ALL prices from real APIs. One system considered `"false"` to mean "price not yet determined." That string `"false"` is truthy in most programming languages, by the way.
+Which of these is the actual price? Trick question—they're ALL prices from real APIs. One system considered `"false"` to mean "price not yet determined." That string `"false"` is truthy in most programming languages, by the way.
 
 ### The Enterprise Anti-Pattern Hall of Fame
 
@@ -245,18 +245,19 @@ feb_data = pq.read_table(
 # Only reads ~8% of the file from disk
 ```
 
-## Real-World Performance: What Actually Changed
+### Real-World Performance: What Actually Changed
 
 Uber's analytics infrastructure shows what Parquet enables at scale. Their platform stores [256 petabytes of data](https://www.ibm.com/think/news/uber-presto) and processes 35 petabytes daily, supporting over 500,000 queries per day from 12,000 monthly active users. When they transitioned [from JSON to Parquet](https://www.uber.com/blog/uber-big-data-platform/) to store schema and data together, they eliminated the vulnerability to upstream data format changes that plagued their first-generation platform. Their custom Parquet reader delivers [2-10x speedup](https://www.uber.com/blog/presto/) over the original open-source reader—the difference between analysts waiting for results and getting them before their coffee cools.
 
 The columnar magic works because reading 3 columns from a 200-column dataset means touching 1.5% of the data instead of all of it. As one [industry analysis notes](https://edgedelta.com/company/blog/parquet-data-format), Parquet's efficiency can cut query costs by up to 90%—less data read means more money saved. Storage typically runs 2x to 5x smaller than JSON or CSV equivalents, with some workloads seeing 75-90% compression versus CSV.
 
-## When Parquet Saves Your Ass (and When It Doesn't)
+### When Parquet Saves Your Ass (and When It Doesn't)
+
 Parquet shines when you're reading specific columns across millions of rows—the classic analytics pattern. Data warehouses, cloud-native workflows, anything where you write once and query endlessly. The compression alone can cut your S3 bill in half.
 
 But Parquet is immutable. You can't append a row; you rewrite the whole file. Streaming pipelines need Avro. If your analysts live in Excel, they'll revolt—you can't double-click a Parquet file. And for datasets under 100MB? CSV is fine. Don't overcomplicate things.
 
-## Parquet Optimization Tips
+### Parquet Optimization Tips
 
 Parquet, like SO MANY projects, has a litany of configuration options. 
 
@@ -369,7 +370,7 @@ The industry has spent the last decade learning an expensive lesson: no single d
 
 Data warehouses (Snowflake, BigQuery) and data lakes (S3, ADLS) are merging into "lakehouses" that provide structured queries over unstructured storage. This isn't a marketing trend; it's a survival response to an architectural contradiction that's been bleeding companies dry for a decade.
 
-The problem: warehouses give you fast, governed queries but charge by the byte. At scale, bills can hit $50K/month and keep climbing without even breaking a sweat. So companies dump raw data into cheap object storage instead, but then need armies of engineers to make that data queryable, reliable, and not a governance nightmare. Most enterprises ended up running both: a warehouse for the data people actually trusted, a lake for everything else, and a fragile pipeline stitching them together. Double the infrastructure, double the engineering burden, and analysts still couldn't get answers without a three-week ETL request.
+The problem: warehouses give you fast, governed queries but charge by the byte. At scale, bills can hit $120K/month and keep climbing without even breaking a sweat. So companies dump raw data into cheap object storage instead, but then need armies of engineers to make that data queryable, reliable, and not a governance nightmare. Most enterprises ended up running both: a warehouse for the data people actually trusted, a lake for everything else, and a fragile pipeline stitching them together. Double the infrastructure, double the engineering burden, and analysts still couldn't get answers without a three-week ETL request.
 
 Lakehouses collapse this into one layer. Open formats like Iceberg and Hudi add ACID transactions, schema enforcement, and time travel directly on top of S3-priced storage. You get warehouse semantics at lake economics.
 
@@ -444,7 +445,7 @@ After all the theory, here's what actually matters when choosing formats:
 
 **2. How big is the data?**
 - Under 100MB → Whatever's convenient
-- 100MB - 10GB → Parquet with compression
+- 100MB—10GB → Parquet with compression
 - Over 10GB → Parquet with partitioning
 - Over 1TB → Parquet with partitioning AND a data catalog
 
@@ -505,7 +506,7 @@ def detect_and_load(file_path):
 
 ## Your Homework
 
-### Exercise 1: The Format Audit (30 minutes)
+### Exercise 1: The Format Audit (Time: ~30 minutes)
 
 List every file format in your data pipeline. For each one, answer:
 1. Why was this format chosen?
@@ -514,7 +515,7 @@ List every file format in your data pipeline. For each one, answer:
 
 I bet at least one format is "because that's how we've always done it."
 
-### Exercise 2: The Compression Test (15 minutes)
+### Exercise 2: The Compression Test (Time: ~15 minutes)
 
 Take your largest dataset and try different formats:
 ```python
@@ -533,7 +534,7 @@ for f in ['test.csv', 'test_snappy.parquet', 'test_zstd.parquet', 'test_gzip.par
     print(f"{f}: {os.path.getsize(f) / 1024 / 1024:.1f} MB")
 ```
 
-### Exercise 3: The JSON Horror Hunt (20 minutes)
+### Exercise 3: The JSON Horror Hunt (Time: ~20 minutes)
 
 Find a JSON API you use regularly. Look for:
 - Numbers stored as strings
@@ -543,13 +544,13 @@ Find a JSON API you use regularly. Look for:
 
 Document at least three issues. Consider sending the API maintainers a polite note.
 
-## Parting Thoughts
+## Bridge to Chapter 4
 
-File formats are like plumbing - invisible when they work, catastrophic when they don't. JSON will keep lying to you, CSV will keep losing your types, and Parquet will keep saving your analytics team's sanity.
+File formats are like plumbing—invisible when they work, catastrophic when they don't. JSON will keep lying to you, CSV will keep losing your types, and Parquet will keep saving your analytics team's sanity.
 
 The format wars aren't going away. New formats will emerge, old formats will persist long past their expiration date, and you'll spend more time than you'd like converting between them. The best you can do is understand the trade-offs and choose deliberately.
 
-Remember that 1:4 ratio from Chapter 1? One hour of model fiddling, four hours on data? Here's the uncomfortable truth: most teams get this backwards, and the cost isn't theoretical. Chapter 4 is where your CFO either cries happy tears or starts asking pointed questions about why you've been doing it wrong. We're finally talking about money—the hidden costs of bad data decisions, the ROI of getting this right, and how to make the business case for all the infrastructure work we've been discussing.
+Remember that 1:4 ratio from Chapter 1? One hour of model fiddling, four hours on data? Most teams get this backwards, and the cost isn't theoretical. Chapter 4 is where your CFO either cries happy tears or starts asking pointed questions about why you've been doing it wrong. We're finally talking about money: where the hidden costs hide on your cloud bill and your engineers' calendars, and what this work turns out to be worth once somebody finally prices it.
 
 Until then, go check how your data is actually stored. I promise you'll find at least one format decision that makes you question your predecessors' sanity.
 

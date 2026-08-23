@@ -24,7 +24,7 @@ This isn't the label quality problem from Chapter 1—those shoes were at least 
 
 Because the model had been performing so well on validation data, no one thought to triple-check. One week later, they discovered they'd auto-ordered 50,000 units of toilet paper for their jewelry department.
 
-What's the failure here? In many ways, this is a "happy case" - at least the pipeline didn't crash, the system didn't error out, and nobody woke up at 3 AM to figure out why the website was down.
+What's the failure here? In many ways, this is a "happy case"—at least the pipeline didn't crash, the system didn't error out, and nobody woke up at 3 AM to figure out why the website was down.
 
 On the other hand, this is the worst of all possible worlds. The error went through ALL the systems with no warnings. You're going to spend hours (days? months?!) debugging it because you're not getting ANY signal about what to do next.
 
@@ -45,7 +45,7 @@ Perfectly Structured                                                  Complete C
 
 > **Figure 2.1**: *The Data Structure Spectrum. From perfectly structured SQL on the left to complete chaos (your nephew's crayon drawings) on the right, with the dangerous "semi-structured" DMZ in the middle where JSON and XML pretend to be organized.*
 
-The key insight isn't where your data sits on this spectrum - it's understanding that **structure is a promise that can be broken**.
+The key insight isn't where your data sits on this spectrum—it's understanding that **structure is a promise that can be broken**.
 
 That CSV file? It promises columns will align. That promise gets broken every time someone opens it in Excel and saves it with "helpful" formatting. That JSON API? It promises consistent schemas. That promise gets broken when the upstream team "just adds a field real quick." That SQL table? It promises type safety. That promise gets broken when someone creates a VARCHAR(MAX) column called "misc_data" because they didn't want to think about schema design.
 
@@ -190,7 +190,7 @@ Before you structure anything, run this calculation:
 | Scanned PDFs         | $$$$         | Weeks           | 50%                | High        |
 | Doctor's Handwriting | $$$$$        | Months          | Prayer             | ∞           |
 
-If the equation doesn't turn out to be ROI positive, it's **perfectly acceptable** - even preferable - to leave data in its raw, unstructured form until you actually need it. Add some metadata about the ingestion and a pointer to the raw form, and you're already on a successful path.
+If the equation doesn't turn out to be ROI positive, it's **perfectly acceptable** - even preferable—to leave data in its raw, unstructured form until you actually need it. Add some metadata about the ingestion and a pointer to the raw form, and you're already on a successful path.
 
 ### An E-Commerce Example: Selective Structure
 
@@ -220,9 +220,9 @@ event:
 
 **Structured fields** are those we need immediately for financial reporting, conversion funnel analysis, payment processing. These have strict validation rules, defined enumerations, and clear data types.
 
-**Unstructured metadata** includes everything else that might be valuable but lacks a current use case - device information, campaign parameters, product details we're not yet analyzing.
+**Unstructured metadata** includes everything else that might be valuable but lacks a current use case—device information, campaign parameters, product details we're not yet analyzing.
 
-When a new use case emerges - say, analyzing conversion rates by screen resolution - we can promote `screen_resolution` to a structured field with proper validation. Until then, it lives happily in the unstructured metadata, consuming minimal resources and requiring no maintenance.
+When a new use case emerges—say, analyzing conversion rates by screen resolution—we can promote `screen_resolution` to a structured field with proper validation. Until then, it lives happily in the unstructured metadata, consuming minimal resources and requiring no maintenance.
 
 ## 2.5 Type Conversion Disasters: A Field Guide
 
@@ -246,7 +246,7 @@ When you cast these to boolean in most languages, you get chaos. The string "fal
 
 Your fraud detection model just learned that "is_fraud = false" means definitely fraud.
 
-**The prevention:** Avoid casting, particularly with limited categories, to ANYTHING without explicit mapping, and VERY sane defaults. For boolean, for example, build a lookup table that handles every representation in your data: true/false, t/f, yes/no, y/n, 1/0, and their various capitalizations - do NOT rely on upstream to handle this (e.g. "don't worry, we're only going to get handed lower case"). Anything not in your lookup should raise an error, not silently convert. And check your data often on errors!
+**The prevention:** Avoid casting, particularly with limited categories, to ANYTHING without explicit mapping, and VERY sane defaults. For boolean, for example, build a lookup table that handles every representation in your data: true/false, t/f, yes/no, y/n, 1/0, and their various capitalizations—do NOT rely on upstream to handle this (e.g. "don't worry, we're only going to get handed lower case"). Anything not in your lookup should raise an error, not silently convert. And check your data often on errors!
 
 ### The Date That Broke Everything
 
@@ -290,7 +290,7 @@ Also check the uniqueness ratio. If more than 95% of values are unique, you're p
 
 Examine every column typed as string/object. Try converting each to numeric. If the conversion succeeds without errors, you've found a number hiding as text.
 
-This happens constantly with data imported from CSVs or JSON where everything comes in as strings. Revenue figures, quantities, prices - all sitting there as text, unable to be aggregated or compared.
+This happens constantly with data imported from CSVs or JSON where everything comes in as strings. Revenue figures, quantities, prices—all sitting there as text, unable to be aggregated or compared.
 
 ### Step 3: Identify Dates Stored as Strings
 
@@ -318,7 +318,7 @@ Sentinel values (999, -1, 9999-12-31) hiding in your data will corrupt every sta
 
 ### Step 6: Check Categorical Cardinality
 
-For categorical columns, count the unique values. If you expect 5 categories and find 50, something's wrong - probably inconsistent capitalization, leading/trailing spaces, or typos creating phantom categories.
+For categorical columns, count the unique values. If you expect 5 categories and find 50, something's wrong—probably inconsistent capitalization, leading/trailing spaces, or typos creating phantom categories.
 
 ### The Conversion Strategy
 
@@ -326,7 +326,7 @@ When you find type problems, fix them with intention, not automation. Each type 
 
 **Categorical conversions** (IDs, ZIP codes, SKUs): Always convert through string first to preserve leading zeros and formatting, then to category type for memory efficiency.
 
-**Numeric conversions** (prices, quantities, measurements): Strip non-numeric characters before conversion. Use error handling that surfaces bad data as NULL rather than crashing - you need to SEE what didn't convert.
+**Numeric conversions** (prices, quantities, measurements): Strip non-numeric characters before conversion. Use error handling that surfaces bad data as NULL rather than crashing—you need to SEE what didn't convert.
 
 **Datetime conversions** (dates, timestamps): Try explicit format strings in order of likelihood for your data source. Only fall back to flexible parsing after explicit formats fail, and log everything that required inference.
 
@@ -362,7 +362,7 @@ The ten minutes you spend documenting now saves hours of archaeology later. And 
 
 ## Your Homework
 
-### Exercise 1: The Type Audit (30 minutes)
+### Exercise 1: The Type Audit (Time: ~30 minutes)
 
 Take a dataset you're currently working with and examine every column. For each one, answer three questions:
 
@@ -374,7 +374,7 @@ Now compare what the tool inferred against what the data actually IS. Count the 
 
 If you find more than three columns with wrong types, you have real work to do before any modeling. If you find zero, you're either lying or you haven't looked hard enough. Every dataset I've ever audited had at least one type problem.
 
-### Exercise 2: The Structured vs Raw Decision (20 minutes)
+### Exercise 2: The Structured vs Raw Decision (Time: ~20 minutes)
 
 Pick one unstructured data source in your organization. Answer these questions:
 1. What structured fields do we actually USE from this data today?
@@ -383,7 +383,7 @@ Pick one unstructured data source in your organization. Answer these questions:
 
 If the answers are "not much," "a lot," and "most of it," consider whether you're over-engineering.
 
-### Exercise 3: The Four Horsemen Hunt (45 minutes)
+### Exercise 3: The Four Horsemen Hunt (Time: ~45 minutes)
 
 Load a dataset you trust. Try to find examples of each horseman:
 1. **Structural lies**: Files that don't parse cleanly
@@ -393,7 +393,7 @@ Load a dataset you trust. Try to find examples of each horseman:
 
 I guarantee you'll find at least two.
 
-## Parting Thoughts
+## Bridge to Chapter 3
 
 Data types seem boring until they're not. The difference between a ZIP code as a number and a ZIP code as a category is the difference between a working model and a $4.2M toilet paper order.
 

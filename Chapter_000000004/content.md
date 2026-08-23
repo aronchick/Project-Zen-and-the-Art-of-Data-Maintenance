@@ -92,7 +92,7 @@ The [2022 State of Data Quality survey](https://www.montecarlodata.com/blog-2022
 - **793 engineering hours monthly** per company spent firefighting
 - **58% said incidents increased** over the prior year as pipelines grew more complex
 
-The business impact extends beyond wasted engineering time. Survey respondents estimated that poor data quality affects 26% of their company's revenue - a figure that climbed to 31% in the 2023 follow-up survey. Perhaps most damning: 74% reported that business stakeholders identify data issues before the data team does, "all or most of the time." Your CFO shouldn't be your primary data quality monitoring system.
+The business impact extends beyond wasted engineering time. Survey respondents estimated that poor data quality affects 26% of their company's revenue—a figure that climbed to 31% in the 2023 follow-up survey. Perhaps most damning: 74% reported that business stakeholders identify data issues before the data team does, "all or most of the time." Your CFO shouldn't be your primary data quality monitoring system.
 
 The cost math is straightforward and brutal. At a fully-loaded cost of $150/hour for a senior engineer, a 10-person data team spending 40% of their time on debugging burns $1.2 million annually. 
 
@@ -119,7 +119,7 @@ Even worse are the truly *hidden* costs: the cognitive load of context switching
 
 [Gloria Mark's research at UC Irvine](https://www.ics.uci.edu/~gmark/chi08-mark.pdf) quantified what every engineer feels intuitively: it takes an average of 23 minutes and 15 seconds to fully regain focus after an interruption. Not "get back to work"—*regain focus*. Carnegie Mellon found that for complex cognitive tasks like debugging distributed systems, that recovery time extends to 45 minutes. Every time someone pings your data engineer with "hey, these numbers look wrong," you're not just stealing an hour of their time. You're stealing the hour before and the hour after.
 
-The math gets worse when you realize what context switching actually destroys. When an engineer is deep in building a new feature - holding the data model, the edge cases, the integration points all in working memory—a Slack message about a data discrepancy doesn't just interrupt them. It *evicts* that entire mental model. They have to rebuild it from scratch when they return, assuming they return at all. Mark's research found that interrupted workers visited an average of 2.3 other tasks before getting back to their original work, if they got back at all.
+The math gets worse when you realize what context switching actually destroys. When an engineer is deep in building a new feature—holding the data model, the edge cases, the integration points all in working memory—a Slack message about a data discrepancy doesn't just interrupt them. It *evicts* that entire mental model. They have to rebuild it from scratch when they return, assuming they return at all. Mark's research found that interrupted workers visited an average of 2.3 other tasks before getting back to their original work, if they got back at all.
 
 Here's what a single "quick question" about data quality actually costs:
 
@@ -566,7 +566,7 @@ The [CrowdFlower Data Science Report (2016)](https://visit.figure-eight.com/rs/4
 
 ## Your Homework
 
-### Exercise 1: The True Cost Audit (Time: 3 hours)
+### Exercise 1: The True Cost Audit (Time: ~3 hours)
 
 For one week, track every hour your team spends on:
 - Debugging data issues
@@ -576,7 +576,7 @@ For one week, track every hour your team spends on:
 
 Convert to dollars. Present to leadership. Watch their faces.
 
-### Exercise 2: The Top 3 Money Pits (Time: 2 hours)
+### Exercise 2: The Top 3 Money Pits (Time: ~2 hours)
 
 Identify the three most expensive recurring data problems:
 1. What breaks most often?
@@ -585,7 +585,7 @@ Identify the three most expensive recurring data problems:
 
 For each: estimate annual cost, estimate fix cost, calculate ROI.
 
-### Exercise 3: The CFO Presentation (Time: 4 hours)
+### Exercise 3: The CFO Presentation (Time: ~4 hours)
 
 Build a one-page business case:
 - Current state: cost and performance
@@ -595,7 +595,7 @@ Build a one-page business case:
 
 Pro tip: CFOs love conservative estimates that you can exceed. Under-promise, over-deliver.
 
-## Parting Thoughts
+## Bridge to Part II
 
 Data quality work isn't glamorous. You won't get conference talks about how you labeled things correctly. Your Kaggle ranking won't improve from documenting your transformations.
 

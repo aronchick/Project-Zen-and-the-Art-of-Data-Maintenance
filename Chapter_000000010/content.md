@@ -2,9 +2,9 @@
 
 ## Or: The Hole Is the Message
 
-A hospital system has eleven facilities, a bit under 400,000 admissions a year, and has built a thirty-day readmission risk model. The purpose is a a care-management program with twelve nurses who call discharged patients, walk through their medications, and made sure someone had actually booked the follow-up appointment. Nurses are expensive and there were twelve of them. So, like so many things nowadays, they decided to use a model to decide who got the call.
+A hospital system with eleven facilities and a bit under 400,000 admissions a year built a thirty-day readmission risk model. The point of it was a care-management program: twelve nurses who called discharged patients, walked through their medications, and made sure someone had actually booked the follow-up appointment. Nurses are expensive and there were twelve of them. So, like so many things nowadays, they decided to use a model to decide who got the call.
 
-With a metric ton of data, they built it. Everything - EHR. Demographics, diagnosis codes, length of stay, prior admission history, and about sixty lab values - all went in, and it all validated respectably. Area under the curve (AUC) was 0.72, which for readmission is a perfectly credible number (readmission is really hard to predict). Then they shipped it, and nurses started working the list every morning.
+With a metric ton of data, they built it. Everything—EHR. Demographics, diagnosis codes, length of stay, prior admission history, and about sixty lab values—all went in, and it all validated respectably. Area under the curve (AUC) was 0.72, which for readmission is a perfectly credible number (readmission is really hard to predict). Then they shipped it, and nurses started working the list every morning.
 
 Eight months later, readmissions had not moved... at all. The program came up for renewal and the CFO asked a reasonable question about what $1.4 million of nursing salary had purchased.
 
@@ -14,7 +14,7 @@ The answer was one line in the preprocessing script:
 df = df.fillna(df.median())
 ```
 
-For those that don't know python, what this meant was that a whole lot of content in the data was being excluded because it was empty. But just that ENTRY was empty, the patient had everything else there. In most cases, this is the exact right thing to do! But in a medical scenario, they're missing a ton of information.
+For those who don't know Python, that line finds every empty cell in the table and writes the column's median value into it. Just that ENTRY was empty, mind you—the patient had everything else. And in most cases, patching a hole with a typical value is the exact right thing to do! In a hospital, it is close to the worst thing you can do.
 
 In this case, roughly 40% of the lab values were missing because nobody ordered the test. Which is not at all uncommon because in a hospital, nobody orders a test at random. A serum albumin gets drawn when a clinician is worried about nutrition. A lactate gets drawn when someone is worried about sepsis. The *existence* of that test is a physician's judgment about a patient, written into the record, for free.
 
@@ -22,25 +22,25 @@ So the null in that column was not an absence of information. It was a doctor sa
 
 As a result, it broke in both directions at once. Patients with no labs drawn (the well ones) were assigned median-sick values, which pushed their risk scores upward. Patients who *did* have labs drawn had real values, but those real values now sat in a distribution containing an enormous artificial spike right at the center, which flattened the model's ability to tell them apart. All this means that the model confidently ranked a population it had been lied to about, and twelve nurses spent their days calling the wrong people.
 
-After dropping the median fill, let the gradient-boosted model handle nulls natively, and added one binary column per lab: was this test ordered, yes or no. AUC went from 0.72 to 0.79. The strongest single predictor in the new model was not any lab *value*; it was whether a lactate had been drawn at all.
+They dropped the median fill, let the gradient-boosted model handle nulls natively, and added one binary column per lab: was this test ordered, yes or no. AUC went from 0.72 to 0.79. The strongest single predictor in the new model was not any lab *value*; it was whether a lactate had been drawn at all.
 
 The missing data was the most predictive signal in the dataset, and yet the preprocessing step deleted it.
 
 ---
 
-Missing data is data. I know that sounds counter intuitive, but it's true.
+Missing data is data. I know that sounds counterintuitive, but it's true.
 
-Every null in your table got there through a process, that process has a shape, and the shape is sometimes the answer to the exact question you're asking. Sometimes it's boring like a sensor dropping a packet, a form field that was optional, a join that doesn't match. But, sometimes it's the whole story.
+Every null in your table got there through a process. That process has a shape, and the shape is sometimes the answer to the exact question you're asking. Sometimes it's boring—a sensor dropping a packet, a form field that was optional, a join that doesn't match. Sometimes it's the whole story. Much of the discipline comes down to working out which one you're holding *before* you fill anything in.
 
-One thing we should nail is the definition of Imputation. Imputation is the act of replacing a missing value with an inferred one. It does not recover the fact that was lost; it inserts a plausible substitute based on assumptions about why the value is missing.
+Which brings us to a word worth nailing down. Imputation is the act of replacing a missing value with an inferred one. It does not recover the fact that was lost; it inserts a plausible substitute based on assumptions about why the value is missing.
 
-Much of the discipline of using data comes down to working out which one you're holding *before* you fill anything in. Every imputation method in existence is a bet about the mechanism that created the gap. Bet wrong and you don't get an exception, a warning, or a failed test. You get a model that validates beautifully and is quietly useless, which is the most expensive failure mode in this book because it takes eight months and a CFO to detect.
+Every imputation method in existence is a bet about the mechanism that created the gap. Bet wrong and you don't get an exception, a warning, or a failed test. You get a model that validates beautifully and is useless in a way nobody notices, which is the most expensive failure mode in this book because it takes eight months and a CFO to detect.
 
 ---
 
 ## 10.1 Understanding Missingness Mechanisms: MCAR, MAR, MNAR
 
-The taxonomy comes from Donald Rubin in 1976 and it has survived fifty years which is crazy since that's like millenia in tech. Three mechanisms, and the practical consequences are wildly different.
+The taxonomy comes from Donald Rubin in 1976 and it has survived fifty years which is crazy since that's like millennia in tech. Three mechanisms, and the practical consequences are wildly different.
 
 **MCAR—Missing Completely At Random.** The probability that a value is missing has nothing to do with anything: not the missing value, not the other columns, not the time of day. This could be truly anything: a network switch dropped packets; a lab machine was down for maintenance on a Tuesday; anything. This is the only mechanism where deleting incomplete rows is statistically safe, because the rows you delete are a random sample of the rows you keep. You lose statistical power and you keep your correctness. The catch is that almost nothing in a real system is MCAR, and the people who assume it are usually assuming it because they didn't check.
 
@@ -162,7 +162,7 @@ Everything above concerns the offline world; production, as usual, adds failure 
 
 ### Exercise 1: The Mechanism Interview (Time: ~45 minutes, mostly talking)
 
-Pick the column with the most nulls in your most important dataset. Find the person or team responsible for the system that produces that field and ask them one question: "under what circumstances is this empty?" Write down their answer verbatim. Then classify it—MCAR, MAR, or MNAR—and compare that to whatever your pipeline currently assumes. The gap between those two is your bug. This exercise fails for most people not because the answer is hard but because they can't find who to ask, and *that's* the finding.
+Pick the column with the most nulls in your most important dataset. Find the person or team responsible for the system that produces that field and ask them one question: "under what circumstances is this empty?" Write down their answer verbatim. Then classify it—MCAR, MAR, or MNAR—and compare that to whatever your pipeline currently assumes. Where those two disagree, the pipeline is wrong and the data is right. This exercise fails for most people not because the answer is hard but because they can't find who to ask, and *that's* the finding.
 
 ### Exercise 2: Break Your Own Data (Time: ~1 hour)
 

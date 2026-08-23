@@ -108,9 +108,9 @@ The practical question isn't "is this data perfectly accurate?" The practical qu
 
 Completeness is about missing data—missing values, missing records, missing relationships. And the critical insight is that not all missingness is created equal.
 
-Statisticians distinguish three types of missing data. Missing Completely At Random (MCAR) means the missingness has no relationship to any observed or unobserved data—someone's survey response is missing because they accidentally skipped the page. Missing At Random (MAR) means the missingness depends on observed data but not on the missing value itself—wealthy people are less likely to report income, but conditional on wealth, there's no additional bias. Missing Not At Random (MNAR) means the missingness depends on the missing value itself—people with very high blood pressure are more likely to miss follow-up appointments because they're more likely to be hospitalized.
+A null left by someone who skipped a page on a survey and a null left by someone too angry to finish the form are the same character in your database and completely different facts about the world. Statisticians have a taxonomy for this—MCAR, MAR, and MNAR—and Chapter 10 gives it a whole chapter, because which one you're holding decides whether you can delete the row, fill it in, or neither.
 
-The implications for your models are completely different. MCAR missingness can often be handled by simple imputation or deletion. MAR missingness can be addressed by modeling the missingness mechanism conditional on observed data. MNAR missingness is a fundamental bias that can't be fully corrected without external information.
+At the acquisition stage you don't need the taxonomy yet. You need the habit of asking the question, because the answer lives with the people who built the collection path and it gets harder to retrieve every month you wait.
 
 When someone tells you "our data is 80% complete," the right question is: which 20% is missing? If you're building a churn prediction model and the missing data is systematically concentrated among high-risk customers who stopped engaging with your app before you could collect their feedback, your "80% complete" dataset will produce a model that's blind to exactly the patterns you need to detect.
 
@@ -350,25 +350,37 @@ Usage tracking answers whether anyone actually uses this data. Acquiring and mai
 
 ---
 
-## Quick Wins: What You Can Do Monday Morning
+## Quick Wins: Provenance Checks You Can Run Today
 
-If you're reading this chapter and wondering where to start, here are concrete actions you can take immediately:
+**Name the owner of your most important table (10 min).** Not the team. The person. Write the name down. If you cannot produce one inside ten minutes, you have just learned that nobody is accountable for the input to your most important model, and that is a finding you can act on this week.
 
-Audit one data source using the six quality dimensions. Pick your most critical dataset, whatever feeds your most important model or dashboard. Spend two hours assessing its accuracy, completeness, consistency, timeliness, validity, and uniqueness. You'll almost certainly find something concerning. That's the point—better to find it deliberately than to discover it during an incident.
+**Write the metadata entry that doesn't exist (20 min).** Pick your most critical dataset and write down what it is, where it lives, who owns it, what its fields mean, and when anyone last verified any of that. You don't need a catalog to do this. You need a file somewhere the next person will look.
 
-Set up basic profiling with whylogs or pandas-profiling for one table. Run it once, examine the output, and decide what thresholds would be concerning. Then schedule it to run daily. This should take about an hour. You'll have ongoing visibility into that table's quality forever.
+**Profile one table on a schedule (1 hour).** Point whylogs or `ydata-profiling` at it, read the output once, and decide which numbers would alarm you if they moved. Then schedule it daily. An hour today buys you standing visibility into that table forever.
 
-Document one data contract between your team and an upstream data producer. Write down what you expect from them: schema, update frequency, quality thresholds. Share it with them. Have a conversation about whether those expectations are realistic. This takes a few hours but forces a conversation that probably hasn't happened.
+**Sample your most expensive vendor feed (30 min).** Take 200 rows from whatever third-party data you pay the most for and check them by hand against something you trust. Two hundred rows is enough to catch a 20% error rate. It is not enough to prove the feed is good, and that asymmetry is the whole point: this test only ever returns bad news, which is the only kind worth paying for.
 
-Create a metadata entry for your most critical dataset. Even if you don't have a formal catalog, write down what the dataset is, where it lives, who owns it, what it means, and when it was last verified. Store it somewhere discoverable. Future you will thank past you.
+---
 
-Run a lineage trace for one report back to its sources. Pick a dashboard metric, and manually trace the path backward through every transformation to the original source tables. Document what you find. You'll learn more about your data pipeline in two hours than you have in months of normal operation.
+## Your Homework
+
+### Exercise 1: The Six-Dimension Audit (Time: ~2 hours)
+
+Pick the dataset feeding your most important model or dashboard and score it against all six dimensions from 5.2: accuracy, completeness, consistency, timeliness, validity, uniqueness. Give each one a number and one sentence of evidence. The scoring matters less than the fact that you had to look. You will almost certainly find something that concerns you, and finding it on a Tuesday with a coffee is a better experience than finding it at 2 a.m. with a VP on the call.
+
+### Exercise 2: Write the Contract Nobody Wrote (Time: ~2 hours)
+
+Choose one upstream producer you depend on and write down what you actually expect from them: schema, update frequency, acceptable null rates, what "late" means, and who gets paged when it breaks. Then send it to them. The document is not the deliverable. The conversation it forces is the deliverable, and in most organizations that conversation has never happened even once.
+
+### Exercise 3: Trace One Number Home (Time: ~2 hours)
+
+Take a single number off a dashboard an executive looks at and walk it backward by hand—every join, every filter, every transformation—until you reach the original source tables. Write down the path. Two things happen: you learn more about your pipeline than months of normal operation would teach you, and roughly half the time you discover the number does not mean what its label says it means.
 
 ---
 
 ## Bridge to Chapter 6
 
-You now know where data comes from and how to assess whether it's any good. But assessment requires investigation—you need to actually look at your data, understand its distributions, find its anomalies, and develop intuition about what's normal and what's broken.
+You now know where data comes from and how to assess whether it's any good. But assessment requires investigation. You have to sit with the distributions, hunt the anomalies, and build enough intuition to know what normal looks like before you can recognize broken.
 
 That's exploratory data analysis: the art of asking your data questions before you start making demands. And it's harder than it sounds—because data is remarkably good at lying when you ask the wrong questions. The next chapter is about asking the right ones.
 

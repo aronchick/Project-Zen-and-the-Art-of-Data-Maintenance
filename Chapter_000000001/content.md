@@ -2,9 +2,9 @@
 
 ## Or: How I Learned to Stop Worrying and Love the Data
 
-**Last year, a Fortune 500 company spent $50 million on ML infrastructure and got beaten to market by three engineers with a laptop and clean data. This isn't a David and Goliath story - it's Tuesday in the ML world.**
+**Last year, a Fortune 500 company spent $50 million on ML infrastructure and got beaten to market by three engineers with a laptop and clean data. This isn't a David and Goliath story—it's Tuesday in the ML world.**
 
-Okay, let's start with another story. Not a "once upon a time" story, but a "last Tuesday in a conference room" story - the kind that makes you either laugh or cry depending on how recently you've lived it.
+Okay, let's start with another story. Not a "once upon a time" story, but a "last Tuesday in a conference room" story—the kind that makes you either laugh or cry depending on how recently you've lived it.
 
 Picture this: Two teams, both alike in dignity (and budget), in fair Des Moines, Iowa where we lay our scene. Lots of folks might start this story in Silicon Valley, but the reality is that data is being generated everywhere. And I think it's appropriate to touch on where people actually are.
 
@@ -24,11 +24,11 @@ As an aside, I should stress (!), there's nothing wrong with Team A. They're doi
 
 In March 2021, [Andrew Ng](https://www.andrewng.org/) gave [a talk](https://www.youtube.com/watch?v=06-AZXmwHjo) that should have been as obvious as "don't eat yellow snow" but somehow wasn't. His message? We've been doing this whole ML thing backwards.
 
-And I'm going to be super honest with you: we (the ML community) got drunk on model architectures. It's like we were teenagers who just discovered guitar effects pedals and microphone distortion. "Sure, I can barely play three chords, but check out this SICK SOUND!" Meanwhile, the data - the actual music - sounds like a cat walking across a piano.
+And I'm going to be super honest with you: we (the ML community) got drunk on model architectures. It's like we were teenagers who just discovered guitar effects pedals and microphone distortion. "Sure, I can barely play three chords, but check out this SICK SOUND!" Meanwhile, the data—the actual music—sounds like a cat walking across a piano.
 
 Ng's revolutionary insight was basically: "Hey folks, maybe we should tune the guitar first?"
 
-I remember when I saw that talk - half of me was like, "doesn't everyone already know this?" I've been very lucky to work at places like Google, Amazon, and Microsoft, and teams internally had been facing this stuff for years. But Andrew's a really smart guy, and if he's feeling the need to put out a blog post / YouTube video around this, it dawned on me that maybe not everyone is up to speed.
+I remember when I saw that talk—half of me was like, "doesn't everyone already know this?" I've been very lucky to work at places like Google, Amazon, and Microsoft, and teams internally had been facing this stuff for years. But Andrew's a really smart guy, and if he's feeling the need to put out a blog post / YouTube video around this, it dawned on me that maybe not everyone is up to speed.
 
 I keep waiting for a book or pamphlet or a sky-writing announcement that helps people realize that the latest model will only get you so far, there's so much more before even using it. But I haven't seen it, so I'm going to take a shot at writing some of that stuff here.
 
@@ -60,11 +60,11 @@ Those wrong outcomes affect how it interprets other examples. Those misinterpret
 
 A great summary on exactly how impactful this can be is Google's paper ["Data Scaling Laws in NLP"](https://arxiv.org/abs/2001.08361) showing that careful data curation beats massive scale. Or don't trust me, do the math yourself and save yourself the storage and network costs.
 
-**Debugging is actually possible.** With 10,000 examples, when something goes wrong, you can actually look at the data. With 10 billion? Good luck. You'll be sampling and praying, which is basically the ML equivalent of "thoughts and prayers" - heartfelt but ineffective.
+**Debugging is actually possible.** With 10,000 examples, when something goes wrong, you can actually look at the data. With 10 billion? Good luck. You'll be sampling and praying, which is basically the ML equivalent of "thoughts and prayers"—heartfelt but ineffective.
 
 ### A Real Story That Still Makes Me Laugh (And Cry)
 
-I once worked with a retailer whose product classification model was stuck at poor accuracy. If I recall correctly, they needed it to be above 75% because otherwise what was the point of using a model, you could just hire poorly paid interns to manually classify. They'd tried everything - ResNet, EfficientNet, even Vision Transformers (because who doesn't love transformers for everything these days?).
+I once worked with a retailer whose product classification model was stuck at poor accuracy. If I recall correctly, they needed it to be above 75% because otherwise what was the point of using a model, you could just hire poorly paid interns to manually classify. They'd tried everything—ResNet, EfficientNet, even Vision Transformers (because who doesn't love transformers for everything these days?).
 
 I asked to see the data. They looked at me like I'd asked to see their childhood photos. "The data? But... we need a better model!"
 
@@ -91,7 +91,7 @@ The investigation revealed:
 - Internal brainstorming documents somehow made it into the "ground truth" dataset
 - The model learned to be creatively optimistic rather than factually accurate
 
-The fix? Three engineers spent two weeks cleaning the training data. No model changes, no additional compute. Customer satisfaction scores jumped 40%. The lesson: Even in the age of foundation models, garbage in still equals garbage out - it's just more eloquent garbage now.
+The fix? Three engineers spent two weeks cleaning the training data. No model changes, no additional compute. Customer satisfaction scores jumped 40%. The lesson: Even in the age of foundation models, garbage in still equals garbage out—it's just more eloquent garbage now.
 
 ## 1.2 The "Garbage In, Garbage Out" Principle: A Modern Horror Story
 
@@ -203,7 +203,7 @@ while accuracy < target:
 
 **Focus on Models When:**
 
-- Your data is genuinely clean (hint: it never is - but if there's nothing OBVIOUS, and you really, honestly have already spent time thinking about it)
+- Your data is genuinely clean (hint: it never is—but if there's nothing OBVIOUS, and you really, honestly have already spent time thinking about it)
 - You've hit theoretical limits (you probably haven't)
 - You need specific inductive biases (okay, fair)
 - You're writing a paper for a conference (we've all been there)
@@ -229,13 +229,13 @@ I've watched a lot of projects succeed and a lot more fail. The difference isn't
 
 I learned about defensive design the hard way. A data pipeline at a company I was consulting for had been running successfully for 847 days. Every single day, data flowed in, got processed, and fed the models. 847 days of green checkmarks.
 
-On day 848, an upstream system changed their date format from `YYYY-MM-DD` to `MM/DD/YYYY`. The pipeline didn't crash - that would have been merciful. Instead, it silently started interpreting dates wrong. March 4th became April 3rd. The model started making predictions about events that hadn't happened yet.
+On day 848, an upstream system changed their date format from `YYYY-MM-DD` to `MM/DD/YYYY`. The pipeline didn't crash—that would have been merciful. Instead, it silently started interpreting dates wrong. March 4th became April 3rd. The model started making predictions about events that hadn't happened yet.
 
 By the time anyone noticed, the system had generated $340,000 worth of incorrect inventory predictions. The "fix" took 6 hours. Finding the bug took 3 weeks.
 
 The lesson isn't "validate your date formats" (though yes, do that). The lesson is that 847 days of success created a false sense of security. The pipeline had been tested against the data that existed when it was built. Nobody thought to ask: "What happens when something upstream changes?"
 
-**Design for failure, not success.** Every piece of data should be treated as potentially hostile. Save the raw input before you transform it. Add checksums. Build rollback capabilities. Assume that if something CAN go wrong, it eventually WILL - and your job is to make sure you can recover when it does.
+**Design for failure, not success.** Every piece of data should be treated as potentially hostile. Save the raw input before you transform it. Add checksums. Build rollback capabilities. Assume that if something CAN go wrong, it eventually WILL—and your job is to make sure you can recover when it does.
 
 ### "I Don't Know Where This Number Came From"
 
@@ -245,7 +245,7 @@ I heard it from a VP at a financial services company. They were being audited. T
 
 The audit did not go well.
 
-**Every piece of data should carry its own history.** Not just "what is this value?" but "where did it come from, what happened to it, and why?" This isn't bureaucratic overhead - it's survival. When (not if) something goes wrong, lineage is the difference between a 3-hour fix and a 3-week archaeological expedition.
+**Every piece of data should carry its own history.** Not just "what is this value?" but "where did it come from, what happened to it, and why?" This isn't bureaucratic overhead—it's survival. When (not if) something goes wrong, lineage is the difference between a 3-hour fix and a 3-week archaeological expedition.
 
 ### The Schema That Grew Organically
 
@@ -255,9 +255,9 @@ It lasted two weeks.
 
 Then the business needed a new field. And another. And a nullable version of an existing field "just for now." And a JSON blob for "miscellaneous attributes we might need later." Within six months, my beautiful schema was a Frankenstein's monster of required fields that weren't really required, optional fields that were actually mandatory, and that JSON blob had become a dumping ground for everything that didn't fit anywhere else.
 
-The opposite approach - no schema at all - is equally disastrous. I've seen teams drown in unstructured data, spending more time parsing than analyzing.
+The opposite approach—no schema at all—is equally disastrous. I've seen teams drown in unstructured data, spending more time parsing than analyzing.
 
-**The answer is schema evolution, not schema perfection.** Start simple. Accept messy data but quarantine it. Add structure incrementally, where it provides value. Your schema should grow like a plant - organically, in response to its environment - not like a building, designed upfront and then stuck with forever.
+**The answer is schema evolution, not schema perfection.** Start simple. Accept messy data but quarantine it. Add structure incrementally, where it provides value. Your schema should grow like a plant—organically, in response to its environment—not like a building, designed upfront and then stuck with forever.
 
 ### The Dashboard Nobody Trusted
 
@@ -265,7 +265,7 @@ A retail company I worked with had beautiful dashboards. Real-time data, gorgeou
 
 The data scientists had learned not to trust the numbers. Too many times, the dashboard showed something alarming, they'd investigate, and discover it was a data quality issue, not a real problem. After enough false alarms, they started ignoring the dashboards entirely. When a real problem finally showed up, nobody noticed for three days.
 
-**Observability isn't about pretty dashboards - it's about trust.** Your monitoring should tell you not just what the numbers are, but whether you should believe them. Track data quality metrics alongside business metrics. Alert on anomalies in the data itself, not just anomalies in the results. Build confidence intervals. Show your work.
+**Observability isn't about pretty dashboards—it's about trust.** Your monitoring should tell you not just what the numbers are, but whether you should believe them. Track data quality metrics alongside business metrics. Alert on anomalies in the data itself, not just anomalies in the results. Build confidence intervals. Show your work.
 
 Documentation helps, but running systems tell the truth in a way that documentation can't. The best pipelines I've seen are self-describing: you can look at the metrics and understand not just what happened, but why.
 
@@ -277,13 +277,13 @@ Not wrong results, exactly. Just... different. Slightly different distributions,
 
 The pipeline had been doing this for eight months.
 
-**Separate concerns ruthlessly.** Each stage of your pipeline should do exactly one thing. Ingestion gets data in - it doesn't transform. Validation checks quality - it doesn't fix. Transformation changes shape - it doesn't validate. When you mix these responsibilities, you create invisible dependencies that only manifest as bizarre bugs on specific days of the week.
+**Separate concerns ruthlessly.** Each stage of your pipeline should do exactly one thing. Ingestion gets data in—it doesn't transform. Validation checks quality—it doesn't fix. Transformation changes shape—it doesn't validate. When you mix these responsibilities, you create invisible dependencies that only manifest as bizarre bugs on specific days of the week.
 
 ### The Audit That Saved the Company
 
 The best data teams I've worked with have a simple rule: never delete anything.
 
-Storage is cheap. Debugging production issues without historical data is expensive. I know a company that avoided a $2M lawsuit because they could prove, from their audit logs, exactly what data was used to train a model that was being challenged. Another company found a subtle bug that had been introduced six months earlier - they could only fix it because they had the original data to compare against.
+Storage is cheap. Debugging production issues without historical data is expensive. I know a company that avoided a $2M lawsuit because they could prove, from their audit logs, exactly what data was used to train a model that was being challenged. Another company found a subtle bug that had been introduced six months earlier—they could only fix it because they had the original data to compare against.
 
 **Keep everything, but keep it organized.** Raw data goes to cold storage after 90 days. Processed data keeps the last 10 versions. Failed processing attempts get logged forever with full error details. Every access, every transformation, every decision gets recorded somewhere.
 
@@ -295,7 +295,7 @@ The next person to debug your pipeline might be you, six months from now, having
 
 [Gartner says 80% of AI projects fail](https://www.gartner.com/en/newsroom/press-releases/2020-10-19-gartner-identifies-the-top-strategic-technology-trends-for-2021). That's worse than restaurants, startups, or my attempts at making sourdough during lockdown.
 
-But here's the thing: they don't fail because of bad algorithms. They fail because of bad data. Let's learn from the fallen.
+They don't fail because of bad algorithms. They fail because of bad data. Let's learn from the fallen.
 
 ### Case Study 1: The Recommendation Engine That Recommended Everything
 
@@ -320,9 +320,9 @@ Solution: Feature engineering
 - Added time-based weights
 ```
 
-**The Lesson**: Raw data is like raw chicken - technically edible, but you're gonna have a bad time.
+**The Lesson**: Raw data is like raw chicken—technically edible, but you're gonna have a bad time.
 
-### Case Study 2: The Fraud Detection System - A Tale of False Positives
+### Case Study 2: The Fraud Detection System—A Tale of False Positives
 
 Timeline of disaster:
 
@@ -341,7 +341,7 @@ Timeline of disaster:
 
 **The Lesson**: If you're finding needles in haystacks, understand both needles AND hay.
 
-### Case Study 3: Predictive Maintenance - Schrödinger's Failure
+### Case Study 3: Predictive Maintenance—Schrödinger's Failure
 
 **The Setup**: IoT sensors everywhere, prevent failures before they happen
 
@@ -424,13 +424,13 @@ Open a Jupyter notebook. Load 10 random examples from your dataset. Actually loo
 3. Write down every transformation it went through
 4. If you can't complete this exercise, you've identified a problem
 
-## Parting Thoughts
+## Bridge to Chapter 2
 
 Look, I know data work isn't sexy. It doesn't get you papers at NeurIPS. It doesn't make for good Twitter threads. Your GitHub stars won't explode.
 
 But you know what? It works. It ships. It makes money. It actually solves problems.
 
-In Chapter 2, we're going to dive into data types - the fundamental building blocks that determine whether your model thinks a ZIP code is a really big number or a categorical variable. We'll explore why "structured" data lies to you, why timestamps are secretly the hardest data type, and why your Boolean field contains the string "false" (which evaluates to True).
+In Chapter 2, we're going to dive into data types—the fundamental building blocks that determine whether your model thinks a ZIP code is a really big number or a categorical variable. We'll explore why "structured" data lies to you, why timestamps are secretly the hardest data type, and why your Boolean field contains the string "false" (which evaluates to True).
 
 Until then, stop reading blogs about the latest architecture and go look at your actual data. Yes, right now. Open a Jupyter notebook, load a random batch, and really LOOK at it. I guarantee you'll find something surprising.
 
@@ -440,6 +440,4 @@ Now go forth and clean your data. The ML gods (and your future self) will thank 
 
 ---
 
-*P.S. - If you found a typo in this chapter, that's actually a feature, not a bug. It's to keep you engaged. Yeah, let's go with that.*
-
----
+*P.S. — If you found a typo in this chapter, that's actually a feature, not a bug. It's to keep you engaged. Yeah, let's go with that.*
