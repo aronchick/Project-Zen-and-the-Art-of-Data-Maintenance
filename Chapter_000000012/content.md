@@ -2,7 +2,7 @@
 
 ## Or: Your Model Was Measuring Pounds
 
-A freight marketplace I advised moved about 900 shipments a day. Shippers posted loads, carriers bid, and the platform's job was to recommend which carriers to surface for a given load. Get it right and the freight arrives on time and undamaged; get it wrong and you've handed a fragile pallet to the cheapest guy with a truck.
+A freight marketplace moved about 900 shipments a day. Shippers posted loads, carriers bid, and the platform's job was to recommend which carriers to surface for a given load. Get it right and the freight arrives on time and undamaged; get it wrong and you've handed a fragile pallet to the cheapest guy with a truck.
 
 They built a matching model on five features: distance in miles, weight in pounds, the carrier's on-time percentage, years in business, and a safety rating from 1 to 5 that the operations team had spent a year and a half building. The safety rating was the whole point. It was the thing that made the marketplace worth more than a spreadsheet of phone numbers.
 
@@ -24,7 +24,7 @@ On-time delivery went from 82% to 91% in the following quarter. Nobody retrained
 
 ---
 
-I've put this chapter's disaster up front the same way as the others, but I want to name what makes this one different. Chapters 10 and 11 were about judgment—someone made a defensible call about nulls or outliers and the call was wrong. This one isn't judgment. Nobody decided the safety rating should be ignored. The decision was made by the numeric range of a column, on their behalf, silently, and it held for fourteen months because there is no error message for "your distance metric is in the wrong units."
+This chapter's disaster sits up front like all the others, but it's worth naming what makes this one different. Chapters 10 and 11 were about judgment—someone made a defensible call about nulls or outliers and the call was wrong. This one isn't judgment. Nobody decided the safety rating should be ignored. The decision was made by the numeric range of a column, on their behalf, silently, and it held for fourteen months because there is no error message for "your distance metric is in the wrong units."
 
 That's what makes scaling the most boring dangerous topic in this book. It fails without symptoms. The model trains, the metrics compute, the dashboard is green, and the only evidence is a business outcome that nobody thinks to connect back to a preprocessing step.
 
@@ -38,13 +38,13 @@ The first thing to get straight is that "should I scale?" has an actual answer, 
 
 **Algorithms where scaling changes the answer in a way people miss.** This is the group that costs the most, because the model still *works*—it just works on a different problem than you think.
 
-Regularized regression is the big one. Ridge, Lasso, and ElasticNet all penalize the magnitude of coefficients. But a coefficient's magnitude depends on its feature's units. Measure a distance in miles and its coefficient is some number; measure the same distance in feet and the coefficient is 5,280 times smaller, so the penalty barely touches it. **You are not regularizing your features, you are regularizing your unit choices.** Run Lasso on unscaled data and the variables it zeroes out are substantially determined by whoever picked the units upstream, which is usually a database schema written by someone who has never heard of your model. This is the most common serious scaling bug I find in production code, and unlike the freight disaster it produces a model that looks completely reasonable.
+Regularized regression is the big one. Ridge, Lasso, and ElasticNet all penalize the magnitude of coefficients. But a coefficient's magnitude depends on its feature's units. Measure a distance in miles and its coefficient is some number; measure the same distance in feet and the coefficient is 5,280 times smaller, so the penalty barely touches it. **You are not regularizing your features, you are regularizing your unit choices.** Run Lasso on unscaled data and the variables it zeroes out are substantially determined by whoever picked the units upstream, which is usually a database schema written by someone who has never heard of your model. This is the most common serious scaling bug in production code, and unlike the freight disaster it produces a model that looks completely reasonable.
 
 PCA has the same disease for the same reason. PCA finds directions of maximum variance, and variance is in squared units, so the component structure is dominated by whichever feature has the largest numeric spread. Unscaled PCA on a table with a revenue column returns, essentially, the revenue column with extra steps. (Chapter 15 goes further into this.)
 
 **Algorithms that don't care at all.** Decision trees and every ensemble built on them—random forests, XGBoost, LightGBM, CatBoost. A tree splits on *order*, not magnitude. The rule "weight > 12,000" partitions the data identically whether weight is in pounds, kilograms, or tons; the threshold just changes to match. Any monotonic transformation of a feature produces the same tree. This is why gradient-boosted trees are so forgiving of raw messy tabular data, and it's why a large amount of the scaling code in the world is doing nothing at all.
 
-That last point deserves emphasis, because the reflex runs both directions. Roughly as often as I find a k-NN model measuring pounds, I find a `StandardScaler` sitting in front of an XGBoost model, adding a fitted artifact that has to be versioned, shipped, and kept in sync between training and serving—for zero benefit. It's not harmful to the math. It's harmful to the system, because every fitted preprocessing step is another thing that can drift out of sync between your training and serving paths, which is Chapter 9's entire disaster waiting for a chance.
+That last point deserves emphasis, because the reflex runs both directions. About as often as you find a k-NN model measuring pounds, you find a `StandardScaler` sitting in front of an XGBoost model, adding a fitted artifact that has to be versioned, shipped, and kept in sync between training and serving—for zero benefit. It's not harmful to the math. It's harmful to the system, because every fitted preprocessing step is another thing that can drift out of sync between your training and serving paths, which is Chapter 9's entire disaster waiting for a chance.
 
 So the question isn't "should I scale." It's "does my algorithm use magnitude, distance, or a penalty term?" If yes, scaling is mandatory. If no, scaling is a liability you're carrying for aesthetic reasons.
 
@@ -180,7 +180,7 @@ Three more traps that a `Pipeline` alone won't save you from.
 
 **Check whether your scaler does anything (15 min).** If your model is a gradient-boosted tree, train it once with your scaling step and once without. The metrics will be materially identical. Delete the step—you're carrying a fitted artifact through training, serialization, and serving for no benefit, and it's one more thing that can desynchronize.
 
-**Check your `Normalizer` imports (2 min).** If `Normalizer` appears anywhere in a tabular pipeline, confirm somebody meant it. In my experience roughly half the time they meant `StandardScaler`.
+**Check your `Normalizer` imports (2 min).** If `Normalizer` appears anywhere in a tabular pipeline, confirm somebody meant it. Roughly half the time, they meant `StandardScaler`.
 
 ---
 

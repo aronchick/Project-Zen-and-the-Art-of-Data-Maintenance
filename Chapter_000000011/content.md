@@ -2,7 +2,7 @@
 
 ## Or: The Number You Deleted Was the Business
 
-A property and casualty insurer I advised wrote about 1.2 million claims a year across personal auto and homeowners, against roughly $620 million in annual incurred losses. They built a claim-severity model: at first notice of loss, predict what this claim will ultimately cost, so the reserve gets set correctly on day one instead of six months later when an adjuster finally gets to it. Good project. Real money attached to it.
+A property and casualty insurer wrote about 120,000 claims a year across personal auto and homeowners, against roughly $740 million in annual incurred losses. They built a claim-severity model: at first notice of loss, predict what this claim will ultimately cost, so the reserve gets set correctly on day one instead of six months later when an adjuster finally gets to it. Good project. Real money attached to it.
 
 The model validated at an R² of 0.71, which for claim severity is a strong number. It went into production setting initial reserves.
 
@@ -15,11 +15,11 @@ cap = df["ultimate_loss"].quantile(0.99)
 df["ultimate_loss"] = df["ultimate_loss"].clip(upper=cap)
 ```
 
-Someone had winsorized the target at the 99th percentile. And I want to be careful here, because the person who wrote that was not being lazy. They were solving a real problem, correctly diagnosed. Claim severity is violently heavy-tailed, mean squared error is dominated by the largest residuals, and a handful of catastrophic claims were jerking the training around so badly the model wouldn't converge cleanly. Capping the target fixed it. The loss curve got smooth. The validation metric went up. Every signal a data scientist normally trusts said this was the right move.
+Someone had winsorized the target at the 99th percentile. Worth being careful here, because the person who wrote that was not being lazy. They were solving a real problem, correctly diagnosed. Claim severity is violently heavy-tailed, mean squared error is dominated by the largest residuals, and a handful of catastrophic claims were jerking the training around so badly the model wouldn't converge cleanly. Capping the target fixed it. The loss curve got smooth. The validation metric went up. Every signal a data scientist normally trusts said this was the right move.
 
 In personal lines, the top 1% of claims by size accounted for about 34% of total loss dollars. A total house fire, a severe bodily injury with a lifetime care component, a liability verdict—these are rare and they are most of the money. Capping at the 99th percentile removed every example of the phenomenon that determines whether the company is profitable. The model was trained on a world in which the largest possible claim was $180,000, and then deployed into a world that regularly produces claims of $2 million.
 
-So it did exactly what it was taught. It became superb at predicting fender-benders and water damage—the claims that are numerous, well-behaved, and financially irrelevant—and it had never once seen a severe claim, so it reserved every one of them at roughly the cap. Twelve thousand times a year it looked at a catastrophic loss and said "call it a hundred and eighty grand." The R² of 0.71 was real. It was measured on capped data, against a capped target, which is to say it was a precise measurement of the model's skill at a task nobody needed done.
+So it did exactly what it was taught. It became superb at predicting fender-benders and water damage—the claims that are numerous, well-behaved, and financially irrelevant—and it had never once seen a severe claim, so it reserved every one of them at roughly the cap. Twelve hundred times a year it looked at a catastrophic loss and said "call it a hundred and eighty grand." The R² of 0.71 was real. It was measured on capped data, against a capped target, which is to say it was a precise measurement of the model's skill at a task nobody needed done.
 
 They deleted the top 1% of their data and with it about a third of their business.
 
@@ -51,7 +51,7 @@ But all of this is procedure, and procedure is the smaller half of the job. Ever
 
 **It's a rare real event.** The house fire. The machine three hours from failure. The fraudulent transaction. The point is correct, it belongs to the population you're modeling, and it is very often the point you are being paid to predict.
 
-Which gives you the only rule in this chapter I'd defend without qualification: **you may delete a data point only if you can name the mechanism that made it wrong.** "It's 4.2 sigma from the mean" is not a mechanism. "The vendor changed the unit from liters to gallons in March and this batch wasn't converted" is a mechanism. If you can't name one, you are not removing an error—you are removing evidence, and you should keep the row and go find out what it is.
+Which gives you the one rule in this chapter that holds without qualification: **you may delete a data point only if you can name the mechanism that made it wrong.** "It's 4.2 sigma from the mean" is not a mechanism. "The vendor changed the unit from liters to gallons in March and this batch wasn't converted" is a mechanism. If you can't name one, you are not removing an error—you are removing evidence, and you should keep the row and go find out what it is.
 
 ---
 
@@ -79,7 +79,7 @@ Two more categories worth having names for, because they change what you look fo
 
 When thresholds and distances run out, there's a family of methods that learn the shape of "normal" and score deviations from it.
 
-**Isolation Forest** is the one I reach for first, because its core idea is clever and it scales. Build random trees by picking a random feature and a random split point, over and over. Anomalies get isolated in very few splits—there's not much data around them, so a random cut separates them quickly—while normal points require many splits to fence off. The score is average path length. It's roughly linear in the number of samples, it needs no distance metric, and it handles moderate dimensionality far better than anything distance-based. Its `contamination` parameter is a trap: it asks you to declare what fraction of your data is anomalous, which is the thing you were trying to find out. Set it deliberately or leave it and threshold the raw scores yourself.
+**Isolation Forest** is the sensible first stop, because its core idea is clever and it scales. Build random trees by picking a random feature and a random split point, over and over. Anomalies get isolated in very few splits—there's not much data around them, so a random cut separates them quickly—while normal points require many splits to fence off. The score is average path length. It's roughly linear in the number of samples, it needs no distance metric, and it handles moderate dimensionality far better than anything distance-based. Its `contamination` parameter is a trap: it asks you to declare what fraction of your data is anomalous, which is the thing you were trying to find out. Set it deliberately or leave it and threshold the raw scores yourself.
 
 **Local Outlier Factor** compares a point's local density to the density of its neighbors. This catches something global methods structurally cannot: a point sitting in a sparse pocket that isn't far from the overall center. If your data has clusters of different densities—and real data does—LOF finds anomalies that Mahalanobis and Isolation Forest both miss.
 
@@ -91,7 +91,7 @@ When thresholds and distances run out, there's a family of methods that learn th
 
 Now the structural limitation that applies to all of them. These are unsupervised methods, which means they answer the question "is this statistically unusual?" That is not the question. The question is "is this *wrong*, or is it the rare real thing I care about?" Nothing unsupervised can distinguish those, because the difference isn't in the data, it's in the mechanism. An anomaly detector produces a ranked list of things to look at. It does not produce a decision, and the moment you wire its output directly into `df.drop()` you've automated a judgment nobody made.
 
-And the corollary that people miss constantly: **if you have labels, use them.** If you know which transactions were fraud, which machines failed, which claims blew up—train a supervised classifier. It will beat every anomaly detector on this list, and it isn't close. Anomaly detection is the technique you use when you don't have labels. Reaching for Isolation Forest on a labeled problem because it sounds more like anomaly detection is a mistake I see roughly monthly.
+And the corollary that people miss constantly: **if you have labels, use them.** If you know which transactions were fraud, which machines failed, which claims blew up—train a supervised classifier. It will beat every anomaly detector on this list, and it isn't close. Anomaly detection is the technique you use when you don't have labels. Reaching for Isolation Forest on a labeled problem because the phrase "anomaly detection" sounds closer to the goal is a mistake that gets made constantly.
 
 ---
 
@@ -117,7 +117,7 @@ One thing that should change your defaults: **outlier sensitivity depends on the
 
 The right answer varies more by domain than by technique, and the pattern across domains is uncomfortable: in most of the fields where this matters, the outlier is the point.
 
-**Fraud and security.** The outlier *is* the target. Any preprocessing step that removes outliers is removing your positive class, and I have watched a team spend a month wondering why their fraud model found no fraud, having cleaned the training set first. Compounding it: adversaries adapt toward normal. Yesterday's obvious anomaly is today's carefully-shaped ordinary transaction, which is Chapter 9's concept drift with a motive.
+**Fraud and security.** The outlier *is* the target. Any preprocessing step that removes outliers is removing your positive class. Teams lose months wondering why their fraud model finds no fraud, having diligently cleaned the training set first. Compounding it: adversaries adapt toward normal. Yesterday's obvious anomaly is today's carefully-shaped ordinary transaction, which is Chapter 9's concept drift with a motive.
 
 **Manufacturing and predictive maintenance.** The excursions are precursors. A vibration spike four hours before a bearing seizes is not noise contaminating your dataset; it is the dataset. Remove pre-failure anomalies and you have built a model that describes machines that are working fine, which you did not need.
 
@@ -147,7 +147,7 @@ Batch detection has the luxury of seeing the whole distribution. Streaming detec
 
 **Alert fatigue is a data-quality failure, not a people problem.** A detector with a 5% false-positive rate on ten million events a day produces five hundred thousand alerts. Nobody reads five hundred thousand of anything. The design target is not detection rate; it's the number of alerts a human can actually act on in a day, which is usually somewhere between ten and fifty. Pick that number first, then set your threshold to produce it, then measure what you miss. A detector nobody reads has a true detection rate of zero regardless of what the offline evaluation said.
 
-**Quarantine, don't drop.** The best production pattern I know: when a record looks anomalous, route it to a side table along with the detector score and the reason, let the main pipeline continue, and review the quarantine. You keep the evidence, you don't block the pipeline, and—the part that pays off later—you are accumulating a labeled dataset. Every quarantined record a human reviews becomes a label, and once you have enough labels you can replace the unsupervised detector with a supervised model that's dramatically better. Dropping the row throws away the raw material for the thing you actually want.
+**Quarantine, don't drop.** The best production pattern available: when a record looks anomalous, route it to a side table along with the detector score and the reason, let the main pipeline continue, and review the quarantine. You keep the evidence, you don't block the pipeline, and—the part that pays off later—you are accumulating a labeled dataset. Every quarantined record a human reviews becomes a label, and once you have enough labels you can replace the unsupervised detector with a supervised model that's dramatically better. Dropping the row throws away the raw material for the thing you actually want.
 
 ---
 
