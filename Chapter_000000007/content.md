@@ -2,7 +2,7 @@
 
 ## Or: Your Ground Truth Is a Rumor
 
-A medical-imaging startup I consulted for spent fourteen months and a little over $2 million building a model to flag a specific abnormality on chest X-rays. Their held-out test set hit 94% accuracy, beat the published benchmarks, and sailed through the demo that closed their Series A. Then they ran it against a fresh batch of images read by a panel of three radiologists, and accuracy fell off a cliff—down into the seventies, with a false-negative rate that would get someone killed.
+A medical-imaging startup spent fourteen months and a little over $2.4 million building a model to flag a specific abnormality on chest X-rays. Their held-out test set hit 94% accuracy, beat the published benchmarks, and sailed through the demo that closed their Series A. Then they ran it against a fresh batch of images read by a panel of three radiologists, and accuracy fell off a cliff—down into the seventies, with a false-negative rate that would get someone killed.
 
 Nothing had changed; what happened was simpler and much more embarrassing: somebody finally checked the labels.
 
@@ -118,7 +118,7 @@ Take 30 examples you labeled at the start of some past project. Re-label them no
 
 ### Exercise 2: Audit a Labeled Dataset You Trust (Time: ~1 hour)
 
-Pick a labeled dataset you consider "clean"—bonus points for a public benchmark. Pull 50 examples and scrutinize the labels against the dataset's own documentation. Known benchmarks have been shown to carry meaningful label-error rates in their test sets; your in-house data is not magically cleaner. Document what you find, and notice how it reframes every leaderboard number you've ever trusted.
+Pick a labeled dataset you consider "clean"—bonus points for a public benchmark. Pull 50 examples and scrutinize the labels against the dataset's own documentation. Remember the number from Chapter 1: at least 6% of the ImageNet validation set is mislabeled, in the most scrutinized dataset in the history of the field. Your in-house data is not magically cleaner. Document what you find, and notice how it reframes every leaderboard number you've ever trusted.
 
 ### Exercise 3: Build a Weak-Supervision Prototype (Time: ~2 hours, optional)
 

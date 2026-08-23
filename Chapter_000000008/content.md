@@ -71,7 +71,7 @@ Two things. First, **columnar is what makes the lakehouse economically possible 
 
 Second, **Arrow has become the lingua franca between the boxes in your architecture diagram.** The expensive, invisible tax in any multi-tool data stack used to be serialization—every hop between Spark and pandas and your model and your query engine meant data putting its coat on and taking it off again, as Chapter 3 put it. When the components all speak Arrow, the data moves between them without that conversion. At the scale of a single notebook, that's a nice speedup. At the scale of an architecture where data crosses five systems on its way to a model, it's the difference between a pipeline that's mostly working and a pipeline that's mostly copying bytes. When you're drawing the diagram, the question to ask at every arrow between two boxes is: *what format does the data take crossing this line, and how many times are we paying to reshape it?* The arrows are where architectures bleed performance.
 
-There's a third consequence that matters specifically for the readers of this book, the ones whose pipelines end at a model. The handoff from your data layer to your training code is the most violent reshape in most architectures—the place where a nice columnar dataset gets exploded into the row-by-row, tensor-shaped thing a model wants, often through pandas, often three times, often in a notebook nobody profiles. A columnar-all-the-way-down architecture pushes that boundary as late as possible: Arrow into the feature pipeline, Arrow into the framework's data loader, and the reshape happens once, at the last possible moment, instead of at every hop. It's the least glamorous performance win available, and on real training pipelines, I've seen it reclaim more wall-clock time than swapping the model for a bigger GPU.
+There's a third consequence that matters specifically for the readers of this book, the ones whose pipelines end at a model. The handoff from your data layer to your training code is the most violent reshape in most architectures—the place where a nice columnar dataset gets exploded into the row-by-row, tensor-shaped thing a model wants, often through pandas, often three times, often in a notebook nobody profiles. A columnar-all-the-way-down architecture pushes that boundary as late as possible: Arrow into the feature pipeline, Arrow into the framework's data loader, and the reshape happens once, at the last possible moment, instead of at every hop. It's the least glamorous performance win available, and on real training pipelines it routinely reclaims more wall-clock time than swapping the model onto a bigger GPU.
 
 ---
 
@@ -107,7 +107,7 @@ Every one of these companies kept their data in open formats and built the missi
 
 ## 8.6 Choosing the Right Architecture for Your Scale
 
-The most expensive architecture mistake I see is picking the *biggest* tool—building the petabyte-scale, multi-region, streaming-first cathedral for a workload that is, in cold reality, forty gigabytes that change once a day. Not the wrong tool. The biggest one.
+The most expensive architecture mistake is picking the *biggest* tool—building the petabyte-scale, multi-region, streaming-first cathedral for a workload that is, in cold reality, forty gigabytes that change once a day. Not the wrong tool. The biggest one.
 
 Scale honestly. Most data, at most companies, fits on one large machine. A single Postgres instance, or DuckDB over Parquet files (Chapter 6 already showed you DuckDB profiling a terabyte from a laptop), will carry you much further than the conference talks imply, and it will do it with a fraction of the operational misery. Distributed systems don't just cost more in dollars; they cost more in the only currency that's truly scarce, which is your team's attention. Every Kafka cluster, every Spark deployment, every streaming job is a thing that pages someone at night. The 10x cost rule from Chapter 4 has an architectural cousin: complexity you adopt before you need it compounds, because every future change now has to be made inside the cathedral instead of inside the cottage.
 
@@ -138,7 +138,7 @@ The right move is almost always to build for the scale you have plus one step, n
 
 ### Exercise 1: Draw the Real Diagram (Time: ~1 hour)
 
-Draw your actual data architecture—not the clean one in the wiki, the real one, with the shadow pipeline someone built in 2022 and the CSV export that three reports secretly depend on. For every arrow between two boxes, label what format the data is in as it crosses. Circle every place the same data exists in two forms. I have never seen this exercise produce a clean diagram, and the mess you find is your actual roadmap.
+Draw your actual data architecture—not the clean one in the wiki, the real one, with the shadow pipeline someone built in 2022 and the CSV export that three reports secretly depend on. For every arrow between two boxes, label what format the data is in as it crosses. Circle every place the same data exists in two forms. This exercise does not produce a clean diagram, and the mess you find is your actual roadmap.
 
 ### Exercise 2: Price Your Architecture (Time: ~45 minutes)
 
