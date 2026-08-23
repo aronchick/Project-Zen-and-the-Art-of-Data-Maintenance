@@ -247,9 +247,9 @@ feb_data = pq.read_table(
 
 ### Real-World Performance: What Actually Changed
 
-Uber's analytics infrastructure shows what Parquet enables at scale. Their platform stores [256 petabytes of data](https://www.ibm.com/think/news/uber-presto) and processes 35 petabytes daily, supporting over 500,000 queries per day from 12,000 monthly active users. When they transitioned [from JSON to Parquet](https://www.uber.com/blog/uber-big-data-platform/) to store schema and data together, they eliminated the vulnerability to upstream data format changes that plagued their first-generation platform. Their custom Parquet reader delivers [2-10x speedup](https://www.uber.com/blog/presto/) over the original open-source reader—the difference between analysts waiting for results and getting them before their coffee cools.
+Uber's analytics infrastructure shows what Parquet enables at scale. Their second-generation platform [moved from JSON to Parquet](https://www.uber.com/blog/uber-big-data-platform/) specifically so that schema and data traveled together, which removed the standing vulnerability to upstream format changes that had plagued the first generation—the same class of failure Chapter 2 spent a whole section on. They also wrote their own Parquet reader for Presto, and report that it processes data ["anywhere from 2-10x faster compared to when we used the original open source reader"](https://www.uber.com/blog/presto/). That is the difference between analysts waiting on results and getting them before their coffee cools.
 
-The columnar magic works because reading 3 columns from a 200-column dataset means touching 1.5% of the data instead of all of it. As one [industry analysis notes](https://edgedelta.com/company/blog/parquet-data-format), Parquet's efficiency can cut query costs by up to 90%—less data read means more money saved. Storage typically runs 2x to 5x smaller than JSON or CSV equivalents, with some workloads seeing 75-90% compression versus CSV.
+The columnar magic works because reading 3 columns from a 200-column dataset means touching 1.5% of the data instead of all of it. On a query engine that bills by bytes scanned, that ratio is your invoice. Treat the compression multipliers you see quoted around Parquet as advertising—they depend entirely on how repetitive your columns are—and measure your own. Exercise 2 at the end of this chapter takes fifteen minutes and gives you a number that is actually about your data.
 
 ### When Parquet Saves Your Ass (and When It Doesn't)
 
@@ -314,10 +314,10 @@ model.train(data_numpy)               # Finally! After multiple copies and trans
 Apache Arrow, first released in 2016, fixed this by establishing a standard in-memory columnar format that could be shared across languages and systems without copying or converting.
 
 ```python
-# The Arrow way: Direct access, no copies
-import pyarrow as pa
-table = pa.parquet.read_table("data.parquet")
-# Everything can read Arrow directly. No conversion. Magic.
+# The Arrow way: one in-memory format everything already understands
+import pyarrow.parquet as pq
+table = pq.read_table("data.parquet")
+# Polars, DuckDB, and Spark can all consume this table without re-encoding it.
 ```
 
 ### 3.3.1 The Zero-Copy Revolution
@@ -342,24 +342,18 @@ Today, Arrow has become the de facto standard for analytical workloads:
 
 ### 3.3.3 The Performance Impact
 
-According to Apache Arrow benchmarks:
-- **100x faster** data interchange between systems
-- **50-80% memory reduction** through shared memory instead of copies
-- **10-100x faster** serialization/deserialization compared to pickle or JSON
+You will find a lot of specific multipliers quoted for Arrow, and most of them are benchmark-shaped rather than true. The durable claim is structural, and it does not need a number attached: moving data between two tools that both speak Arrow skips serialization entirely. There is no encode step, no decode step, and no second copy of the data in memory. Whatever your current conversion costs, that is roughly what Arrow removes—which is why the win is largest exactly where it hurts most, on the biggest datasets.
 
 ```python
-# The Arrow advantage (real benchmark)
-# Task: Transfer 10GB dataset between tools
+# Task: hand a large dataset from pandas to Spark
 
-# Old way: Through CSV
-df.to_csv("temp.csv")  # 5 minutes
-spark.read.csv("temp.csv")  # 5 minutes
-# Total: 10 minutes, 2x memory usage
+# Old way: through a file on disk
+df.to_csv("temp.csv")        # serialize every value to text, lose every type
+spark.read.csv("temp.csv")   # parse it all back and guess the types again
 
-# New way: Through Arrow
-arrow_table = pa.Table.from_pandas(df)  # 3 seconds
-spark_df = spark.createDataFrame(arrow_table)  # 0 seconds (zero-copy!)
-# Total: 3 seconds, no extra memory
+# New way: through Arrow
+spark.conf.set("spark.sql.execution.arrow.pyspark.enabled", "true")
+spark_df = spark.createDataFrame(df)   # transferred as Arrow batches, no text round-trip
 ```
 
 ## 3.4 The Format Wars: Lakehouse, Lance, and What's Coming
@@ -376,11 +370,11 @@ Lakehouses collapse this into one layer. Open formats like Iceberg and Hudi add 
 
 ### 3.4.2 What This Looks Like in Practice
 
-Airbnb's migration to Iceberg tells the real story. They [cut compute costs by 50% and reduced data ingestion time by 40%](https://medium.com/airbnb-engineering/upgrading-data-warehouse-infrastructure-at-airbnb-a4e18f09b6d5)—processing 35 billion Kafka events daily across more than a thousand tables. But the cost savings weren't the headline. Iceberg eliminated their Hive Metastore bottleneck, which meant engineers stopped debugging partition overloads at 2am and started building features that actually shipped. Schema changes that used to require costly table rewrites now happen at the metadata level. That's the pattern you see across the industry: the table format migration pays for itself in infrastructure savings, but the real ROI is engineering hours redirected from babysitting pipelines to building product.
+Airbnb's warehouse upgrade tells the real story. Moving their event-ingestion framework from Hive-on-Tez to Spark 3 with Iceberg, they report [more than 50% compute resource savings and a 40% reduction in job elapsed time](https://medium.com/airbnb-engineering/upgrading-data-warehouse-infrastructure-at-airbnb-a4e18f09b6d5). Worth being precise about what that measures: it is one workload, and the gain comes from the engine and the table format together, not from Iceberg alone. But the cost savings weren't the headline. Iceberg eliminated their Hive Metastore bottleneck, which meant engineers stopped debugging partition overloads at 2am and started building features that actually shipped. Schema changes that used to require costly table rewrites now happen at the metadata level. That's the pattern you see across the industry: the table format migration pays for itself in infrastructure savings, but the real ROI is engineering hours redirected from babysitting pipelines to building product.
 
 ### 3.4.3 Lance: An Emerging Format for the AI Era
 
-*Note: Lance is a newer format (first released in 2023) that's still maturing. I'm including it because I believe it represents where the industry is heading, but verify production-readiness for your use case.*
+*Note: Lance is young and still maturing. It's here because the problem it targets is real and getting more common, not because it's a settled choice—verify production-readiness for your own use case before betting on it.*
 
 Lance combines columnar storage (like Parquet) with native vector indexing for AI workloads. The problem it solves is real: every company now has embeddings (from OpenAI, Cohere, etc.), and storing vectors in Parquet requires a separate vector database (Pinecone, Weaviate) at significant cost. You end up with your metadata in one system and your embeddings in another, stitched together by application code that inevitably drifts.
 
@@ -389,8 +383,8 @@ Lance unifies these:
 ```python
 # The problem Lance solves
 # Old way: Two systems, double the cost
-metadata_df.to_parquet("products.parquet")  # Product info
-vector_db.upsert(embeddings)  # $2000/month for Pinecone
+metadata_df.to_parquet("products.parquet")  # Product info here
+vector_db.upsert(embeddings)             # ...and embeddings over there, in a second bill
 
 # New way: One format, one query
 import lance
@@ -398,7 +392,7 @@ dataset = lance.write_dataset(
     df_with_embeddings,  # Tabular + vectors together
     "products.lance"
 )
-# 10x faster queries, 75% less storage, no separate vector DB
+# Tabular filters and vector similarity against one dataset, in one query
 ```
 
 Consider Lance if you're building RAG applications, semantic search, or recommendation systems where you need both traditional filtering ("products under $50") and vector similarity ("products similar to this image"). For pure analytics without embeddings, Parquet remains the safer choice.
@@ -407,16 +401,16 @@ Consider Lance if you're building RAG applications, semantic search, or recommen
 
 Different access patterns need different storage:
 
-| Access Pattern | Optimal Storage | Suboptimal | Speed Difference |
+| Access Pattern | Optimal Storage | Suboptimal | What goes wrong |
 |---------------|-----------------|------------|------------------|
-| Point Lookup | Redis/DynamoDB | Parquet | 500x slower |
-| Analytics Scan | Parquet/BigQuery | MongoDB | 60x slower |
-| Time Series | InfluxDB/TimescaleDB | Postgres | 200x slower |
-| Full-Text Search | Elasticsearch | Postgres LIKE | 600x slower |
-| Stream Processing | Kafka + Flink | Batch ETL | 3000x slower |
-| Graph Traversal | Neo4j | SQL with CTEs | 2000x slower |
+| Point Lookup | Redis/DynamoDB | Parquet | Reads a whole row group to return one row |
+| Analytics Scan | Parquet/BigQuery | Document store | Touches every field of every document |
+| Time Series | InfluxDB/TimescaleDB | Plain Postgres | No time partitioning; the index stops helping |
+| Full-Text Search | Elasticsearch | `LIKE '%term%'` | Leading wildcard defeats the index; full scan |
+| Stream Processing | Kafka + Flink | Batch ETL | Latency floor is your batch interval, by construction |
+| Graph Traversal | Neo4j | Recursive CTEs | Each hop is another join over the whole edge table |
 
-Shopify's architecture demonstrates polyglot persistence at scale. Their data platform combines [Apache Kafka](https://shopify.engineering/running-apache-kafka-on-kubernetes-at-shopify) for event streaming (handling 66 million messages per second at peak), [Vitess-sharded MySQL](https://shopify.engineering/capturing-every-change-shopify-sharded-monolith) across 100+ database shards for transactional data, and Redis clusters isolated per pod for caching. Each technology handles what it's optimized for: Kafka buffers high-volume events without blocking producers, MySQL with Vitess provides ACID transactions with horizontal scaling, and Redis delivers sub-millisecond lookups for session data.
+Shopify's architecture demonstrates polyglot persistence at scale. Their data platform combines [Apache Kafka](https://shopify.engineering/running-apache-kafka-on-kubernetes-at-shopify) for event streaming—billions of events a day across their clusters—with [Vitess-sharded MySQL](https://shopify.engineering/capturing-every-change-shopify-sharded-monolith) for transactional data and Redis for caching. Each technology handles what it's optimized for: Kafka buffers high-volume events without blocking producers, MySQL with Vitess provides ACID transactions with horizontal scaling, and Redis delivers sub-millisecond lookups for session data.
 
 The alternative—forcing MySQL to handle event streaming, caching, and OLAP queries—would require either vertical scaling to increasingly expensive hardware or accepting degraded performance across all workloads. Polyglot architectures trade operational complexity for the ability to match each data access pattern to purpose-built infrastructure.
 
@@ -455,7 +449,7 @@ After all the theory, here's what actually matters when choosing formats:
 - Constantly → JSON blob with validation layer
 - Every sprint → You have bigger problems
 
-Schema evolution matters more than most teams realize until it's too late. Your data schema *will* change: new fields get added, old ones deprecated, types get refined. Parquet handles this poorly—add a column and older readers choke. Avro was designed for exactly this problem: it stores the writer's schema with the data and can automatically translate between schema versions. If your upstream systems change frequently (and they will), format choice determines whether that's a Tuesday or a two-week migration project.
+Schema evolution matters more than most teams realize until it's too late. Your data schema *will* change: new fields get added, old ones deprecated, types get refined. Bare Parquet handles the easy half of this—append a column and readers that don't know about it simply don't read it—and handles the rest badly. Rename a column, change a type, or reorder fields, and behavior depends on which engine is reading and whether it matches by name or by position. Avro was designed for exactly this problem: it stores the writer's schema alongside the data and resolves it against the reader's schema explicitly. This is also precisely the gap that Iceberg and Delta fill on top of Parquet, by tracking column identity in metadata instead of leaving it to the file. If your upstream systems change frequently (and they will), format choice determines whether that's a Tuesday or a two-week migration project.
 
 **4. What's the access pattern?**
 - Full scans → Parquet (columnar wins)

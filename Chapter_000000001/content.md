@@ -28,17 +28,17 @@ And I'm going to be super honest with you: we (the ML community) got drunk on mo
 
 Ng's revolutionary insight was basically: "Hey folks, maybe we should tune the guitar first?"
 
-I remember when I saw that talk—half of me was like, "doesn't everyone already know this?" I've been very lucky to work at places like Google, Amazon, and Microsoft, and teams internally had been facing this stuff for years. But Andrew's a really smart guy, and if he's feeling the need to put out a blog post / YouTube video around this, it dawned on me that maybe not everyone is up to speed.
+The reaction inside large engineering organizations was somewhere between agreement and impatience—a lot of "doesn't everyone already know this?" Teams at Google, Amazon, and Microsoft had been fighting this exact problem for years, mostly without a name for it. But when somebody with Ng's reach decides a message needs a talk and a campaign behind it, that is a reliable signal the rest of the field hasn't caught up.
 
 I keep waiting for a book or pamphlet or a sky-writing announcement that helps people realize that the latest model will only get you so far, there's so much more before even using it. But I haven't seen it, so I'm going to take a shot at writing some of that stuff here.
 
 ### The Numbers That Should Scare You Straight
 
-Here's what I've seen across dozens of projects:
+These are rules of thumb, not measurements—what you actually get depends entirely on how bad the data was to begin with. But the *ordering* holds across a startling range of projects:
 
 - **Model architecture improvements**: 1-2% accuracy gain (if you're lucky and the moon is in the right phase)
 - **Cleaning your data**: 5-10% accuracy gain
-- **Actually understanding your data**: 20-30% accuracy gain (I've seen this with my own eyes, multiple times)
+- **Understanding your data well enough to fix the right things**: 20-30% accuracy gain
 
 > **Figure 1.1**: *Improvement sources compared. Model architecture changes typically yield 1-2% gains; data cleaning delivers 5-10%; truly understanding your data can unlock 20-30% improvements.*
 
@@ -48,38 +48,38 @@ Many years ago (well 2009, but in AI world that's like last century) Alon Halevy
 
 Think of it like cooking. You can't make a bad ingredient good by using more of it. A ton of rotten tomatoes doesn't make better sauce than a handful of good ones. It just makes more bad sauce. And now your kitchen smells weird.
 
-Here's what I've learned the hard way (so you don't have to):
+Here's what that looks like in practice:
 
 **Quality compounds, quantity plateaus.** You know that feeling when you're debugging code and you fix one thing and suddenly five other things start working? Data quality is like that, but in reverse for bad data. One mislabeled example teaches your model wrong. Or breaks your pipeline. Or remains hidden for months and months until finally something goes wrong and you go back and question how this ever worked.
 
-Those wrong outcomes affect how it interprets other examples. Those misinterpretations affect your confidence scores. Those confidence scores affect your active learning. Before you know it, you're in what I call "ML debt spiral," and you're explaining to your VP why the model thinks all dogs are cats on Tuesdays.
+Those wrong outcomes affect how it interprets other examples. Those misinterpretations affect your confidence scores. Those confidence scores affect your active learning. Before you know it, you're in an ML debt spiral, and you're explaining to your VP why the model thinks all dogs are cats on Tuesdays.
 
 > **Figure 1.2**: *The ML Debt Spiral. One mislabeled example teaches wrong patterns → affects confidence scores → corrupts active learning → compounds into systemic bias. Breaking the cycle requires going back to the source.*
 
-**Small datasets are your friends (really!).** I worked with a team that was producing 600,000 readings every second. You know what they actually needed? About 10,000 single data points, every 10 minutes. The rest was basically very expensive random noise that took forever to process and made their cloud bill look like a phone number.
+**Small datasets are your friends (really!).** Take an industrial telemetry team producing 600,000 readings every second. What the model actually needed was about 10,000 single data points, every 10 minutes. The rest was very expensive random noise that took forever to process and made the cloud bill look like a phone number.
 
-A great summary on exactly how impactful this can be is Google's paper ["Data Scaling Laws in NLP"](https://arxiv.org/abs/2001.08361) showing that careful data curation beats massive scale. Or don't trust me, do the math yourself and save yourself the storage and network costs.
+There is a formal version of this. ["Beyond neural scaling laws: beating power law scaling via data pruning"](https://arxiv.org/abs/2206.14486) (Sorscher et al., NeurIPS 2022) showed that if you can rank your training examples by how much each one teaches, throwing the useless ones away beats the power-law scaling everyone budgets around. More data has a predictable, disappointing return curve. *Better-chosen* data does not.
 
 **Debugging is actually possible.** With 10,000 examples, when something goes wrong, you can actually look at the data. With 10 billion? Good luck. You'll be sampling and praying, which is basically the ML equivalent of "thoughts and prayers"—heartfelt but ineffective.
 
-### A Real Story That Still Makes Me Laugh (And Cry)
+### A Real Story That Should Make You Laugh (And Cry)
 
-I once worked with a retailer whose product classification model was stuck at poor accuracy. If I recall correctly, they needed it to be above 75% because otherwise what was the point of using a model, you could just hire poorly paid interns to manually classify. They'd tried everything—ResNet, EfficientNet, even Vision Transformers (because who doesn't love transformers for everything these days?).
+A retailer's product classification model was stuck at poor accuracy. It had to clear 75%, because below that there was no reason to run a model at all—you could hire interns to classify by hand for less. The team had tried everything: ResNet, EfficientNet, even Vision Transformers, because who doesn't love transformers for everything these days.
 
-I asked to see the data. They looked at me like I'd asked to see their childhood photos. "The data? But... we need a better model!"
+Nobody had looked at the data. When somebody finally asked to, the reaction was the one you always get: "The data? But... we need a better model!"
 
-Folks, what we found would make you weep:
+What was in there would make you weep:
 
-- The same shoe was labeled as "sneaker," "trainer," "athletic shoe," and (my personal favorite) "foot sock"
-- 30% of the data was in a category called "miscellaneous" (Sanskrit for "we gave up")
+- The same shoe was labeled "sneaker," "trainer," "athletic shoe," and—the standout—"foot sock"
+- 30% of the data sat in a category called "miscellaneous" (Sanskrit for "we gave up")
 - Product photos included mannequins that were sometimes more prominent than the actual product
-- One enterprising annotator had labeled all blue items as "electronics" because "electronics are usually blue, right?"
+- One enterprising annotator had labeled all blue items "electronics," because electronics are usually blue, right?
 
-We spent three weeks cleaning. Just cleaning. No fancy algorithms, no TPUs (Tensor Processing Units), no sacrifice to the ML gods. Used the same ResNet-50 that PyTorch gives you out of the box.
+Three weeks of cleaning followed. Just cleaning. No fancy algorithms, no TPUs (Tensor Processing Units), no sacrifice to the ML gods. Same ResNet-50 that PyTorch gives you out of the box.
 
 Result? 89% accuracy.
 
-The CTO asked what magic we'd used. I told him: "Excel and common sense." He didn't believe me. I showed him the Git history. He still didn't believe me. Some people just want to believe in magic.
+The CTO asked what magic had been used. The real answer was "Excel and common sense." He didn't believe it. The Git history didn't convince him either. Some people just want to believe in magic.
 
 ### The LLM Data Quality Crisis
 
@@ -97,7 +97,7 @@ The fix? Three engineers spent two weeks cleaning the training data. No model ch
 
 ### GIGO: Not Your Grandfather's Problem Anymore
 
-The phrase ["Garbage In, Garbage Out"](https://en.wikipedia.org/wiki/Garbage_in,_garbage_out) dates back to the 1960s, when computers were the size of refrigerators and programmers wore ties. Back then, GIGO was simple: put in 2+2=5, get out wrong answers. Today? Not quite so deterministic.
+The phrase ["Garbage In, Garbage Out"](https://en.wikipedia.org/wiki/Garbage_in,_garbage_out) shows up in print as early as 1957, in a newspaper piece about Army mathematicians, back when computers were the size of refrigerators and programmers wore ties. Back then, GIGO was simple: put in 2+2=5, get out wrong answers. Today? Not quite so deterministic.
 
 Today's garbage is sneaky. It's like that roommate who seems clean but is secretly leaving dirty dishes in the sink because they are "soaking." Or worse, they are putting them under the bed, and you do not find out about them until the local raccoons are setting up a nest in your attic. Your model looks great, validates beautifully, and then face-plants in production because it learned that all pictures taken of arctic huskies happen to have snow in the background, so you didn't build a wolf detector, you built a snow detector (true story from ["Why Should I Trust You?" Explaining the Predictions of Any Classifier](https://arxiv.org/pdf/1602.04938)).
 
@@ -107,11 +107,11 @@ Buckle up, because this one's a doozy.
 
 During COVID-19, the ML community did what it does best: threw models at the problem. Over 600 papers! Models everywhere! It was like Black Friday but for ArXiv.
 
-[Roberts et al.'s systematic review](https://www.nature.com/articles/s42256-021-00307-0) looked at all these models. Guess how many were actually useful?
+[Roberts et al.'s systematic review](https://www.nature.com/articles/s42256-021-00307-0) went looking for the ones that worked. They started from 2,212 papers, screened down to 415, and gave 62 of them a full methodological review. Guess how many were fit for clinical use.
 
-Two.
+None.
 
-Not two hundred. Not two dozen. Two. Out of 606.
+Not two hundred. Not two dozen. Zero, out of sixty-two finalists drawn from a field of two thousand.
 
 That's a success rate that makes dating apps look effective.
 
@@ -125,7 +125,7 @@ That's a success rate that makes dating apps look effective.
 *Month 3-4 (False Hope Phase):*
 - 98% accuracy reported!
 - No external validation
-- Models learning hospital fonts, not disease patterns
+- Models learning image annotations, not disease patterns
 
 *Month 5-6 (Reality Check):*
 - Models fail spectacularly on new data
@@ -134,7 +134,7 @@ That's a success rate that makes dating apps look effective.
 
 **The "Clever Hans" Effect**
 
-You know [Clever Hans](https://en.wikipedia.org/wiki/Clever_Hans), the horse that could "count" but was actually just reading body language? These models were doing the same thing. One model achieved 98% accuracy by learning to identify the font used by different hospitals. Another learned that portable X-ray machines = COVID positive (because they were used in ICU units).
+You know [Clever Hans](https://en.wikipedia.org/wiki/Clever_Hans), the horse that could "count" but was actually just reading body language? These models were doing the same thing. [DeGrave, Janizek, and Lee](https://www.nature.com/articles/s42256-021-00338-7) pulled apart the high-scoring COVID classifiers and found them keying on laterality markers, text burned into the corner of the image, and how the patient had been positioned—everything except the lungs. The Cambridge group found a worse one: several datasets used pediatric scans for the non-COVID class and adult scans for the COVID class, so the only thing the model had really learned was how to tell a child from an adult.
 
 It's like training a food critic AI that gives five stars to any restaurant with a French name.
 
@@ -146,19 +146,17 @@ People combined datasets like they were making trail mix. "Let's take some data 
 
 [Amazon's infamous recruiting tool](https://www.reuters.com/article/us-amazon-com-jobs-automation-insight-idUSKCN1MK08G) is like a cautionary tale parents should tell their ML children.
 
-They trained it on 10 years of resumes. Sounds reasonable, right? Except tech in 2008-2018 was heavily biased towards hiring men. The model learned that "women" or "women's" was a negative signal. It downranked graduates from women's colleges.
+Amazon started building it in 2014 and trained it on the previous decade of resumes. Sounds reasonable, right? Except tech hiring from 2004 to 2014 skewed heavily male. The model learned that "women" or "women's" was a negative signal. It downranked graduates from women's colleges. The team spotted the problem in 2015, couldn't guarantee it wouldn't find some other proxy for gender, and the project was killed in 2017.
 
 The terrifying part? The model was doing exactly what we asked it to do: learn from historical patterns. But only with oversight, and understanding exactly what the source of the model's training data is can we understand, and diagnose, why a hiring pipeline is broken.
 
 ### Even ImageNet Is Broken (Sorry, Not Sorry)
 
-ImageNet, the dataset that launched a thousand papers, is kind of a mess. [Northcutt et al. from MIT found](https://arxiv.org/abs/2103.14749):
+ImageNet, the dataset that launched a thousand papers, is kind of a mess. [Northcutt, Athalye, and Mueller](https://arxiv.org/abs/2103.14749) hand-checked the test sets of ten benchmark datasets and found label errors throughout: at least 3.3% on average, and **at least 6% of the ImageNet validation set**.
 
-- ~6% of labels are just wrong
-- ~10% are "ambiguous" (academic speak for "we're not sure either")
-- The "basketball" category is basically "NBA players holding round objects"
+Sit with that one. The validation set is the scoreboard. If six percent of the answers on the scoreboard are wrong, a model can be marked down for being right, and a model that learned the *mistakes* can outrank one that learned the task. The paper's title says it plainly: pervasive label errors destabilize benchmarks.
 
-Every model trained on ImageNet inherited these problems. If you fine-tuned your models using those data sources as inputs, you'll just be compounding the problem. It's turtles all the way down. The ONLY way to break this cycle is to actually look at your data, understand its flaws, and either fix them or explicitly account for them in your model design (we'll cover both approaches in Chapter 7).
+Every model ever ranked on ImageNet was graded against those errors, and every model fine-tuned from ImageNet weights inherited whatever the *training* set's error rate is—a number nobody has measured as carefully. If you fine-tuned using those data sources as inputs, you're compounding the problem. It's turtles all the way down. The ONLY way to break this cycle is to actually look at your data, understand its flaws, and either fix them or explicitly account for them in your model design (we'll cover both approaches in Chapter 7).
 
 ## 1.3 Data-Centric vs Model-Centric: The Middle Path
 
@@ -223,11 +221,11 @@ Here's what actually works in practice:
 
 ## 1.4 What Data-Centric Actually Means in Practice
 
-I've watched a lot of projects succeed and a lot more fail. The difference isn't frameworks or tools or how many GPUs you can requisition. It's a handful of habits that separate the teams who ship from the teams who pivot.
+Plenty of projects succeed and more of them fail, and the difference is rarely frameworks or tools or how many GPUs a team can requisition. It's a handful of habits that separate the teams who ship from the teams who pivot.
 
 ### The Pipeline That Ran for 847 Days (And Then Didn't)
 
-I learned about defensive design the hard way. A data pipeline at a company I was consulting for had been running successfully for 847 days. Every single day, data flowed in, got processed, and fed the models. 847 days of green checkmarks.
+Defensive design is a lesson nearly everyone learns the hard way. One data pipeline had been running successfully for 847 days. Every single day, data flowed in, got processed, and fed the models. 847 days of green checkmarks.
 
 On day 848, an upstream system changed their date format from `YYYY-MM-DD` to `MM/DD/YYYY`. The pipeline didn't crash—that would have been merciful. Instead, it silently started interpreting dates wrong. March 4th became April 3rd. The model started making predictions about events that hadn't happened yet.
 
@@ -241,7 +239,7 @@ The lesson isn't "validate your date formats" (though yes, do that). The lesson 
 
 The most terrifying sentence in data engineering is: "I don't know where this number came from."
 
-I heard it from a VP at a financial services company. They were being audited. The auditor asked why a particular customer was flagged as high-risk. The model said so, but nobody could explain why. The training data that led to that classification had been through seventeen different transformations across three different systems. The original source? Unknown. The transformation logic? Partially documented in a Confluence page from 2019 that referenced code that had since been deleted.
+A VP at a financial services firm said it out loud during an audit. The auditor asked why a particular customer was flagged as high-risk. The model said so, but nobody could explain why. The training data that led to that classification had been through seventeen different transformations across three different systems. The original source? Unknown. The transformation logic? Partially documented in a Confluence page from 2019 that referenced code that had since been deleted.
 
 The audit did not go well.
 
@@ -249,29 +247,29 @@ The audit did not go well.
 
 ### The Schema That Grew Organically
 
-Early in my career, I built a data pipeline with a beautifully strict schema. Every field was typed, validated, and documented. It was a work of art.
+Somewhere right now, somebody is building a data pipeline with a beautifully strict schema. Every field typed, validated, documented. A work of art.
 
-It lasted two weeks.
+It will last about two weeks.
 
-Then the business needed a new field. And another. And a nullable version of an existing field "just for now." And a JSON blob for "miscellaneous attributes we might need later." Within six months, my beautiful schema was a Frankenstein's monster of required fields that weren't really required, optional fields that were actually mandatory, and that JSON blob had become a dumping ground for everything that didn't fit anywhere else.
+Then the business needs a new field. And another. And a nullable version of an existing field "just for now." And a JSON blob for "miscellaneous attributes we might need later." Within six months the beautiful schema is a Frankenstein's monster of required fields that aren't really required, optional fields that are actually mandatory, and a JSON blob that has become the dumping ground for everything that didn't fit anywhere else.
 
-The opposite approach—no schema at all—is equally disastrous. I've seen teams drown in unstructured data, spending more time parsing than analyzing.
+The opposite approach—no schema at all—is equally disastrous. Teams drown in unstructured data, spending more time parsing than analyzing.
 
 **The answer is schema evolution, not schema perfection.** Start simple. Accept messy data but quarantine it. Add structure incrementally, where it provides value. Your schema should grow like a plant—organically, in response to its environment—not like a building, designed upfront and then stuck with forever.
 
 ### The Dashboard Nobody Trusted
 
-A retail company I worked with had beautiful dashboards. Real-time data, gorgeous visualizations, automatic alerts. The problem? Nobody used them.
+A retail company had beautiful dashboards. Real-time data, gorgeous visualizations, automatic alerts. The problem? Nobody used them.
 
 The data scientists had learned not to trust the numbers. Too many times, the dashboard showed something alarming, they'd investigate, and discover it was a data quality issue, not a real problem. After enough false alarms, they started ignoring the dashboards entirely. When a real problem finally showed up, nobody noticed for three days.
 
 **Observability isn't about pretty dashboards—it's about trust.** Your monitoring should tell you not just what the numbers are, but whether you should believe them. Track data quality metrics alongside business metrics. Alert on anomalies in the data itself, not just anomalies in the results. Build confidence intervals. Show your work.
 
-Documentation helps, but running systems tell the truth in a way that documentation can't. The best pipelines I've seen are self-describing: you can look at the metrics and understand not just what happened, but why.
+Documentation helps, but running systems tell the truth in a way documentation can't. The best pipelines are self-describing: you can look at the metrics and understand not just what happened, but why.
 
 ### The Tuesday Bug
 
-One of my favorite debugging war stories involves a pipeline that produced different results on Tuesdays.
+There is a whole genre of bug that only shows up on Tuesdays. Here is a real one: a pipeline that produced different results on Tuesdays.
 
 Not wrong results, exactly. Just... different. Slightly different distributions, slightly different model scores. Nobody could figure out why until someone noticed that the ingestion job ran at 2 AM, and on Tuesdays, it overlapped with a maintenance window that added 200ms of latency to database queries. The timeout logic was set to 150ms. On Tuesdays, some queries timed out. The fallback code path handled missing data by using last week's values.
 
@@ -281,9 +279,9 @@ The pipeline had been doing this for eight months.
 
 ### The Audit That Saved the Company
 
-The best data teams I've worked with have a simple rule: never delete anything.
+The best data teams have a simple rule: never delete anything.
 
-Storage is cheap. Debugging production issues without historical data is expensive. I know a company that avoided a $2M lawsuit because they could prove, from their audit logs, exactly what data was used to train a model that was being challenged. Another company found a subtle bug that had been introduced six months earlier—they could only fix it because they had the original data to compare against.
+Storage is cheap. Debugging production issues without historical data is expensive. One company avoided a $2M lawsuit because they could prove, from their audit logs, exactly what data was used to train a model that was being challenged. Another company found a subtle bug that had been introduced six months earlier—they could only fix it because they had the original data to compare against.
 
 **Keep everything, but keep it organized.** Raw data goes to cold storage after 90 days. Processed data keeps the last 10 versions. Failed processing attempts get logged forever with full error details. Every access, every transformation, every decision gets recorded somewhere.
 
@@ -291,11 +289,11 @@ The next person to debug your pipeline might be you, six months from now, having
 
 ## 1.5 Learning from Failures: The Hall of Shame (And Fame)
 
-### The 80% Failure Rate: It's Not You, It's... Actually, It Might Be You
+### The Failure Rate: It's Not You, It's... Actually, It Might Be You
 
-[Gartner says 80% of AI projects fail](https://www.gartner.com/en/newsroom/press-releases/2020-10-19-gartner-identifies-the-top-strategic-technology-trends-for-2021). That's worse than restaurants, startups, or my attempts at making sourdough during lockdown.
+[Gartner predicted back in 2018](https://www.gartner.com/en/newsroom/press-releases/2018-02-13-gartner-says-nearly-half-of-cios-are-planning-to-deploy-artificial-intelligence) that through 2022, 85% of AI projects would deliver erroneous outcomes "due to bias in data, algorithms or the teams responsible for managing them."
 
-They don't fail because of bad algorithms. They fail because of bad data. Let's learn from the fallen.
+Read where they put the blame. Two of those three are data problems outright, and the third is the people who were supposed to be looking at the data. Let's learn from the fallen.
 
 ### Case Study 1: The Recommendation Engine That Recommended Everything
 
@@ -432,7 +430,7 @@ But you know what? It works. It ships. It makes money. It actually solves proble
 
 In Chapter 2, we're going to dive into data types—the fundamental building blocks that determine whether your model thinks a ZIP code is a really big number or a categorical variable. We'll explore why "structured" data lies to you, why timestamps are secretly the hardest data type, and why your Boolean field contains the string "false" (which evaluates to True).
 
-Until then, stop reading blogs about the latest architecture and go look at your actual data. Yes, right now. Open a Jupyter notebook, load a random batch, and really LOOK at it. I guarantee you'll find something surprising.
+Until then, stop reading blogs about the latest architecture and go look at your actual data. Yes, right now. Open a Jupyter notebook, load a random batch, and really LOOK at it. Nobody does this and comes back empty-handed.
 
 And remember the leverage: an hour spent making your data better pays back many times over in model tuning you never have to do. That's not a motivational poster; that's math.
 

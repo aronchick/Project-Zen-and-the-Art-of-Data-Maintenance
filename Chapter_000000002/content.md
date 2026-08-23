@@ -6,7 +6,7 @@
 
 Chapter 1 was philosophy and principles. This chapter is about what data actually *is* - the nuts and bolts that determine whether your pipeline processes information or generates expensive nonsense.
 
-Data types are like ingredients. You can have the best recipe in the world, but mix up salt and sugar and you're fucked. Unlike cooking, you can't taste-test your model and start over. Well, you can, but it costs $50,000 in compute and your manager starts asking extremely uncomfortable questions about your decision-making process.
+Data types are like ingredients. You can have the best recipe in the world, but mix up salt and sugar and you're fucked. Unlike cooking, you can't taste-test your model and start over. Well, you can, but it costs $65,000 in compute and your manager starts asking extremely uncomfortable questions about your decision-making process.
 
 ## 2.1 The Great Data Type Disaster
 
@@ -22,7 +22,7 @@ Mathematically sound. And insane.
 
 This isn't the label quality problem from Chapter 1—those shoes were at least correctly identified as footwear. This is a *structure* problem: the model treated identifiers as quantities.
 
-Because the model had been performing so well on validation data, no one thought to triple-check. One week later, they discovered they'd auto-ordered 50,000 units of toilet paper for their jewelry department.
+Because the model had been performing so well on validation data, no one thought to triple-check. One week later, they discovered they'd auto-ordered 50,000 cases of toilet paper for their jewelry department.
 
 What's the failure here? In many ways, this is a "happy case"—at least the pipeline didn't crash, the system didn't error out, and nobody woke up at 3 AM to figure out why the website was down.
 
@@ -128,7 +128,7 @@ This is the expert-level mistake. Worried about the first three horsemen, you sp
 
 Your strict parser ends up being so brittle that it either breaks on valid inputs or, worse, throws away most of your data.
 
-**The tell:** Your data pass-through percentage is small (anything less than 90% is a real issue), or the "structured" data you produce seems to be missing crucial information that you can see plainly in the raw source.
+**The tell:** Your data pass-through percentage is small (anything less than 90% is a real issue), or the "structured" data you produce is missing information you can see plainly in the raw source.
 
 **The example:** You're extracting structured data from customer support chat logs.
 
@@ -157,7 +157,7 @@ This principle challenges the common instinct to immediately structure and norma
 
 ### The Hospital Records Lesson
 
-A hospital system decided to "modernize" by converting 20 years of medical records into structured data. Budget: $2M. Timeline: 6 months.
+A hospital system decided to "modernize" by converting 20 years of medical records into structured data. Budget: $3M. Timeline: 6 months.
 
 **Month 1**: "We'll use OCR!" (Narrator: They would not use OCR.)
 
@@ -171,7 +171,7 @@ A hospital system decided to "modernize" by converting 20 years of medical recor
 
 **Month 6**: Hired 50 medical students to manually transcribe.
 
-**Final cost**: $8M
+**Final cost**: $11M
 **Final timeline**: 18 months
 **Accuracy**: "Good enough for billing"
 
@@ -226,7 +226,7 @@ When a new use case emerges—say, analyzing conversion rates by screen resoluti
 
 ## 2.5 Type Conversion Disasters: A Field Guide
 
-Every type conversion failure I've witnessed follows one of five patterns. Learn them, and you'll recognize the disaster before it ships.
+Type conversion failures come in five recognizable patterns. Learn them and you'll spot the disaster before it ships.
 
 ### The ZIP Code Incident
 
@@ -260,9 +260,9 @@ The failure mode: your parser tries to be helpful by guessing formats. It guesse
 
 Phone numbers look like numbers. They're not. They're strings with specific formatting conventions that vary by country, carrier, and the mood of whoever entered the data.
 
-When a type inference engine sees "555-0123", it helpfully computes 555 minus 123 and gives you 432. "555.012.3456" becomes 555.0123456 (a float!). "+1-555-012-3456" becomes 1 (everything after the first non-numeric character is discarded). 
+The damage lands in three predictable places. Leading zeros vanish the moment anything infers a numeric type, so the London number `020 7946 0958` loses the `0` that identifies the city. Excel renders long digit strings in scientific notation, and past fifteen significant digits it stops storing them exactly at all—which is why account numbers and IMEIs come back from a spreadsheet round-trip with trailing zeros that were never in the original. And loose parsers truncate instead of failing: JavaScript's `parseInt("+1-555-012-3456")` returns `1`, because it reads digits until it hits something that isn't one and hands back whatever it has.
 
-Your customer contact list is now unusable.
+None of these throw. Your contact list is now unusable and nothing in your logs says so.
 
 **The prevention:** Phone numbers are ALWAYS strings. Period. If you need to validate or normalize them, use a purpose-built library (like `phonenumbers` in Python) that understands international formats. Never let numeric type inference touch a phone column.
 
@@ -372,7 +372,7 @@ Take a dataset you're currently working with and examine every column. For each 
 
 Now compare what the tool inferred against what the data actually IS. Count the mismatches.
 
-If you find more than three columns with wrong types, you have real work to do before any modeling. If you find zero, you're either lying or you haven't looked hard enough. Every dataset I've ever audited had at least one type problem.
+If you find more than three columns with wrong types, you have real work to do before any modeling. If you find zero, you're either lying or you haven't looked hard enough. There is no such thing as a dataset with no type problems in it.
 
 ### Exercise 2: The Structured vs Raw Decision (Time: ~20 minutes)
 
@@ -391,7 +391,7 @@ Load a dataset you trust. Try to find examples of each horseman:
 3. **Semantic sinkholes**: Valid types with impossible values
 4. **Schema mirages**: Overly rigid structures that lose information
 
-I guarantee you'll find at least two.
+You will find at least two.
 
 ## Bridge to Chapter 3
 
