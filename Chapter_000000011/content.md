@@ -185,7 +185,7 @@ Half the outliers in this chapter weren't outliers. They were the correct upper 
 
 That's Chapter 12. Feature scaling and transformation is the most boring topic in this book and it silently decides whether half the algorithms in your toolkit work at all. A k-nearest-neighbors model where one feature is measured in dollars and another in years isn't computing similarity, it's computing dollars. Gradient descent on unscaled features doesn't converge so much as stagger. And the log transform that makes your claim-severity distribution behave is the same operation that makes your outlier problem disappear without deleting a single row.
 
-Chapter 12 covers which algorithms actually require scaling and which don't care, how to pick a transformation, and the leakage trap that sits inside every scaler—the one where you fit on the full dataset before splitting and quietly inflate every number you report afterward.
+Chapter 12 covers which algorithms actually require scaling and which don't care, how to pick a transformation, and the leakage trap that sits inside every scaler—the one where you fit it on everything you have and inflate every number you report afterward.
 
 ---
 

@@ -169,6 +169,10 @@
 
 ### Chapter 13: Encoding Strategies for Categorical Variables
 
+**[Read Chapter 13](Chapter_000000013/content.md)**
+
+*Inventing arithmetic for things that don't have any—and what your encoder does on a Tuesday when a category shows up that wasn't in training.*
+
 - 13.1 Understanding Categorical Types: Nominal, Ordinal, and Cyclical
 - 13.2 Basic to Advanced Encoding Techniques
 - 13.3 Target-Based Encoding and Regularization
@@ -179,6 +183,10 @@
 ## Part V: Feature Engineering and Selection
 
 ### Chapter 14: The Art of Feature Creation
+
+**[Read Chapter 14](Chapter_000000014/content.md)**
+
+*Where good features actually come from, and why the tool that generates three thousand of them will miss the one that matters.*
 
 - 14.1 Domain Knowledge: The Competitive Advantage
 - 14.2 Mathematical and Statistical Transformations

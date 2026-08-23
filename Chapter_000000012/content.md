@@ -176,7 +176,7 @@ Three more traps that a `Pipeline` alone won't save you from.
 
 **Print your feature ranges (5 min).** Run `X.describe().T` and look at the min and max columns. If the widest range is more than a couple orders of magnitude above the narrowest, and your model is distance-based, gradient-descent-trained, regularized, or PCA, you have the freight problem right now. This is a five-minute check that would have saved that marketplace fourteen months.
 
-**Grep for the leak (10 min).** Search your training code for `fit_transform`. For every hit, determine whether it runs before or after the train/test split. Every one that runs before is inflating a number you've reported to somebody.
+**Grep for the leak (10 min).** Chapter 10 had you run this check on imputers; run it now on scalers. Search your training code for `fit_transform` and check each hit against the split. Anything fit on everything has already described your test set's distribution to your model.
 
 **Check whether your scaler does anything (15 min).** If your model is a gradient-boosted tree, train it once with your scaling step and once without. The metrics will be materially identical. Delete the step—you're carrying a fitted artifact through training, serialization, and serving for no benefit, and it's one more thing that can desynchronize.
 
