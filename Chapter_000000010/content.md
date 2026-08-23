@@ -122,7 +122,7 @@ To state it plainly: **you cannot validate an imputation against ground truth, b
 
 **What does my imputation do to aggregate statistics, like distributions?** Overlay the imputed values against the observed ones. Mean imputation will often be incredibly obvious—a single spike where a distribution should be. Then check the correlation matrix before and after imputation. If your correlations moved substantially toward zero, your imputer diluted the structure you were trying to model.
 
-**What changes downstream once I start imputing?** Does the model ACTUALLY get better? Cross-validated, with the imputer fit *inside* each fold. Which brings us to the most common anti-pattern in this chapter's territory.
+**What changes downstream once I start imputing?** Does the model ACTUALLY get better? Cross-validated, with the imputer fit *inside* each fold. Which is where the field's favorite anti-pattern lives.
 
 Fitting the imputer on the entire dataset before splitting for training / test is leakage, because the median you filled the training rows with was computed using the test rows. It is a small leak, it inflates your validation score by a modest and entirely fake amount, and it is present in an alarming share of the notebooks in the world. The point people miss is that an imputer *has fitted parameters* of its own—that median is something it learned from data. Anything with fitted parameters belongs inside the `Pipeline` object and inside the fold, alongside the scaler and the encoder.
 

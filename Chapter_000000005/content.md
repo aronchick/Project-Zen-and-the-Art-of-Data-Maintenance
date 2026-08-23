@@ -50,7 +50,7 @@ The promise is always compelling: "Our partner will give us their customer data,
 
 Data-sharing consortia collapse over this constantly, and rarely for technical reasons. A retail co-op's initiative dies because the partners cannot agree on update cadence. One partner pushed daily updates; another pushed weekly. Some partners sent full snapshots; others sent only deltas. By the time the data engineering team built a system to reconcile all of this, the underlying business reality had drifted so far from the harmonized dataset that the models trained on it were worse than models trained on single-partner data alone.
 
-Second-party data works when you have clear contracts, genuinely shared incentives, technical alignment on formats and cadence, and—this is crucial—explicit ownership of what happens when things go wrong. If your partnership agreement doesn't include an SLA for schema change notification, you don't have a data partnership. You have a ticking time bomb.
+Second-party data works when you have clear contracts, genuinely shared incentives, technical alignment on formats and cadence, and—the part everyone skips—explicit ownership of what happens when things go wrong. If your partnership agreement doesn't include an SLA for schema change notification, you don't have a data partnership. You have a ticking time bomb.
 
 ### 5.1.3 Third-Party Data: The Vendor Roulette
 
@@ -302,7 +302,7 @@ Lineage tracks data flow from source to destination through all intermediate tra
 
 Lineage granularity matters. Table-level lineage tells you that Table A depends on Table B. Column-level lineage tells you that Column A.foo comes from Column B.bar. Row-level lineage tells you that specific rows in the output came from specific rows in the input. Finer granularity provides more precise impact analysis but is more expensive to compute and store.
 
-The tool landscape includes Apache Atlas (Hadoop ecosystem), OpenLineage (a cross-platform lineage spec), Marquez (reference implementation of OpenLineage), and lineage features in commercial platforms like Atlan and Monte Carlo. Most modern orchestration tools can emit lineage events automatically as jobs run.
+For tooling: Apache Atlas (Hadoop ecosystem), OpenLineage (a cross-platform lineage spec), Marquez (the reference implementation of OpenLineage), and lineage features in commercial platforms like Atlan and Monte Carlo. Most modern orchestration tools can emit lineage events automatically as jobs run.
 
 ### 5.6.4 Practical Implementation
 

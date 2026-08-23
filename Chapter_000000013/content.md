@@ -129,6 +129,8 @@ pipe = Pipeline([("pre", pre), ("model", HistGradientBoostingClassifier())])
 cross_val_score(pipe, X, y, cv=5)
 ```
 
+One detail worth internalizing, because it bites people who hand-roll this: the cross-fitting happens in `fit_transform`, not in `fit` followed by `transform`. Calling `fit(X, y).transform(X)` on your training data gives you the leaky version. A `Pipeline` calls `fit_transform` for you, which is one more reason to use one.
+
 The `Pipeline` is not decoration. It is the thing that guarantees the encoder is fit inside each CV fold rather than once over everything, which is the exact leak Chapter 12 covered for scalers and which is far more dangerous here—a scaler leaks distribution shape, a target encoder leaks the answer.
 
 One trap worth naming: **leave-one-out encoding**, which computes each row's encoding from every other row in its category, sounds like the strictest possible fix and is in fact worse than smoothed out-of-fold. It leaks in a subtler direction—the encoded value becomes systematically *anti*-correlated with the row's own label, which a model can learn to invert. If it seems too clever, it is.
@@ -168,7 +170,7 @@ Your encoder was fit on a fixed vocabulary. Production is not fixed. A new merch
 
 **It raises.** `OneHotEncoder` with default settings throws on unknown input. Your inference service returns a 500. This is the *good* outcome, because you find out.
 
-**It silently zeroes.** With `handle_unknown="ignore"`, an unknown value produces a row of all zeros. That is not a neutral outcome; it is the encoder asserting "this record belongs to none of the known categories," which for a linear model means the entire categorical contribution vanishes and the prediction shifts toward the intercept. Every unknown value gets the same silent, confident, wrong answer. `handle_unknown="infrequent_if_exist"` is usually what you actually wanted—it routes unknowns into the infrequent bucket you already trained on, which at least has a learned response.
+**It silently zeroes.** With `handle_unknown="ignore"`, an unknown value produces a row of all zeros. That is not a neutral outcome; it is the encoder asserting "this record belongs to none of the known categories," which for a linear model means the entire categorical contribution vanishes and the prediction shifts toward the intercept. Every unknown value gets the same silent, confident, wrong answer. `handle_unknown="infrequent_if_exist"` is usually closer to what you wanted, because it routes unknowns into the infrequent bucket you already trained on, which at least has a learned response. Read that parameter name carefully, though: *if exist*. If you never set `min_frequency` or `max_categories`, there is no infrequent bucket, and the encoder falls back to the all-zeros behavior above without telling you. Two settings, and one of them is silently the other.
 
 **It gets the global mean.** Target encoders typically fall back to the prior for unseen categories, which is defensible and still needs to be a decision you made rather than a default you inherited.
 

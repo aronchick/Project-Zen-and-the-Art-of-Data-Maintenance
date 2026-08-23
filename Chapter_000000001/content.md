@@ -40,7 +40,7 @@ These are rules of thumb, not measurements—what you actually get depends entir
 - **Cleaning your data**: 5-10% accuracy gain
 - **Understanding your data well enough to fix the right things**: 20-30% accuracy gain
 
-> **Figure 1.1**: *Improvement sources compared. Model architecture changes typically yield 1-2% gains; data cleaning delivers 5-10%; truly understanding your data can unlock 20-30% improvements.*
+> **Figure 1.1**: *Improvement sources compared, as rules of thumb rather than measurements. Model architecture changes typically yield 1-2%; data cleaning delivers 5-10%; understanding your data well enough to fix the right things delivers 20-30%.*
 
 ### Why Small and Clean Beats Big and Messy
 
@@ -102,8 +102,6 @@ The phrase ["Garbage In, Garbage Out"](https://en.wikipedia.org/wiki/Garbage_in,
 Today's garbage is sneaky. It's like that roommate who seems clean but is secretly leaving dirty dishes in the sink because they are "soaking." Or worse, they are putting them under the bed, and you do not find out about them until the local raccoons are setting up a nest in your attic. Your model looks great, validates beautifully, and then face-plants in production because it learned that all pictures taken of arctic huskies happen to have snow in the background, so you didn't build a wolf detector, you built a snow detector (true story from ["Why Should I Trust You?" Explaining the Predictions of Any Classifier](https://arxiv.org/pdf/1602.04938)).
 
 ### The COVID-19 Diagnosis Disaster: A Masterclass in What Not to Do
-
-Buckle up, because this one's a doozy.
 
 During COVID-19, the ML community did what it does best: threw models at the problem. Over 600 papers! Models everywhere! It was like Black Friday but for ArXiv.
 
