@@ -2,11 +2,11 @@
 
 ## Or: The Number You Deleted Was the Business
 
-A property and casualty insurer wrote about 120,000 claims a year across personal auto and homeowners, against roughly $740 million in annual incurred losses. They built a claim-severity model: at first notice of loss, predict what this claim will ultimately cost, so the reserve gets set correctly on day one instead of six months later when an adjuster finally gets to it. Good project. Real money attached to it.
+A property and casualty insurer wrote about 120,000 claims a year across personal auto and homeowners, against roughly $740 million in annual incurred losses. They built a claim-severity model: at first notice of loss, predict what this claim will ultimately cost, so the reserve gets set correctly on day one instead of six months later when an adjuster finally gets to it. All great!
 
-The model validated at an R² of 0.71, which for claim severity is a strong number. It went into production setting initial reserves.
+The model validated at an R² of 0.71, which for claim severity is a strong number, so it went into production setting initial reserves.
 
-Eleven months later the year-end actuarial review came back with a reserve strengthening charge of $26 million. The book had been systematically under-reserved all year, and the model had been confidently wrong in one direction the entire time.
+Eleven months later the year-end actuarial review came back with a reserve strengthening charge of $26 million. Turns out the book had been systematically under-reserved all year, and the model had been confidently wrong in one direction the entire time.
 
 The cause was three lines in a preprocessing notebook:
 
@@ -15,41 +15,41 @@ cap = df["ultimate_loss"].quantile(0.99)
 df["ultimate_loss"] = df["ultimate_loss"].clip(upper=cap)
 ```
 
-Someone had winsorized the target at the 99th percentile. Worth being careful here, because the person who wrote that was not being lazy. They were solving a real problem, correctly diagnosed. Claim severity is violently heavy-tailed, mean squared error is dominated by the largest residuals, and a handful of catastrophic claims were jerking the training around so badly the model wouldn't converge cleanly. Capping the target fixed it. The loss curve got smooth. The validation metric went up. Every signal a data scientist normally trusts said this was the right move.
+Someone had winsorized the target at the 99th percentile. It's not that the person who wrote that was being lazy; they were solving a real problem, that they had investigated and correctly diagnosed. Claim severity is *extremely* heavy-tailed, mean squared error is dominated by the largest residuals, and a handful of catastrophic claims were jerking the training around so badly the model wouldn't converge cleanly. By capping the target, that solved the problem, the loss curve got smooth, and the validation metric went up. Every signal a data scientist normally trusts said this was the right move.
 
 In personal lines, the top 1% of claims by size accounted for about 34% of total loss dollars. A total house fire, a severe bodily injury with a lifetime care component, a liability verdict—these are rare and they are most of the money. Capping at the 99th percentile removed every example of the phenomenon that determines whether the company is profitable. The model was trained on a world in which the largest possible claim was $180,000, and then deployed into a world that regularly produces claims of $2 million.
 
-So it did exactly what it was taught. It became superb at predicting fender-benders and water damage—the claims that are numerous, well-behaved, and financially irrelevant—and it had never once seen a severe claim, so it reserved every one of them at roughly the cap. Twelve hundred times a year it looked at a catastrophic loss and said "call it a hundred and eighty grand." The R² of 0.71 was real. It was measured on capped data, against a capped target, which is to say it was a precise measurement of the model's skill at a task nobody needed done.
+So it did exactly what it was taught. The model became superb at predicting fender-benders and water damage—the claims that are numerous, well-behaved, and financially irrelevant—and it had never once seen a severe claim, so it reserved every one of them at roughly the cap. Twelve hundred times a year it looked at a catastrophic loss and said "call it a hundred and eighty grand." The R² of 0.71 was measured on capped data, against a capped target, which is to say it was a precise measurement of the model's skill at a task nobody needed done.
 
 They deleted the top 1% of their data and with it about a third of their business.
 
 ---
 
-The reflex that produced that disaster is the same reflex that produced Chapter 10's. Confronted with a value that makes the data awkward, reach for the standard move that makes it go away. Fill the null. Clip the tail. In both cases the standard move is a bet about where the value came from, and in both cases the pipeline will run perfectly whether or not the bet was right.
+The reflex that produced that disaster is the same reflex that produced Chapter 10's. Confronted with a value that makes the data awkward, reach for the standard move that makes it go away. Fill the null, clip the tail, get the core of the model right. In both cases the standard move is a bet about where the value came from, and in both cases the pipeline will run perfectly whether or not the bet was right.
 
-An outlier is not a property of a number. It is a *claim about the process that generated the number*—specifically, the claim that this point came from somewhere your model shouldn't represent. That claim can be true. Frequently it is. But it's a claim about the world, it cannot be settled by a threshold, and the entire cost of getting it wrong lands in the tail, which is where a great many businesses keep their profit, their risk, and the thing they hired you to predict.
+An outlier is not a property of a number. It is a *claim about the process that generated the number*—specifically, the claim that this point came from somewhere your model shouldn't represent. That claim can be true, and frequently it is! But it's a claim about the world, it cannot be settled by a threshold, and the entire cost of getting it wrong lands in the tail, which is where a great many businesses keep their profit, their risk, and the thing they hired you to predict.
 
 ---
 
 ## 11.1 Defining Outliers: Statistical vs Domain-Based Approaches
 
-The three-sigma rule is the most widely used piece of statistics in industry and almost nobody remembers where it comes from. Under a normal distribution, 99.7% of mass sits within three standard deviations of the mean, so a point outside that range is rare—one in about 370. Flagging it as suspicious is reasonable.
+The three-sigma rule is the most widely used piece of statistics in industry. Under a normal distribution, 99.7% of mass sits within three standard deviations of the mean, so a point outside that range is rare—one in about 370. Flagging it as suspicious is reasonable.
 
-*Under a normal distribution.* That's the whole load-bearing clause, and it does not hold for most of the quantities anyone cares about. Claim sizes, incomes, transaction values, page views, session durations, file sizes, city populations, word frequencies, order quantities—all right-skewed, most of them roughly log-normal or worse. On a log-normal distribution, points five and six standard deviations above the mean are not anomalies. They are Tuesday. Apply a three-sigma filter to a heavy-tailed variable and you are not removing errors, you are performing a distributional lobotomy and calling it data cleaning.
+*Under a normal distribution.* This is a CRITICAL statement to get right. Claim sizes, incomes, transaction values, page views, session durations, file sizes, city populations, word frequencies, order quantities—all right-skewed, most of them roughly log-normal or worse. On a log-normal distribution, points five and six standard deviations above the mean are not anomalies, they happen every Tuesday. If you apply a three-sigma filter to a heavy-tailed variable and you are not removing errors, you are performing a distributional lobotomy and calling it data cleaning.
 
-The mean and standard deviation have a second problem, which is that they are computed from the data including the outliers. One value entered as 5,000,000 instead of 50 will inflate the standard deviation enough that it no longer flags itself. Statisticians call this *masking*, and it means the three-sigma rule is least reliable in exactly the situation you deployed it for.
+The mean and standard deviation have a second problem as well, which is that they are computed from the data including the outliers. One value entered as 5,000,000 instead of 50 will inflate the standard deviation enough that it no longer flags itself. Statisticians call this *masking*, and it means the three-sigma rule is least reliable in exactly the situation you deployed it for.
 
-The **IQR or Tukey fence** (flag anything below Q1 − 1.5×IQR or above Q3 + 1.5×IQR) is better on both counts, because quartiles don't care how extreme the extreme values are. It's what the whiskers on a box plot mean. But it was designed with roughly symmetric distributions in mind, and on a strongly right-skewed variable it will flag a large slice of the upper tail *by construction*—not because anything is wrong, but because the fence assumes a symmetry the data doesn't have. Run it on income data and watch it declare that several percent of the population is anomalous.
+The **IQR or Tukey fence** (flag anything below Q1 − 1.5×IQR or above Q3 + 1.5×IQR) is better on both counts, because quartiles don't care how extreme the extreme values are. But it was designed with roughly symmetric distributions in mind, and on a strongly right-skewed variable it will flag a large slice of the upper tail by construction. Not because anything is wrong, but because the fence assumes a symmetry the data doesn't have. Run it on income data and watch it declare that several percent of the population is anomalous.
 
-The **modified z-score** built on median absolute deviation is the best of the simple options. Take the median, take the median of the absolute deviations from that median, and scale: 0.6745 × (x − median) / MAD, flagging above about 3.5. MAD has a breakdown point of 50%, meaning half your data would have to be corrupted before it lies to you. Compare that to the standard deviation, where one bad value is enough. If you're going to use a threshold, use this one.
+The **modified z-score** built on median absolute deviation is the best of the simple options. Take the median, take the median of the absolute deviations from that median, and scale: 0.6745 × (x − median) / MAD, flagging above about 3.5. MAD has a breakdown point of 50%, meaning half your data would have to be corrupted before bad things start happening. Compare that to the standard deviation, where one bad value is enough. If you're going to use a threshold, use this one.
 
-But all of this is procedure, and procedure is the smaller half of the job. Every extreme value in your dataset is one of three things, and the statistics cannot tell you which:
+But all of this is procedure, and procedure is the *easy bit*. Every extreme value in your dataset is one of three things, and the statistics cannot tell you which:
 
 **It's an error.** A decimal point in the wrong place, a unit mix-up, a sensor reporting garbage, an undecoded sentinel like -999 or 9999 masquerading as a measurement (Chapter 2's problem, arriving late and expensive). Remove it or repair it.
 
-**It's a different population.** A wholesale account sitting in a retail dataset. A bot in a table of human users. An internal test transaction that was never filtered out. This point is not wrong—it is correct data about a thing you weren't modeling. The right move is almost never deletion; it's segmentation, or a flag, or a separate model.
+**It's a different population.** A wholesale account sitting in a retail dataset. A bot in a table of human users. An internal test transaction that was never filtered out. This point is not wrong; it is correct data about a thing you weren't modeling. The right move is almost never deletion; it's segmentation, or a flag, or a separate model.
 
-**It's a rare real event.** The house fire. The machine three hours from failure. The fraudulent transaction. The point is correct, it belongs to the population you're modeling, and it is very often the point you are being paid to predict.
+**It's a rare real event.** The house fire. The machine three hours from failure. The fraudulent transaction. The point is correct, it belongs to the population you're modeling, and it is very often the MOST IMPORTANT point. This is the outlier that you are being paid to predict.
 
 Which gives you the one rule in this chapter that holds without qualification: **you may delete a data point only if you can name the mechanism that made it wrong.** "It's 4.2 sigma from the mean" is not a mechanism. "The vendor changed the unit from liters to gallons in March and this batch wasn't converted" is a mechanism. If you can't name one, you are not removing an error—you are removing evidence, and you should keep the row and go find out what it is.
 
