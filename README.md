@@ -1,3 +1,5 @@
+
+
 # Data Preparation for Machine Learning: A Slightly Obsessive Survival Guide
 
 ![Status](https://img.shields.io/badge/status-dangerous_WIP-red.svg)
@@ -8,7 +10,7 @@
 
 You know how they say 80% of Machine Learning is data preparation? Well, I decided to write a book about the 80%.
 
-I started with the goal of writing a short, practical guide. I blinked, and now it's a 26-chapter, 6-appendix monstrosity that covers everything from Andrew Ng's philosophy to the mathematical proofs for things I barely understood myself. It's less of a book and more of a strategic manual for navigating the data jungle armed with more than just a rusty `df.dropna()`.
+I started with the goal of writing a short, practical guide. I blinked, and now it's a 29-chapter, 6-appendix monstrosity that covers everything from Andrew Ng's philosophy to the mathematical proofs for things I barely understood myself. It's less of a book and more of a strategic manual for navigating the data jungle armed with more than just a rusty `df.dropna()`.
 
 The core philosophy is simple: **"Garbage In, Garbage Out" is the silent killer of AI projects.** This book is an attempt to perform an exorcism on the "Garbage In" demon.
 
@@ -18,7 +20,7 @@ I've stared at this table of contents for so long that the words "Imputation" an
 
 **I'm looking for your brutal, merciless, and invaluable feedback on:**
 
-* **Is This Insane?** Is a 26-chapter book on data prep a noble quest or a sign of a complete psychological break?
+* **Is This Insane?** Is a 29-chapter book on data prep a noble quest or a sign of a complete psychological break?
 * **What Did I Miss?** Did I forget your favorite esoteric encoding technique? Is there a new data architecture from Netflix that renders Chapter 3 obsolete?
 * **Does It Make Sense?** Does the flow from "The Data-Centric Revolution" to "Quantum Computing Implications" feel like a logical progression or a fever dream?
 * **Technical Blunders:** Have I misinterpreted a core concept? Is my explanation of MCAR vs. MAR going to get me laughed out of the next data science meetup?
