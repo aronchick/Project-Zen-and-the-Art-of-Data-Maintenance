@@ -1,5 +1,3 @@
-
-
 # Data Preparation for Machine Learning: A Slightly Obsessive Survival Guide
 
 ![Status](https://img.shields.io/badge/status-dangerous_WIP-red.svg)
