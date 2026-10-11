@@ -4,7 +4,7 @@
 
 A 300mm semiconductor fab ran about ninety wafer lots a month. Each lot carried roughly $1.2 million of product by the time it reached the back half of the line, and the thing everyone in the building was afraid of was a yield excursion: a drifting tool quietly ruining lot after lot before anyone noticed on the electrical test data three weeks later.
 
-The fab had instrumentation for days. Around two hundred sensors across the etch and deposition tool chain, logged per process step: chamber pressure, RF forward and reflected power, gas flows, electrode temperature, endpoint signal. The data team summarized each sensor trace per step with about twenty statistics—mean, standard deviation, slope, range, time-above-threshold—and ended up with roughly 4,000 columns describing every lot.
+The fab had instrumentation for days. Around two hundred sensor-step channels across the etch and deposition tool chain: chamber pressure, RF forward and reflected power, gas flows, electrode temperature, endpoint signal. The data team summarized each sensor trace per step with about twenty statistics—mean, standard deviation, slope, range, time-above-threshold—and ended up with roughly 4,000 columns describing every lot.
 
 They had fourteen months of history. 1,200 lots. 72 of them had suffered a real excursion, a base rate of six percent.
 
@@ -22,7 +22,7 @@ Here is what happened, and it was not the model.
 
 The top-50 features were chosen using the labels of all 1,200 lots. Then cross-validation was run on those 50 columns. Every fold's "held-out" data had already voted on which columns got to be in the table. The selection step saw everything, so there was no held-out set left—just a held-out model, fit on features that had been hand-picked to look good on exactly the rows it was about to be scored against.
 
-The size of the illusion is easy to underestimate, so it is worth doing the arithmetic. With 1,200 rows, the standard error of a correlation estimated from a column with no relationship to the target at all is about 1/√1197, or 0.029. Draw 4,000 of those and the largest absolute value you see will land somewhere near 0.10, roughly 3.7 standard errors out, from pure noise. Select the top 50 of 4,000 and a good fraction of what you selected is the right tail of a noise distribution, pre-validated against your validation set.
+The size of the illusion is easy to underestimate, so it is worth doing the arithmetic. With 1,200 rows, the standard error of a correlation estimated from a column with no relationship to the target at all is about 1/√1199, or 0.029. Draw 4,000 of those and the largest absolute value you see will land somewhere near 0.10, roughly 3.7 standard deviations out, from pure noise. Treat that as an upper bound: correlated columns behave like fewer independent draws, so the tail is less extreme than 4,000 coin flips would suggest. Select the top 50 of 4,000 and a good fraction of what you selected is the right tail of a noise distribution, pre-validated against your validation set.
 
 When someone finally moved the selection inside the cross-validation loop, so each fold picked its own 50 columns from its own training rows, the same pipeline scored **0.66**.
 
@@ -32,7 +32,7 @@ The rest of the story is better. A process engineer who had been in the building
 
 Two features, built the way Chapter 14 described—a quantity normalized against its own recent history—plus seven survivors from an honest nested selection. Nine columns. Nested AUC **0.74**.
 
-They also tried the other obvious move first: PCA on all 4,000 sensor features, keep 40 components, model on those. Nested AUC 0.71, which is respectable and nearly as good as the nine hand-built columns. It was abandoned anyway, for a reason that has nothing to do with accuracy. When the model flagged a lot, the fab's next question was always the same three words—*which chamber, which step*—and the answer from a 40-component model is a weighted sum across 4,000 measurements spanning sixty tools. Nobody can walk to that.
+They also tried the other obvious move first: PCA on all 4,000 sensor features, keep 40 components, model on those. Nested AUC 0.71, which is respectable and nearly as good as the nine hand-built columns. It was abandoned anyway, for a reason that has nothing to do with accuracy. When the model flagged a lot, the fab's next question was always the same three words—*which chamber, which step*—and the answer from a 40-component model is a weighted sum across 4,000 measurements spanning the whole etch and deposition chain. Nobody can walk to that.
 
 Four thousand features and a 0.91 that meant nothing. Nine features and a 0.74 that moved a technician to a specific chamber.
 
@@ -58,7 +58,7 @@ Both answer the same pressure and they are not interchangeable. Choosing between
 
 **Problem three: multiple comparisons in selection.** This is the one that ate the fab, and it is the least discussed of the four. Every candidate column is another lottery ticket in a search for columns that look predictive. The more tickets, the better the best one looks, with no change in the underlying truth. The arithmetic in the cold open is the whole mechanism: noise at the right tail of 4,000 draws is indistinguishable from modest signal, and you selected specifically on the quantity you then reported.
 
-**Problem four: estimator variance.** When the number of features approaches or exceeds the number of rows, ordinary least squares has no unique solution and unregularized models fit the training set perfectly while learning nothing. This is the regime where regularization stops being a tuning choice and becomes load-bearing.
+**Problem four: estimator variance.** Once the number of features reaches the number of rows, ordinary least squares no longer has a unique solution, and unregularized models fit the training set perfectly while learning nothing. Short of that, as p merely approaches n, the solution is unique and wildly high-variance, which is bad in a less obvious way. This is the regime where regularization stops being a tuning choice and becomes load-bearing.
 
 The useful counterweight is **intrinsic dimension**. Your data lives in a space with 4,000 axes, but the set of configurations a working fab actually produces is a much lower-dimensional surface inside it—correlated, constrained by physics and by recipe. Ambient dimension is how many columns you have. Intrinsic dimension is how many independent directions your data actually varies in. The curse is a function of the second one, and the gap between the two is the headroom available to every technique in this chapter.
 
@@ -81,7 +81,7 @@ A filter scores each feature against the target independently, ranks, and cuts. 
 ```python
 from sklearn.feature_selection import SelectKBest, f_classif, mutual_info_classif
 
-# Linear/monotone association, assumes roughly normal within-class spread
+# Between-class mean difference, so linear association only
 sel = SelectKBest(f_classif, k=200)
 
 # Captures nonlinear association; nearest-neighbor estimator, so set the seed
@@ -91,7 +91,7 @@ sel = SelectKBest(
 )
 ```
 
-Filters are extremely cheap, which is their entire reason to exist: cutting 4,000 columns to 400 before a wrapper runs is the difference between an afternoon and a week. They also have two failure modes that you should expect rather than discover.
+Filters are extremely cheap, which is their entire reason to exist: cutting 4,000 columns to 400 before a wrapper runs is the difference between an afternoon and a week of recursive elimination. They also have two failure modes that you should expect rather than discover.
 
 **Filters are blind to interactions.** A feature with zero marginal association can be essential in combination. The textbook case is an exclusive-or relationship: neither input correlates with the target at all, and together they determine it completely. Univariate ranking puts both at the bottom. Real versions of this are less tidy and quite common—a sensor reading that only matters conditional on which recipe was running.
 
@@ -105,6 +105,7 @@ A wrapper uses the model's own performance as the scoring function. Recursive fe
 
 ```python
 from sklearn.feature_selection import RFECV
+from sklearn.linear_model import LogisticRegression
 from sklearn.model_selection import StratifiedKFold
 
 sel = RFECV(
@@ -116,11 +117,11 @@ sel = RFECV(
 )
 ```
 
-Wrappers optimize the thing you care about, which is their appeal, and they are expensive in a way that scales badly. Recursive elimination with a step size is a manageable number of fits; forward sequential selection over p features is on the order of p²/2 model fits, each cross-validated. On 4,000 columns that is not a long job, it is an impossible one, which is why filters run first.
+Wrappers optimize the thing you care about, which is their appeal, and they are expensive in a way that scales badly. Recursive elimination with a step size is a manageable number of fits; forward sequential selection costs roughly k·p cross-validated fits to reach k features, and about p²/2 to walk the whole path. On 4,000 columns, picking even 20 features is 80,000 cross-validated fits, which is why filters run first.
 
 The subtler cost is that a wrapper is a search over a huge space of feature subsets, scored on data. Searched hard enough, it will find a subset that looks good on the scoring data by luck. The selection metric is optimistically biased for the same reason the fab's 0.91 was, just less dramatically, and the fix is the same: the wrapper's internal cross-validation is a tuning signal, never a performance estimate.
 
-Also inherit the biases of whatever estimator you handed it. Recursive elimination driven by gradient-boosting gain importance inherits gain importance's documented pull toward high-cardinality and continuous columns, which Chapter 14.6 covered. You are not selecting features; you are selecting features *as ranked by that estimator's quirks*.
+Wrappers also inherit the biases of whatever estimator you handed them. Recursive elimination driven by gradient-boosting gain importance inherits gain importance's documented pull toward high-cardinality columns, which Chapter 14.6 covered. You are not selecting features; you are selecting features *as ranked by that estimator's quirks*.
 
 ### Embedded methods
 
@@ -152,7 +153,7 @@ Four facts about the lasso that determine whether it is the right tool:
 
 **Elastic net is usually the better default.** Adding an L2 term to the L1 term makes correlated groups share weight instead of fighting, which both stabilizes selection and keeps the group visible. The cost is that it zeroes out less aggressively, so you get a larger set.
 
-Tree ensembles are embedded selectors too, via `SelectFromModel` on their importances, with the bias caveat above. Permutation importance computed on held-out data is the better-behaved ranking and costs a refit-free pass per column.
+Tree ensembles are embedded selectors too, via `SelectFromModel` on their importances, with the bias caveat above. Permutation importance computed on held-out data is the better-behaved ranking and costs one pass over the data per column per repeat, with no refitting.
 
 ### All-relevant versus minimal-optimal
 
@@ -165,13 +166,16 @@ Lasso and most wrappers chase minimal-optimal. Methods like Boruta chase all-rel
 
 ### The mistake that produced the 0.91
 
-This is the most consequential error in the chapter and it is three lines of code.
+This is the most consequential error in the chapter and it is two lines of code.
 
 ```python
+from sklearn.ensemble import GradientBoostingClassifier
+from sklearn.model_selection import cross_val_score
+
 # Wrong. Selection used every label, including the rows it is about
 # to be validated on. The reported score is a measurement of luck.
 X_sel = SelectKBest(f_classif, k=50).fit_transform(X, y)
-scores = cross_val_score(model, X_sel, y, cv=10)
+scores = cross_val_score(GradientBoostingClassifier(), X_sel, y, cv=10)
 
 # Right. Selection is a fitted step, so it belongs inside the fold
 # and only ever sees that fold's training rows.
@@ -183,7 +187,7 @@ pipe = Pipeline([
 scores = cross_val_score(pipe, X, y, cv=10)
 ```
 
-This is the same rule as Chapter 10's imputer, Chapter 11's outlier thresholds, Chapter 12's scaler, and Chapter 13's target encoder, and it is the rule the whole back half of this book keeps returning to: **anything estimated from data is a fitted parameter, and fitted parameters belong inside the training split.** A feature ranking is estimated from data. It is a fitted parameter. The fact that it produces a list of column names rather than a vector of numbers does not exempt it.
+This is the same rule as Chapter 10's imputer, Chapter 12's scaler, and Chapter 13's target encoder, and it is the rule the whole back half of this book keeps returning to: **anything estimated from data is a fitted parameter, and fitted parameters belong inside the training split.** A feature ranking is estimated from data. It is a fitted parameter. The fact that it produces a list of column names rather than a vector of numbers does not exempt it.
 
 One more turn of the screw. If you also tune *how many* features to keep, then `k` is a hyperparameter chosen by looking at validation scores, and the best score over a grid is biased upward even when every individual score is honest. Reporting it as your performance estimate is a smaller version of the same error. The fix is nested cross-validation: an inner loop that picks `k`, and an outer loop that never sees the choosing.
 
@@ -197,7 +201,7 @@ inner = GridSearchCV(
 honest = cross_val_score(inner, X, y, cv=5, scoring="roc_auc")
 ```
 
-That costs 25 fits per candidate value where the naive version costs 5. On the fab's data it was the difference between 0.91 and 0.66, which is an excellent return on compute.
+That costs 25 fits per candidate value where the naive version costs 5. On the fab's data, simply moving a fixed k=50 selection inside the folds accounted for the whole drop from 0.91 to 0.66; nesting the choice of k on top of that is a smaller second correction, and worth the compute for the same reason.
 
 ---
 
@@ -229,14 +233,16 @@ Four things decide whether PCA helps you.
 
 Two structural limits worth knowing: PCA returns at most min(n−1, p) nonzero components, and the components are dense linear combinations of every input column.
 
-That density has a specific consequence that catches people. **PCA usually hurts tree ensembles.** A tree asks axis-aligned questions—is this one column above this one threshold—and rotating your space into dense mixtures means every question is now about a weighted sum of 4,000 things. You have taken a structure the model exploits well and smeared it. PCA pairs naturally with linear models, distance-based methods, and anything that assumes an isotropic space. It pairs badly with gradient boosting, which is the same shape of advice Chapter 12 gave about scaling, for the same underlying reason.
+That density has a specific consequence that catches people. **PCA usually hurts tree ensembles when the signal is axis-aligned in your original columns, and it always destroys attribution.** A tree asks axis-aligned questions—is this one column above this one threshold—and if the useful thresholds live on the raw columns, rotating into dense mixtures takes a structure the model exploits well and smears it. The reverse case is real but narrower: when the true boundaries are oblique, rotation helps, which is the entire premise of Rotation Forest. So PCA pairs naturally with linear models, distance-based methods, and anything that assumes an isotropic space, and it is a gamble with gradient boosting.
+
+Note that this is a different argument from Chapter 12's. There, scaling was pointless for trees because any strictly monotonic transform of a single column produces the same tree. PCA is a rotation *across* columns, which is exactly what that invariance does not cover, so Chapter 12's reasoning predicts no effect where the real answer is that it depends on the geometry of your signal.
 
 The variants you will actually reach for:
 
 - **`TruncatedSVD`** for sparse input. It skips the centering step, which is the whole point: centering a sparse matrix makes it dense and can blow up your memory. This is the one to use on TF-IDF, where it goes by the name latent semantic analysis.
 - **`IncrementalPCA`** when the matrix does not fit in memory, fit in minibatches.
 - **`KernelPCA`** for nonlinear structure, at the cost of an n×n kernel matrix, which puts a hard ceiling on n.
-- **Randomized SVD**, the default solver for large problems, which approximates the top components far faster than a full decomposition.
+- **Randomized SVD**, which `svd_solver="auto"` usually picks for large matrices when you ask for a small number of components, and which approximates the top components far faster than a full decomposition.
 
 ### ICA
 
@@ -252,7 +258,7 @@ The constraint nobody expects is hard and worth memorizing: **LDA can produce at
 
 LDA assumes roughly Gaussian classes with equal covariance matrices. It degrades gracefully when that is wrong but it does degrade, and `QuadraticDiscriminantAnalysis` is the version that drops the equal-covariance assumption at the cost of estimating a covariance matrix per class.
 
-One naming trap, because it causes real confusion and Chapter 17 will walk straight into it: **LDA also stands for latent Dirichlet allocation**, an unrelated topic model for text. Same three letters, no relationship.
+One naming trap, because it causes real confusion in any conversation that touches text: **LDA also stands for latent Dirichlet allocation**, an unrelated topic model. Same three letters, no relationship.
 
 ### PLS
 
@@ -280,7 +286,7 @@ Three things in a t-SNE plot that look like information and are not:
 
 ### UMAP
 
-UMAP is faster, preserves more global structure, and—unlike t-SNE—does provide a `transform`, so it can technically live in a pipeline. People do use UMAP embeddings as features, and it sometimes works.
+UMAP is faster, preserves more global structure at default settings, and—unlike t-SNE—does provide a `transform`, so it can technically live in a pipeline. The global-structure advantage is smaller than its reputation: much of it comes from initialization, and t-SNE initialized from PCA closes most of the gap. People do use UMAP embeddings as features, and it sometimes works.
 
 The costs are real. It is stochastic, so the embedding changes with the seed. It is quite sensitive to `n_neighbors` and `min_dist`, which trade local against global structure. And it is non-monotone and uninterpretable, so you have added a column nobody can explain to a production system that now has a new failure mode.
 
@@ -290,7 +296,7 @@ UMAP also has a supervised mode where you pass `y` during fitting. That is a tar
 
 An autoencoder is a neural network trained to reconstruct its own input through a narrow bottleneck. The bottleneck activations are a learned nonlinear compression of the input.
 
-Two useful anchors. A linear autoencoder trained with squared error recovers the same subspace as PCA—so the architecture's whole value is in the nonlinearity, and if you are not confident you have nonlinear structure, PCA is cheaper, deterministic, and better understood. And autoencoders are data-hungry in the way neural networks generally are, which makes them a poor fit for the 1,200-row regime where you most want dimensionality reduction. The honest use case is high-dimensional, dense, plentiful data.
+Two useful anchors. A linear autoencoder trained with squared error recovers the same subspace as PCA at its global optimum, though its bottleneck units are not the ordered orthogonal components themselves—so the architecture's whole value is in the nonlinearity, and if you are not confident you have nonlinear structure, PCA is cheaper, deterministic, and better understood. And autoencoders are data-hungry in the way neural networks generally are, which makes them a poor fit for the 1,200-row regime where you most want dimensionality reduction. The honest use case is high-dimensional, dense, plentiful data.
 
 The variants matter less than the vocabulary: denoising autoencoders train on corrupted inputs to learn more robust representations, and variational autoencoders regularize the latent space toward a prior and are generative models whose latents happen to be useful.
 
@@ -308,7 +314,7 @@ Selection is not model-agnostic, and most of the bad advice in this area comes f
 
 **Linear and logistic regression are hurt most by redundancy.** Correlated predictors inflate coefficient variance, which makes coefficients unstable and sometimes flips their signs. Variance inflation factor is the standard diagnostic, with rough alarm thresholds around 5 to 10, and there is an important nuance in what it tells you: multicollinearity damages *coefficient interpretation* much more than it damages *prediction*. If you only need predictions, ridge handles correlated features gracefully without dropping any. If someone is going to read the coefficients and act on their signs and magnitudes, you need to resolve the redundancy.
 
-**Tree ensembles tolerate irrelevant features without being free of them.** A tree can ignore a useless column, but it pays to consider it: with `max_features` or `colsample_bytree` below 1, each split is offered a random subset of columns, so a feature matrix that is 95 percent noise means most splits are chosen from mostly-noise candidates. Dilution is a real effect, which is one of the ch13 lessons about hashing in a different setting. Trees also split importance between redundant features, which degrades your importance table even when accuracy holds up—a feature that looks unimportant may have two siblings splitting the credit three ways.
+**Tree ensembles tolerate irrelevant features without being free of them.** A tree can ignore a useless column, but it pays to consider it: with `max_features` or `colsample_bytree` below 1, each split is offered a random subset of columns, so a feature matrix that is 95 percent noise means most splits are chosen from mostly-noise candidates. Dilution is a real effect. Trees also split importance between redundant features, which degrades your importance table even when accuracy holds up—a feature that looks unimportant may have two siblings splitting the credit three ways.
 
 **Naive Bayes is hurt by redundancy in a specific and nasty way.** It assumes conditional independence and multiplies evidence, so twenty correlated features counting the same fact count it twenty times. Accuracy may survive; calibrated probabilities will not. If you need the probability and not just the ranking, deduplicate.
 
@@ -353,6 +359,7 @@ The crucial corollary: **a feature's absence from a selected set is not evidence
 The clean way to handle redundancy is to stop pretending correlated features are separate candidates. Cluster the features first, then select clusters, then pick a representative per cluster on grounds you can state—cheapest to serve, easiest to explain, most physically direct.
 
 ```python
+import numpy as np
 from scipy.cluster.hierarchy import linkage, fcluster
 from scipy.spatial.distance import squareform
 from scipy.stats import spearmanr
@@ -376,7 +383,7 @@ That is the general shape of it. A prediction triggers an action, the action req
 
 - A ranking that routes work to a queue usually does not. Nobody asks why lot 4,418 is third.
 - A flag that sends a specific human to investigate a specific thing almost always does.
-- A decision about a person frequently must, as a matter of regulation. Adverse-action requirements in US consumer lending oblige you to state specific principal reasons for a denial, and "component 14 was low" is not one. Chapter 23 covers that terrain properly; the consequence here is that in those domains, selection is available to you and reduction largely is not.
+- A decision about a person frequently must, as a matter of regulation. Adverse-action requirements in US consumer lending oblige you to state, or to disclose the applicant's right to request, the specific principal reasons for a denial, and "component 14 was low" is not one of those. The consequence here is that in those domains, selection is available to you and reduction largely is not.
 
 There is also a real monitoring argument for selection over reduction. Nine named features are nine things you can chart, alert on, and explain to the on-call engineer. Forty components are forty quantities whose drift tells you that something moved somewhere.
 
@@ -428,7 +435,7 @@ Then do it again under whatever reduced representation you are considering—com
 
 That closes Part V, and with it the long run of chapters that assumed your data is a table. Everything from Chapter 10 forward—missing values, outliers, scales, categories, created features, and now the selection of them—has operated on rows and columns of numbers and strings.
 
-Part VI is about data that is not a table yet. An image is a few hundred thousand integers that mean nothing until you know the color space, the EXIF orientation, and what the previous pipeline already did to them. Audio is a waveform whose useful representation depends on what you are listening for. Text is a sequence whose tokenization is itself a modeling decision with consequences downstream of everything.
+Most of Part VI is about data that is not a table yet. An image is a few hundred thousand integers that mean nothing until you know the color space, the EXIF orientation, and what the previous pipeline already did to them. Audio is a waveform whose useful representation depends on what you are listening for. Text is a sequence whose tokenization is itself a modeling decision with consequences downstream of everything.
 
 The dimensionality lesson carries over directly, which is worth noticing before you get there. A 224×224 RGB image is 150,528 numbers with an intrinsic dimension vastly lower, and essentially all of modern computer vision is a statement about how to find the low-dimensional structure in it. What changes in Part VI is that the reduction is no longer something you bolt on at the end. It is the first thing the pipeline does, and getting it wrong corrupts everything after.
 
