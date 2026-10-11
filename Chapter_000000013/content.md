@@ -13,9 +13,9 @@ means = train.groupby("placement_id")["clicked"].mean()
 train["placement_ctr"] = train["placement_id"].map(means)
 ```
 
-Offline AUC went from 0.71 to 0.91 on the same model, same split, same everything. That is not an improvement anyone questions on a Friday. They shipped it.
+Offline AUC went from 0.71 to 0.91 on the same model, cross-validated over the same already-encoded training frame. That is not an improvement anyone questions on a Friday. They shipped it.
 
-Here is what those three lines actually built. Sixty percent of those 2.3 million placements appeared fewer than five times in the training window. For a placement that appeared exactly once, its "average CTR" is that single row's label. Not correlated with the label. *Is* the label, written into the feature column, sitting right next to it at training time.
+Here is what those two lines actually built. Sixty percent of those 2.3 million placements appeared fewer than five times in the training window. For a placement that appeared exactly once, its "average CTR" is that single row's label. Not correlated with the label. *Is* the label, written into the feature column, sitting right next to it at training time.
 
 The model did what any competent model does when you hand it the answer key: it learned to read the answer key. `placement_ctr == 1.0` means clicked. `placement_ctr == 0.0` means not clicked. It scored 0.91 because it was being graded on a test it had already been given.
 
@@ -47,7 +47,7 @@ Before you pick an encoder, you have to know which of three things you're holdin
 
 If you know the real spacing, encode the real spacing. Map credit ratings to historical default rates. Map T-shirt sizes to chest measurements. You are allowed to put domain knowledge into the numbers; that's the whole point of Chapter 14.
 
-**Cyclical** categories have an order that wraps. Month, day of week, hour, compass bearing, wind direction, angle. December is month 12 and January is month 1, and every linear encoding you can write says they are eleven units apart when they are in fact adjacent. Same for hour 23 and hour 0, which are the two halves of one night.
+**Cyclical** categories have an order that wraps. Month, day of week, hour, compass bearing, wind direction, angle. December is month 12 and January is month 1, and every linear encoding you can write says they are eleven units apart when they are in fact adjacent. Same for hour 23 and hour 0, which are sixty minutes apart.
 
 The standard fix is to project onto a circle:
 
@@ -56,7 +56,7 @@ df["hour_sin"] = np.sin(2 * np.pi * df["hour"] / 24)
 df["hour_cos"] = np.cos(2 * np.pi * df["hour"] / 24)
 ```
 
-You need both. Sine alone maps 3 a.m. and 9 p.m. to nearly the same value, which just moves the collision somewhere less obvious. The pair together gives every hour a unique position on a circle where hour 23 and hour 0 sit next to each other, which is where they belong.
+You need both. Sine alone maps 3 a.m. and 9 a.m. to nearly the same value, which just moves the collision somewhere less obvious. The pair together gives every hour a unique position on a circle where hour 23 and hour 0 sit next to each other, which is where they belong.
 
 One caveat worth internalizing: tree-based models handle cyclical variables tolerably well without this, because a tree can carve out `hour >= 22 OR hour <= 5` given enough depth. Linear models and distance-based models cannot, ever. If you're running k-NN or a linear model on raw hour-of-day, your model believes midnight and 11 p.m. are maximally different, and it will keep believing that no matter how much data you give it.
 
@@ -74,21 +74,21 @@ The `drop_first` question comes up constantly and the answer depends entirely on
 
 **Frequency and count encoding** replaces each category with how often it appears. Cheap, one column, no target involvement so no leakage risk, and often more predictive than it has any right to be—for merchants, sellers, and users, "how much do we see this thing" carries real information about size, tenure, and legitimacy. The obvious failure is collision: two categories with identical counts become identical to the model. Usually acceptable, occasionally not.
 
-**Binary and BaseN encoding** compress cardinality into log-scaled columns by writing the category index in base 2 or base N. It was a reasonable middle ground when memory was tight. The bit patterns are arbitrary, so the model has to learn to reassemble a meaning from digits that have none, and in practice hashing or embeddings do the same job better. Know it exists; reach for it rarely.
+**Binary and BaseN encoding** compress cardinality into log-scaled columns by writing the category index in base 2 or base N. They were a reasonable middle ground when memory was tight. The bit patterns are arbitrary, so the model has to learn to reassemble a meaning from digits that have none, and in practice hashing or embeddings do the same job better. Know it exists; reach for it rarely.
 
-**Native categorical handling** is what you should actually be doing on tree models in 2026. LightGBM and CatBoost both accept categorical columns directly and split on them properly—partitioning the category set rather than testing one value at a time. This is strictly better than one-hot for trees at moderate-to-high cardinality, it's one parameter, and a startling number of teams don't know it's there.
+**Native categorical handling** is what you should actually be doing on tree models in 2026. LightGBM and XGBoost (with `enable_categorical=True`) accept categorical columns directly and split on them properly—partitioning the category set rather than testing one value at a time. CatBoost accepts them too, but gets there another way, converting each category to an ordered target statistic and then splitting on that number. This is strictly better than one-hot for trees at moderate-to-high cardinality, it's one parameter, and a startling number of teams don't know it's there.
 
 ```python
 import lightgbm as lgb
 
 for c in cat_cols:
-    df[c] = df[c].astype("category")
+    X_train[c] = X_train[c].astype("category")
 
 model = lgb.LGBMClassifier()
 model.fit(X_train, y_train, categorical_feature=cat_cols)
 ```
 
-That is the whole intervention. Before you build anything more sophisticated, try this and write down the number.
+That is very nearly the whole intervention. The one catch is that the category dtype carries a code mapping, so serving data has to present the same categories in the same order or the codes shift underneath you—13.5's problem, arriving early. Before you build anything more sophisticated, try this and write down the number.
 
 ---
 
@@ -102,7 +102,7 @@ You already saw the mechanism. Compute a category's mean over the full training 
 
 Two defenses, and you want both.
 
-**Out-of-fold computation.** Split the training data into folds. For rows in fold *k*, compute the encoding using only the other folds. A row's own label is then structurally incapable of reaching its own feature. This is the same discipline as Chapter 9's point-in-time correctness, wearing different clothes: never let a row see information it wouldn't have had.
+**Out-of-fold computation.** Split the training data into folds. For rows in fold *k*, compute the encoding using only the other folds. A row's own label is then structurally incapable of reaching its own feature. Use time-ordered folds or an expanding window if the data has a time axis: with random folds, a row is still encoded from labels that, within its own category, happened after it. This is the same discipline as Chapter 9's point-in-time correctness, wearing different clothes: never let a row see information it wouldn't have had.
 
 **Smoothing toward the prior.** Even out-of-fold, a category with two observations produces a noisy estimate that the model has no way to discount. So shrink every category's mean toward the global mean, weighted by how much evidence backs it:
 
@@ -110,28 +110,30 @@ Two defenses, and you want both.
 smoothed = (counts * category_mean + m * global_mean) / (counts + m)
 ```
 
-Read `m` as "how many observations of evidence I demand before I start believing a category's own average." At `m = 20`, a category with 2 rows lands almost entirely on the global mean, a category with 20 rows sits halfway, and a category with 5,000 rows is essentially its own average. Tune `m`; it matters more than most hyperparameters people do tune.
+Read `m` as "how many observations of evidence I demand before I start believing a category's own average." At `m = 20`, a category with 2 rows lands almost entirely on the global mean, a category with 20 rows sits halfway, and a category with 5,000 rows is essentially its own average. Tune `m`; it matters more than most hyperparameters people do tune. Scikit-learn's `TargetEncoder` calls it `smooth`, and will estimate it for you if you leave it on `"auto"`.
 
-CatBoost's ordered target statistics are the most rigorous version of this idea: it draws a random permutation of the data and encodes each row using only rows that came before it, which is the streaming-safe formulation of out-of-fold. If you're already using CatBoost, you're getting this for free and should not hand-roll a replacement.
+CatBoost's ordered target statistics are the most rigorous version of this idea: it draws a random permutation of the data and encodes each row using only rows that came before it, which gets you out-of-fold behavior without a fold structure. That permutation is random unless you set `has_time=True`, so it respects your ordering only if you tell it to. If you're already using CatBoost, you're getting this for free and should not hand-roll a replacement.
 
 Scikit-learn shipped a `TargetEncoder` that does the cross-fitting internally, which removed most people's excuse for the naive version:
 
 ```python
-from sklearn.preprocessing import TargetEncoder
+from sklearn.preprocessing import TargetEncoder, StandardScaler
 from sklearn.pipeline import Pipeline
 from sklearn.compose import ColumnTransformer
+from sklearn.linear_model import LogisticRegression
+from sklearn.model_selection import cross_val_score
 
 pre = ColumnTransformer([
-    ("cat", TargetEncoder(smooth="auto"), cat_cols),
+    ("cat", TargetEncoder(smooth=20.0), cat_cols),
     ("num", StandardScaler(), num_cols),
 ])
-pipe = Pipeline([("pre", pre), ("model", HistGradientBoostingClassifier())])
+pipe = Pipeline([("pre", pre), ("model", LogisticRegression(max_iter=1000))])
 cross_val_score(pipe, X, y, cv=5)
 ```
 
 One detail worth internalizing, because it bites people who hand-roll this: the cross-fitting happens in `fit_transform`, not in `fit` followed by `transform`. Calling `fit(X, y).transform(X)` on your training data gives you the leaky version. A `Pipeline` calls `fit_transform` for you, which is one more reason to use one.
 
-The `Pipeline` is not decoration. It is the thing that guarantees the encoder is fit inside each CV fold rather than once over everything, which is the exact leak Chapter 12 covered for scalers and which is far more dangerous here—a scaler leaks distribution shape, a target encoder leaks the answer.
+Use the `Pipeline`. It refits the encoder inside each CV fold rather than once over everything, which is the same leak Chapter 12 covered for scalers and which is far more dangerous here—a scaler leaks distribution shape, a target encoder leaks the answer.
 
 One trap worth naming: **leave-one-out encoding**, which computes each row's encoding from every other row in its category, sounds like the strictest possible fix and is in fact worse than smoothed out-of-fold. It leaks in a subtler direction—the encoded value becomes systematically *anti*-correlated with the row's own label, which a model can learn to invert. If it seems too clever, it is.
 
@@ -152,9 +154,9 @@ hasher = FeatureHasher(n_features=2**18, input_type="string")
 X_hashed = hasher.transform(df["merchant_id"].astype(str).apply(lambda s: [s]))
 ```
 
-The cost is collisions—two unrelated merchants sharing a bucket—and total loss of interpretability, since you cannot invert a hash to ask which category a coefficient belongs to. Collisions bother people more than they should. A collision only hurts when both colliding categories are individually informative *and* point in opposite directions, and with buckets set to several times your effective cardinality that intersection is small. Size the space generously; powers of two, and more than you think.
+The cost is collisions—two unrelated merchants sharing a bucket—and total loss of interpretability, since you cannot invert a hash to ask which category a coefficient belongs to. Collisions bother people more than they should. A collision hurts most when both colliding categories are individually informative *and* point in opposite directions, and with buckets set to several times your effective cardinality that intersection is small. Size the space generously; powers of two, and more than you think.
 
-**Entity embeddings** learn a dense vector per category as part of model training, the way word embeddings work in language models. The technique got its reputation from a Kaggle solution to Rossmann store sales forecasting, where embedding store IDs beat carefully hand-engineered store features. A common starting rule for dimension is `min(50, (cardinality + 1) // 2)`, which nobody should treat as more than a starting point.
+**Entity embeddings** learn a dense vector per category as part of model training, the way word embeddings work in language models. The technique got its reputation from a Kaggle solution to Rossmann store sales forecasting, where embedding store IDs took third place against entries built on heavy hand-engineered features—competitive accuracy for a fraction of the feature work. A common starting rule for dimension is `min(50, (cardinality + 1) // 2)`, which nobody should treat as more than a starting point.
 
 What you get beyond accuracy is a similarity space, and that is often the more valuable artifact. After training, stores that behave alike sit near each other in embedding space, whether or not anyone ever labeled them as similar. Merchandising teams will use that map long after the model that produced it is retired.
 
@@ -164,13 +166,13 @@ What you pay is real: you need a neural network or a library that supports embed
 
 ## 13.5 Handling Unknown Categories in Production
 
-This section ends more production models than anything else in this part of the book, and it gets about a paragraph in most treatments of encoding.
+The problem in this section ends more production models than anything else in this part of the book, and most treatments of encoding give it a paragraph.
 
 Your encoder was fit on a fixed vocabulary. Production is not fixed. A new merchant onboards. A vendor adds a device type. Someone in operations creates a status code on a Tuesday afternoon to unblock a customer. Now a value arrives that the encoder has never seen, and one of three things happens.
 
 **It raises.** `OneHotEncoder` with default settings throws on unknown input. Your inference service returns a 500. This is the *good* outcome, because you find out.
 
-**It silently zeroes.** With `handle_unknown="ignore"`, an unknown value produces a row of all zeros. That is not a neutral outcome; it is the encoder asserting "this record belongs to none of the known categories," which for a linear model means the entire categorical contribution vanishes and the prediction shifts toward the intercept. Every unknown value gets the same silent, confident, wrong answer. `handle_unknown="infrequent_if_exist"` is usually closer to what you wanted, because it routes unknowns into the infrequent bucket you already trained on, which at least has a learned response. Read that parameter name carefully, though: *if exist*. If you never set `min_frequency` or `max_categories`, there is no infrequent bucket, and the encoder falls back to the all-zeros behavior above without telling you. Two settings, and one of them is silently the other.
+**It silently zeroes.** With `handle_unknown="ignore"`, an unknown value produces a row of all zeros. That is not a neutral outcome; it is the encoder asserting "this record belongs to none of the known categories," which for a linear model means the entire categorical contribution vanishes and the prediction shifts toward the intercept. Worse, if you also dropped a reference level, all-zeros already means that reference level, so the encoder is now asserting the unknown *is* the reference category. Every unknown value gets the same silent, confident, wrong answer. `handle_unknown="infrequent_if_exist"` is usually closer to what you wanted, because it routes unknowns into the infrequent bucket you already trained on, which at least has a learned response. Read that parameter name carefully, though: *if exist*. If you never set `min_frequency` or `max_categories`, there is no infrequent bucket, and the encoder falls back to the all-zeros behavior above without telling you. Two settings, and one of them is silently the other.
 
 **It gets the global mean.** Target encoders typically fall back to the prior for unseen categories, which is defensible and still needs to be a decision you made rather than a default you inherited.
 
@@ -182,7 +184,7 @@ Two variants of this failure are worth naming separately because monitoring the 
 
 **Category drift with a stable vocabulary.** The string `PENDING` was in your training data and is still arriving, but after a product launch it means something different than it used to. No unknown, no error, no alert. Your encoder maps it to the same coefficient it learned from the old meaning. Only a contract or a human catches this.
 
-**Encoding skew between training and serving.** Training encoded `merchant_category` from the warehouse, where it is title case and trimmed. Serving reads the same conceptual field from an upstream service where it arrives as `"restaurant "`, lowercase with a trailing space. Different string, therefore unknown category, therefore silent zeros on a feature that mattered. This is Chapter 9's train/serve skew arriving through the encoder rather than the feature pipeline, and the defense is the same: one definition, computed once, shared by both paths.
+**Encoding skew between training and serving.** Training encoded `merchant_category` from the warehouse, where it is title case and trimmed. Serving reads the same conceptual field from an upstream service where it arrives as `"restaurant "`, lowercase with a trailing space. Different string, therefore unknown category, therefore silent zeros on a feature that mattered. This is Chapter 2's category explosion and Chapter 9's train/serve skew arriving together, through the encoder rather than the feature pipeline, and the defense is the same: one definition, computed once, shared by both paths.
 
 ---
 
@@ -196,7 +198,7 @@ Two variants of this failure are worth naming separately because monitoring the 
 | Genuine order, unknown spacing | Ordinal, then check | Treating 1/2/3 as arithmetic |
 | Cyclical | sin/cos pair | Shipping only the sine |
 | 15–1,000 levels, tree model | Native categorical support | Not knowing it exists |
-| 15–1,000 levels, linear model | Target encoding, OOF + smoothed | Fitting the encoder outside the CV fold |
+| 15–1,000 levels, linear model | Target encoding, out-of-fold + smoothed | Fitting the encoder outside the CV fold |
 | Over 1,000, need it this week | Rare bucketing, then hashing | Undersizing the hash space |
 | Over 1,000, deep model, lots of data | Entity embeddings | Building it because it sounds good |
 | Anything, in production | All of the above, plus explicit unknown handling | The Tuesday problem |
@@ -235,7 +237,7 @@ Take any dataset with a high-cardinality categorical column and a binary target.
 
 ### Exercise 2: Price Your Cardinality (Time: ~30 minutes)
 
-For your three highest-cardinality categorical features, compute: total distinct levels, levels needed to cover 95% of rows, and the count of levels appearing fewer than five times. Then one-hot encode the raw column and record the matrix size in memory. You now have the actual cost of the default choice, in megabytes, which is a far more persuasive artifact in a design review than an opinion about encoders.
+For your three highest-cardinality categorical features, compute: total distinct levels, levels needed to cover 95% of rows, and the count of levels appearing fewer than five times. Then one-hot encode the raw column to a dense matrix and record its size in memory. You now have the actual cost of the default choice, in megabytes, which is a far more persuasive artifact in a design review than an opinion about encoders.
 
 ### Exercise 3: Train the Unknown (Time: ~1 hour)
 
@@ -245,7 +247,7 @@ Take a model you have already shipped. Retrain it with a preprocessing step that
 
 ## Bridge to Part V
 
-Parts of this book so far have been about repair. Missing values, outliers, scales, categories: four chapters of taking the data you were given and making it fit to feed a model without lying to it. That work is necessary and it is not where models are won.
+This part of the book has been about repair. Missing values, outliers, scales, categories: four chapters of taking the data you were given and making it fit to feed a model without lying to it. That work is necessary and it is not where models are won.
 
 Part V is about the other half—not fixing what you have, but creating what you don't. The features that decide whether a model is useful usually don't exist in any source system. Nobody logs "days since this customer's last complaint," or "ratio of this transaction to this cardholder's rolling median," or "how many admins this account has lost this quarter." Somebody has to know the domain well enough to realize the number matters, and then build it.
 

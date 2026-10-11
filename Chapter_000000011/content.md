@@ -8,7 +8,7 @@ The model validated at an R² of 0.71, which for claim severity is a strong numb
 
 Eleven months later the year-end actuarial review came back with a reserve strengthening charge of $26 million. Turns out the book had been systematically under-reserved all year, and the model had been confidently wrong in one direction the entire time.
 
-The cause was three lines in a preprocessing notebook:
+The cause was two lines in a preprocessing notebook:
 
 ```python
 cap = df["ultimate_loss"].quantile(0.99)

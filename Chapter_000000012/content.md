@@ -20,7 +20,7 @@ The fix was one line:
 X = StandardScaler().fit_transform(X)
 ```
 
-On-time delivery went from 82% to 91% in the following quarter. Nobody retrained anything, nobody added a feature, nobody touched the architecture. They just stopped measuring quality in pounds.
+On-time delivery went from 82% to 91% in the following quarter. Nobody added a feature, nobody touched the architecture. They just stopped measuring quality in pounds. (That one-liner is the idea, not the code. Section 12.6 has the version that doesn't fit the scaler on the test set.)
 
 ---
 
@@ -34,15 +34,15 @@ That's what makes scaling the most boring dangerous topic in this book. It fails
 
 The first thing to get straight is that "should I scale?" has an actual answer, and it depends entirely on how your algorithm consumes the numbers. There are three groups.
 
-**Algorithms that break without scaling.** Anything that computes a distance: k-nearest-neighbors, k-means, hierarchical clustering, DBSCAN, and SVMs with an RBF kernel. All of them share the cold open's failure mode—the feature with the widest numeric range becomes the metric, and everything else becomes noise. Also in this group: anything trained by gradient descent, including every neural network. When features have wildly different scales, the loss surface becomes a long narrow valley, and gradient descent bounces off the walls instead of running down the floor. You'll see it as slow convergence, or as a learning rate that's simultaneously too large for one feature and too small for another, which no amount of tuning fixes because it's not a learning-rate problem.
+**Algorithms that break without scaling.** Anything that computes a distance: k-nearest-neighbors, k-means, hierarchical clustering, DBSCAN, and SVMs with an RBF kernel. All of them share the cold open's failure mode—the feature with the widest numeric range becomes the metric, and everything else becomes noise. Also in this group, though here it shows up as slow convergence rather than outright failure: anything trained by gradient descent, neural networks included. When features have wildly different scales, the loss surface becomes a long narrow valley, and gradient descent bounces off the walls instead of running down the floor. You'll see it as slow convergence, or as a learning rate that's simultaneously too large for one feature and too small for another, which no amount of tuning fixes because it's not a learning-rate problem.
 
 **Algorithms where scaling changes the answer in a way people miss.** This is the group that costs the most, because the model still *works*—it just works on a different problem than you think.
 
-Regularized regression is the big one. Ridge, Lasso, and ElasticNet all penalize the magnitude of coefficients. But a coefficient's magnitude depends on its feature's units. Measure a distance in miles and its coefficient is some number; measure the same distance in feet and the coefficient is 5,280 times smaller, so the penalty barely touches it. **You are not regularizing your features, you are regularizing your unit choices.** Run Lasso on unscaled data and the variables it zeroes out are substantially determined by whoever picked the units upstream, which is usually a database schema written by someone who has never heard of your model. This is the most common serious scaling bug in production code, and unlike the freight disaster it produces a model that looks completely reasonable.
+Regularized regression is the big one. Ridge, Lasso, and ElasticNet all penalize the magnitude of coefficients. But a coefficient's magnitude depends on its feature's units. Measure a distance in miles and its coefficient is some number; measure the same distance in feet and the coefficient is 5,280 times smaller, so the penalty barely touches it. **You are not regularizing your features, you are regularizing your unit choices.** Run Lasso on unscaled data and the variables it zeroes out are substantially determined by whoever picked the units upstream, which is usually a database schema written by someone who has never heard of your model. This is the most common serious scaling bug in production code, and like the freight disaster it produces a model that looks completely reasonable.
 
 PCA has the same disease for the same reason. PCA finds directions of maximum variance, and variance is in squared units, so the component structure is dominated by whichever feature has the largest numeric spread. Unscaled PCA on a table with a revenue column returns, essentially, the revenue column with extra steps. (Chapter 15 goes further into this.)
 
-**Algorithms that don't care at all.** Decision trees and every ensemble built on them—random forests, XGBoost, LightGBM, CatBoost. A tree splits on *order*, not magnitude. The rule "weight > 12,000" partitions the data identically whether weight is in pounds, kilograms, or tons; the threshold just changes to match. Any monotonic transformation of a feature produces the same tree. This is why gradient-boosted trees are so forgiving of raw messy tabular data, and it's why a large amount of the scaling code in the world is doing nothing at all.
+**Algorithms that don't care at all.** Decision trees and every ensemble built on them—random forests, XGBoost, LightGBM, CatBoost. A tree splits on *order*, not magnitude. The rule "weight > 12,000" partitions the data identically whether weight is in pounds, kilograms, or tons; the threshold just changes to match. Any strictly monotonic transformation of a feature produces the same tree; one that merges values, like rounding or binning, does not. This is why gradient-boosted trees are so forgiving of raw messy tabular data, and it's why a large amount of the scaling code in the world is doing nothing at all.
 
 That last point deserves emphasis, because the reflex runs both directions. About as often as you find a k-NN model measuring pounds, you find a `StandardScaler` sitting in front of an XGBoost model, adding a fitted artifact that has to be versioned, shipped, and kept in sync between training and serving—for zero benefit. It's not harmful to the math. It's harmful to the system, because every fitted preprocessing step is another thing that can drift out of sync between your training and serving paths, which is Chapter 9's entire disaster waiting for a chance.
 
@@ -52,19 +52,19 @@ So the question isn't "should I scale." It's "does my algorithm use magnitude, d
 
 ## 12.2 Core Scaling Techniques and When to Use Them
 
-Six things people call scalers. They are not interchangeable, and two of them are routinely used by accident.
+Six things people call scalers. They are not interchangeable, and one of them is routinely used by accident.
 
 **StandardScaler**—subtract the mean, divide by the standard deviation. Output has mean 0 and standard deviation 1, unbounded in both directions. The default, correctly. Use it when your feature is roughly symmetric and you don't have wild outliers. Note what it does *not* do: it does not make anything normally distributed. A bimodal feature standardized is still bimodal, now centered at zero. People say "normalize" and mean this, and then assume normality they didn't get.
 
-**MinMaxScaler**—subtract the min, divide by the range, output bounded to [0, 1]. Useful when you need a hard bound: image pixel values, neural network inputs where a bounded activation expects it. And it is catastrophically fragile, because the min and max are the two most outlier-sensitive statistics in existence. One data-entry error of 9,999,999 in your training set and every real value gets squashed into the bottom 0.001% of the range. You have not scaled your data; you have converted it into a constant with one interesting point. Chapter 11's material is a prerequisite for using this safely.
+**MinMaxScaler**—subtract the min, divide by the range, output bounded to [0, 1]. Useful when you need a hard bound: image pixel values, neural network inputs where a bounded activation expects it. And it is catastrophically fragile, because the min and max are the two most outlier-sensitive statistics in existence. One data-entry error of 9,999,999 in your training set and, if your real values top out around 100, every one of them gets squashed into the bottom 0.001% of the range. You have not scaled your data; you have converted it into a constant with one interesting point. Chapter 11's material is a prerequisite for using this safely.
 
 **RobustScaler**—subtract the median, divide by the interquartile range. Same idea as StandardScaler, built from statistics that don't care about the tails. When you have outliers you've decided to keep (which, per Chapter 11, is often the right call), this is the scaler that lets you keep them without letting them set the scale for everything else. Underused.
 
-**MaxAbsScaler**—divide by the maximum absolute value, output in [-1, 1]. Its one distinguishing property: it doesn't shift the data, so zeros stay zeros and sparse matrices stay sparse. If you're working with high-dimensional sparse data—text features, one-hot encodings at scale—running StandardScaler will center the data, destroy sparsity, and turn a 2 GB sparse matrix into a 400 GB dense one. This is a real way to run a machine out of memory.
+**MaxAbsScaler**—divide by the maximum absolute value, output in [-1, 1]. Its one distinguishing property: it doesn't shift the data, so zeros stay zeros and sparse matrices stay sparse. If you're working with high-dimensional sparse data—text features, one-hot encodings at scale—StandardScaler will refuse outright, raising rather than centering a sparse matrix, and the usual workaround of calling `.toarray()` first turns a 2 GB sparse matrix into a 400 GB dense one. This is a real way to run a machine out of memory.
 
-**Normalizer**—and this is the one people use by accident. Every other scaler on this list works down a *column*, one feature at a time, fit across your rows. `Normalizer` works across a *row*, scaling each sample to unit norm. It's a completely different operation for a completely different purpose (comparing direction rather than magnitude, standard in text similarity). It is next to `StandardScaler` in the docs, it sounds like the generic option, and if you drop it into a tabular pipeline it will silently destroy the relationship between your features. Check your imports.
+**Normalizer**—and this is the one people use by accident. Every other scaler on this list works down a *column*, one feature at a time, fit across your rows. `Normalizer` works across a *row*, scaling each sample to unit norm. It's a completely different operation for a completely different purpose (comparing direction rather than magnitude, standard in text similarity). It is next to `StandardScaler` in the docs, it sounds like the generic option, and if you drop it into a tabular pipeline it will silently erase every feature's magnitude and leave only each row's direction. Check your imports.
 
-**QuantileTransformer**—map each value to its rank, then to a uniform or normal distribution. This is the heavy artillery: it's immune to outliers by construction, and it will force any input distribution into the output shape you asked for, no matter how ugly the input was. The costs are real. It discards the *shape* of the distribution and keeps only the ordering, so the distance between two points stops meaning what it used to mean. It needs enough data to estimate quantiles reliably. And it will happily map a value it never saw during training onto the edge of the distribution, which makes its production behavior on new extremes worth testing deliberately.
+**QuantileTransformer**—map each value to its rank among a thousand quantile landmarks, then to a uniform or normal distribution. This is the heavy artillery: it's immune to outliers by construction, and it will force any input distribution into the output shape you asked for, no matter how ugly the input was. The costs are real. It discards the *shape* of the distribution and keeps only the ordering, so the distance between two points stops meaning what it used to mean. It needs enough data to estimate quantiles reliably. And it will happily map a value it never saw during training onto the edge of the distribution, which makes its production behavior on new extremes worth testing deliberately.
 
 The practical default: **RobustScaler if you have outliers, StandardScaler if you don't, MaxAbsScaler if you're sparse, and nothing at all if you're using trees.**
 
@@ -72,15 +72,15 @@ The practical default: **RobustScaler if you have outliers, StandardScaler if yo
 
 ## 12.3 Handling Skewed Distributions: Modern Transformation Methods
 
-Scaling moves and stretches a distribution. It does not change its shape. If your feature is heavily right-skewed—and per Chapter 11, most business quantities are—standardizing it gives you a heavily right-skewed feature with mean zero. For a linear model that assumes roughly symmetric errors, that's the same problem in new units.
+Scaling moves and stretches a distribution. It does not change its shape. If your feature is heavily right-skewed—and per Chapter 11, most business quantities are—standardizing it gives you a heavily right-skewed feature with mean zero. The skew is untouched, so for a linear model it's the same leverage problem in new units.
 
 Changing the shape needs a nonlinear transformation.
 
 **The log transform** is the workhorse, and it's worth being precise about *why* it works rather than treating it as a magic skew-fixer. A log transform converts multiplicative relationships into additive ones. If your process generates values by compounding—revenue per customer, city populations, file sizes, claim severity, session durations—then the natural structure is multiplicative, the distribution is roughly log-normal, and taking a log doesn't distort the data so much as finally look at it on the axis it was always living on. Use `log1p` (log of 1+x) so that zeros survive.
 
-**Box-Cox** generalizes this into a family parameterized by λ, and estimates the λ that best normalizes your data—λ=0 recovers the log, λ=0.5 is a square root, λ=1 is no transform. It requires strictly positive input, which rules out most real columns.
+**Box-Cox** generalizes this into a family parameterized by λ, and estimates the λ that best normalizes your data—λ=0 recovers the log, λ=0.5 is a square root, λ=1 is no transform. It requires strictly positive input, which rules out any column carrying a zero or a negative.
 
-**Yeo-Johnson** is Box-Cox extended to handle zeros and negatives, and it's the better default for exactly that reason. In scikit-learn both live in `PowerTransformer`, and it will fit λ for you.
+**Yeo-Johnson** is Box-Cox extended to handle zeros and negatives, and it's the better default for exactly that reason. In scikit-learn both live in `PowerTransformer`, and it will fit λ for you. Note that it standardizes its output by default too, so it is a transform and a scaler in one step.
 
 Now the part that gets skipped, and it's the part that costs money.
 
@@ -96,7 +96,7 @@ One more caution. Transformations make features harder to explain. "A one-unit i
 
 ## 12.4 Discretization and Binning Strategies
 
-Binning converts a continuous variable into buckets. It's the one technique in this chapter that deliberately throws information away, which means it needs a reason.
+Binning converts a continuous variable into buckets. It's the technique in this chapter that throws the most information away on purpose, which means it needs a reason.
 
 **Equal-width** cuts the range into n intervals of the same size. Fast, and useless on skewed data—you'll get one bin with 97% of your rows and nine bins with the tail.
 
@@ -110,7 +110,7 @@ Legitimate reasons to bin: your model is linear and the relationship isn't (binn
 
 And the reason not to, which is the one that matters: **binning creates cliffs that don't exist in the world.** Bin age at 65 and your model treats 64 and 65 as categorically different people while treating 65 and 79 as identical. You've imposed a discontinuity on a smooth process, and every row near a boundary gets a prediction that would flip if the underlying value moved by one unit. When someone asks why two nearly-identical customers got different decisions, the answer "they landed on opposite sides of an arbitrary cutoff" is not one you want to give a regulator or a customer.
 
-The blunt version: if you're using a tree-based model, don't bin. Trees find their own splits, optimized against your actual objective, and every one they find will be at least as good as the ones you hand-drew. Pre-binning for a gradient-boosted model is doing the model's job worse than the model would.
+The blunt version: if you're using a tree-based model, you almost never need to bin. Trees find their own splits, optimized against your actual objective, and LightGBM, XGBoost's `hist` mode and `HistGradientBoosting` already bin every feature for you, 255 buckets by default. Hand-binning ahead of a gradient-boosted model is usually redundant work.
 
 ---
 
@@ -118,11 +118,11 @@ The blunt version: if you're using a tree-based model, don't bin. Trees find the
 
 Linear models can't represent "the effect of A depends on B." If your process actually works that way—and business processes constantly do—you either use a model that learns interactions natively or you build them by hand.
 
-`PolynomialFeatures(degree=2)` generates every squared term and every pairwise product. It's one line, and here's the arithmetic before you run it: with n input features, degree 2 gives you (n+2)(n+1)/2 outputs. Ten features become 66. A hundred features become 5,151. Five hundred features become 125,751, at which point you have more columns than rows and your model is going to memorize the training set with great enthusiasm.
+`PolynomialFeatures(degree=2)` generates every squared term and every pairwise product. It's one line, and here's the arithmetic before you run it: with n input features, degree 2 gives you (n+2)(n+1)/2 outputs, counting the originals and the bias column it adds by default. Ten features become 66. A hundred features become 5,151. Five hundred features become 125,751, at which point you have more columns than rows and your model is going to memorize the training set with great enthusiasm.
 
 The generated features are also badly collinear by construction—x and x² move together—which makes linear coefficients unstable and uninterpretable. If you're going to do this, regularize, and scale *before* generating the terms, because squaring a feature that ranges to 45,000 produces one that ranges to two billion.
 
-The alternative that works better in practice is to build the handful of interactions you have a reason to believe in. Price per square foot. Revenue per employee. Debt-to-income. Utilization as a ratio of usage to capacity. Distance divided by time. Every one of these is an interaction that a domain expert would name in a sentence, they're interpretable, they don't explode your feature count, and they routinely outperform a brute-force polynomial expansion because they encode something true rather than something combinatorial. This is Chapter 14's territory and the most valuable thing in it.
+The alternative that works better in practice is to build the handful of interactions you have a reason to believe in. Price per square foot. Revenue per employee. Debt-to-income. Utilization as a ratio of usage to capacity. Distance divided by time. Every one of these is an interaction that a domain expert would name in a sentence. They're interpretable, they don't explode your feature count, and they routinely outperform a brute-force polynomial expansion because they encode something true rather than something combinatorial. This is Chapter 14's territory and the most valuable thing in it.
 
 Worth knowing: tree ensembles learn interactions natively, but *inefficiently* for multiplicative relationships. A tree approximates `a × b` with a staircase of axis-aligned splits, and it needs depth and data to get there. So handing a gradient-boosted model an explicit ratio feature often helps a lot, even though the model could theoretically discover it. "Theoretically discoverable" and "discoverable with the data you actually have" are different claims.
 
@@ -130,7 +130,7 @@ Worth knowing: tree ensembles learn interactions natively, but *inefficiently* f
 
 ## 12.6 Pipeline Integration and Data Leakage Prevention
 
-Everything in this chapter has fitted parameters. `StandardScaler` learns a mean and a standard deviation. `MinMaxScaler` learns a min and a max. `QuantileTransformer` learns the full empirical distribution. `PowerTransformer` learns λ.
+Everything in this chapter has fitted parameters. `StandardScaler` learns a mean and a standard deviation. `MinMaxScaler` learns a min and a max. `QuantileTransformer` learns a thousand quantile landmarks, by default from a subsample. `PowerTransformer` learns λ.
 
 Which produces the rule this chapter exists to enforce, and it's the same rule Chapter 10 gave for imputers: **anything with fitted parameters is part of your model, and it must be fit on training data only.**
 
@@ -145,9 +145,9 @@ scaler = StandardScaler().fit(X_train)
 X_train_s, X_test_s = scaler.transform(X_train), scaler.transform(X_test)
 ```
 
-The first version leaks. Your test set's mean and variance participated in computing the scaling constants applied to your training data, so your validation score is measuring performance on data your preprocessing had already seen. The inflation is usually small—a point or two—which is precisely why it survives review. It's not large enough to look like a bug. It's just large enough to make you pick the wrong model, ship a system that underperforms its evaluation, and have no idea why.
+The first version leaks. Your test set's mean and variance participated in computing the scaling constants applied to your training data, so your validation score is measuring performance on data your preprocessing had already seen. The inflation is usually small, often well under a point, which is precisely why it survives review. It's not large enough to look like a bug. It's just large enough to make you pick the wrong model, ship a system that underperforms its evaluation, and have no idea why.
 
-With `QuantileTransformer` and `PowerTransformer` the leak is considerably worse than with `StandardScaler`, because they learn far more about the distribution's shape.
+With `QuantileTransformer` and `PowerTransformer` there is more to leak than with `StandardScaler`, because they learn far more about the distribution's shape.
 
 The structural fix is to stop doing this by hand:
 
@@ -164,7 +164,7 @@ Now the imputer and the scaler are refit inside every fold, automatically, and t
 
 Three more traps that a `Pipeline` alone won't save you from.
 
-**Time series.** A random split is already wrong; use `TimeSeriesSplit`. But note that even a correct temporal split leaves the scaler able to leak, because fitting it on the full training window means it learned statistics from the end of that window and applied them to the beginning. For most problems that's acceptable. For anything where the distribution moves materially over time, use an expanding-window fit, and know which one you chose.
+**Time series.** A random split is already wrong; use `TimeSeriesSplit`. But note that even a correct temporal split leaves the scaler looking into its own future, because fitting it on the full training window means it learned statistics from the end of that window and applied them to the beginning. For most problems that's acceptable. For anything where the distribution moves materially over time, use an expanding-window fit, and know which one you chose.
 
 **Production.** Your scaler's mean and standard deviation are learned constants. Serialize them with the model, version them together, and never recompute them at serving time from live traffic. A serving path that computes its own scaling statistics from the current batch is Chapter 9's train/serve skew, rebuilt from scratch in a new place, and it will drift the moment your live distribution shifts. If you're using a feature store, the scaler belongs in the transformation layer with everything else.
 
@@ -192,7 +192,7 @@ Take any dataset with features on different scales. Fit a k-NN model on the raw 
 
 ### Exercise 2: Measure the Leak (Time: ~45 minutes)
 
-Build the same model twice: once with the scaler fit on the full dataset before splitting, once with it inside a `Pipeline` and cross-validated properly. Record both validation scores. The gap is your leak, measured in your own data rather than taken on faith from a book. Then do it again with `QuantileTransformer` instead of `StandardScaler` and watch the gap widen. Write both numbers down. The next time someone tells you the leak is too small to bother with, you'll have a figure.
+Build the same model twice: once with the scaler fit on the full dataset before splitting, once with it inside a `Pipeline` and cross-validated properly. Record both validation scores. The gap is your leak, measured in your own data rather than taken on faith from a book. Then do it again with `QuantileTransformer` instead of `StandardScaler` and see whether the gap widens. Write both numbers down. The next time someone tells you the leak is too small to bother with, you'll have a figure.
 
 ### Exercise 3: Find the Retransformation Bias (Time: ~45 minutes)
 
