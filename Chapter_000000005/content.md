@@ -12,7 +12,7 @@ Note which number that is, though. For homes *not* currently on the market—whi
 
 The problem wasn't the models. The problem was the data feeding those models.
 
-Zillow's iBuying algorithm relied on third-party listing feeds with inconsistent update frequencies, with some sources refreshed daily, others weekly, creating temporal mismatches that the model couldn't detect. They ingested user-submitted "Zestimates" that homeowners actively gamed to inflate their property values. They pulled MLS data that lagged actual market conditions by weeks, sometimes months. And they wrapped all of this in synthetic confidence intervals that masked the fundamental uncertainty baked into every input.
+Zillow's iBuying algorithm relied on third-party listing feeds with inconsistent update frequencies, with some sources refreshed daily, others weekly, creating temporal mismatches that the model couldn't detect. They ingested user-submitted "Zestimates" that homeowners actively gamed to inflate their property values. They pulled MLS data (the Multiple Listing Service feeds realtors use to list homes) that lagged actual market conditions by weeks, sometimes months. And they wrapped all of this in synthetic confidence intervals that masked the fundamental uncertainty baked into every input.
 
 Meanwhile, competitors like Opendoor and Offerpad, using essentially the same iBuying model in the same markets during the same pandemic-era volatility, weathered the storm. Not because they had better algorithms. Because they had better data acquisition strategies. They had built systems that could detect when their inputs were drifting from reality. They had guardrails that caught systematic overpayment before it metastasized into an $881 million tumor.
 
@@ -22,11 +22,13 @@ That's the bile you should feel rising. Not because Zillow failed—companies fa
 
 Chapter 4 showed you what bad data costs. This chapter is about not acquiring bad data in the first place.
 
+Two terms before we start, because the rest of the chapter leans on them. **Data acquisition** is everything that happens to get data into your hands: who collected it, how, under what agreement, and through which systems it traveled before you ever saw it. **Data quality** is how fit that data is for the decision you're about to make with it—not "clean" in the abstract, but accurate enough, complete enough, fresh enough, and consistent enough for the specific model or dashboard on the other end. The same file can be high quality for one question and worthless for another, which is why quality is a property of the data *plus* the use, never of the data alone.
+
 ---
 
 ## 5.1 The Acquisition Hierarchy: Where Data Actually Comes From
 
-Before you can assess data quality, you need to understand data provenance. And I don't mean that in some abstract data-governance sense—I mean you need to understand the actual, physical, organizational journey that data takes before it lands in your feature store. Because every step in that journey is an opportunity for the data to lie to you.
+Before you can assess data quality, you need to understand data provenance. And I don't mean that in some abstract data-governance sense—I mean you need to understand the actual, physical, organizational journey that data takes before it lands in your feature store (the system that serves model-ready inputs; Chapter 9 is all about them). Because every step in that journey is an opportunity for the data to lie to you.
 
 ### 5.1.1 First-Party Data: Your Own Exhaust
 
@@ -50,7 +52,7 @@ The promise is always compelling: "Our partner will give us their customer data,
 
 Data-sharing consortia collapse over this constantly, and rarely for technical reasons. A retail co-op's initiative dies because the partners cannot agree on update cadence. One partner pushed daily updates; another pushed weekly. Some partners sent full snapshots; others sent only deltas. By the time the data engineering team built a system to reconcile all of this, the underlying business reality had drifted so far from the harmonized dataset that the models trained on it were worse than models trained on single-partner data alone.
 
-Second-party data works when you have clear contracts, genuinely shared incentives, technical alignment on formats and cadence, and—the part everyone skips—explicit ownership of what happens when things go wrong. If your partnership agreement doesn't include an SLA for schema change notification, you don't have a data partnership. You have a ticking time bomb.
+Second-party data works when you have clear contracts, genuinely shared incentives, technical alignment on formats and cadence, and—the part everyone skips—explicit ownership of what happens when things go wrong. If your partnership agreement doesn't include an SLA (a service-level agreement: a written commitment with a number in it) for schema change notification, you don't have a data partnership. You have a ticking time bomb.
 
 ### 5.1.3 Third-Party Data: The Vendor Roulette
 
@@ -62,7 +64,7 @@ That's not hyperbole. When a Fortune 500 company finally audited its primary thi
 
 The vendor's response? "Well, data decays over time." As if that absolved them of selling a product that was broken on delivery.
 
-Due diligence on third-party data requires a sample-then-verify approach, not trust-then-discover. Before you sign a contract, demand a representative sample. Validate that sample against ground truth you control—match it to your existing customers, verify phone numbers actually ring, spot-check addresses. Calculate your own accuracy, staleness, and duplication rates. If the vendor won't give you a sample to validate, that tells you everything you need to know about what they're actually selling.
+Due diligence on third-party data requires a sample-then-verify approach, not trust-then-discover. Before you sign a contract, demand a representative sample. Validate that sample against ground truth you control—ground truth being records you have independently confirmed are correct, the answer key you grade everything else against. Match it to your existing customers, verify phone numbers actually ring, spot-check addresses. Calculate your own accuracy, staleness, and duplication rates. If the vendor won't give you a sample to validate, that tells you everything you need to know about what they're actually selling.
 
 ### 5.1.4 Scraped Data: The Legal Minefield
 
@@ -78,7 +80,7 @@ The lesson isn't that scraping is always illegal—it often isn't, especially fo
 
 ### 5.1.5 Synthetic Data: The New Frontier
 
-Synthetic data is algorithmically generated to mimic real distributions. It's the promise of infinite training data, privacy-safe by construction, with no collection costs. Train your models on synthetic faces, synthetic medical records, synthetic financial transactions. Scale without limits.
+Synthetic data is algorithmically generated to mimic real distributions—the shape of how a variable's values spread out, which values are common and which are rare. It's the promise of infinite training data, privacy-safe by construction, with no collection costs. Train your models on synthetic faces, synthetic medical records, synthetic financial transactions. Scale without limits.
 
 The danger is subtle and fundamental: when you train on synthetic data, you're training on your assumptions about reality.
 
@@ -100,29 +102,29 @@ Academic literature will give you elaborate frameworks with dozens of quality di
 
 Accuracy is the most intuitive quality dimension: does the data reflect reality? If your dataset says a customer lives at 123 Main Street, do they actually live there? If it says a transaction occurred at 3:47 PM, did it actually occur at 3:47 PM?
 
-The measurement problem is that ground truth is expensive. You can't verify every address by sending a letter and waiting for it to bounce. You can't validate every timestamp against an atomic clock. So you sample—and your sampling strategy determines what you can actually know about accuracy.
+The measurement problem is that ground truth is expensive. You can't verify every address by sending a letter and waiting for it to bounce. You can't validate every timestamp against an atomic clock. So you sample—`df.sample(200, random_state=0)` pulls two hundred rows to check by hand—and your sampling strategy determines what you can actually know about accuracy.
 
-Medical imaging labels illustrate this challenge vividly. When you train a model to detect tumors in radiology images, your ground truth is typically radiologist annotations. But radiologists disagree. Radiologists disagree with each other at rates that would alarm most consumers of their output, and disagree with their own prior readings often enough that intra-reader variability is its own field of study. So what's the "true" label for a contested image? You can use consensus voting, but that biases toward common interpretations. You can use pathology confirmation, but that's only available for a subset of cases. You can use follow-up imaging, but that adds temporal lag and selection bias.
+Medical imaging labels illustrate this challenge vividly. When you train a model to detect tumors in radiology images, your ground truth is typically radiologist annotations. But radiologists disagree. Radiologists disagree with each other at rates that would alarm most consumers of their output, and disagree with their own prior readings often enough that intra-reader variability is its own field of study. So what's the "true" label for a contested image? You can use consensus voting, but that biases toward common interpretations. You can use pathology confirmation, but that's only available for a subset of cases. You can use follow-up imaging, but that adds temporal lag and selection bias (the cases you can confirm are no longer a fair sample of the cases you have).
 
 The practical question isn't "is this data perfectly accurate?" The practical question is "what accuracy do I actually need, and can I verify that this dataset meets that threshold?" A recommendation system probably doesn't need to know exact addresses—ZIP code accuracy might be sufficient. A fraud detection system probably needs timestamp accuracy to the second. Define your requirements before you start measuring, or you'll measure everything and learn nothing actionable.
 
 ### 5.2.2 Completeness: Is It All There?
 
-Completeness is about missing data—missing values, missing records, missing relationships. And the critical insight is that not all missingness is created equal.
+Completeness is about missing data—missing values, missing records, missing relationships. The rate is one line, `df.isna().mean()`, which gives the share of nulls in every column. And the critical insight is that not all missingness is created equal.
 
-A null left by someone who skipped a page on a survey and a null left by someone too angry to finish the form are the same character in your database and completely different facts about the world. Statisticians have a taxonomy for this—MCAR, MAR, and MNAR—and Chapter 10 gives it a whole chapter, because which one you're holding decides whether you can delete the row, fill it in, or neither.
+A null left by someone who skipped a page on a survey and a null left by someone too angry to finish the form are the same character in your database and completely different facts about the world. Statisticians have a taxonomy for this—MCAR, MAR, and MNAR: missing completely at random, missing at random, and missing not at random—and Chapter 10 gives it a whole chapter, because which one you're holding decides whether you can delete the row, fill it in, or neither.
 
 At the acquisition stage you don't need the taxonomy yet. You need the habit of asking the question, because the answer lives with the people who built the collection path and it gets harder to retrieve every month you wait.
 
-When someone tells you "our data is 80% complete," the right question is: which 20% is missing? If you're building a churn prediction model and the missing data is systematically concentrated among high-risk customers who stopped engaging with your app before you could collect their feedback, your "80% complete" dataset will produce a model that's blind to exactly the patterns you need to detect.
+When someone tells you "our data is 80% complete," the right question is: which 20% is missing? If you're building a churn prediction model (churn being customers who quietly leave) and the missing data is systematically concentrated among high-risk customers who stopped engaging with your app before you could collect their feedback, your "80% complete" dataset will produce a model that's blind to exactly the patterns you need to detect.
 
-Quantify missingness patterns, not just rates. Know not just how much is missing, but why it's missing, and what that means for the inferences your model will draw.
+Quantify missingness patterns, not just rates. `df.isna().groupby(df["segment"]).mean()` breaks the null rate out by customer segment, which is where that 20% starts to show its shape. Know not just how much is missing, but why it's missing, and what that means for the inferences your model will draw.
 
 ### 5.2.3 Consistency: Does It Agree With Itself?
 
 Consistency means the same entity has the same representation everywhere. This sounds trivial until you realize how many different systems contain overlapping representations of your data—and how rarely those representations actually agree.
 
-The canonical example is the customer who exists in your CRM, your billing system, your support ticketing system, and your product analytics. In the CRM, they're "John Smith." In billing, they're "J. Smith Jr." In support, they're "John A. Smith (Enterprise)." In product analytics, they're user_id_847291. Are these the same person? Probably. Can you prove it programmatically? Often not without heroic entity resolution efforts.
+The canonical example is the customer who exists in your CRM, your billing system, your support ticketing system, and your product analytics. In the CRM, they're "John Smith." In billing, they're "J. Smith Jr." In support, they're "John A. Smith (Enterprise)." In product analytics, they're user_id_847291. Are these the same person? Probably. Can you prove it programmatically? Often not without heroic entity resolution efforts (matching records that refer to the same real-world thing; more on that in 5.2.6). When the systems do share a key, the check is cheap: `crm.merge(billing, on="customer_id", how="outer", indicator=True)["_merge"].value_counts()` counts how many customers exist in one system but not the other.
 
 Temporal consistency adds another layer of complexity. What does "active user" mean? If the definition changed six months ago—maybe you went from "logged in within 30 days" to "performed a meaningful action within 14 days"—your historical analysis will show a discontinuity that has nothing to do with actual user behavior. Teams lose weeks investigating why engagement "dropped" on a specific date, and find a definition change nobody documented.
 
@@ -130,17 +132,27 @@ The solution is canonical definitions, enforced at write time. Agree on what "cu
 
 ### 5.2.4 Timeliness: Is It Fresh Enough?
 
-Timeliness measures data age relative to decision requirements. A real-time fraud detection system needs transaction data in milliseconds. A quarterly business review can work with data that's weeks old. Mismatching freshness requirements to actual decision cadence is one of the most expensive mistakes in data engineering.
+Timeliness measures data age relative to decision requirements. The measurement itself is trivial—`pd.Timestamp.now("UTC") - df["event_time"].max()` is the age of your newest record; the hard part is deciding what age is acceptable. A real-time fraud detection system needs transaction data in milliseconds. A quarterly business review can work with data that's weeks old. Mismatching freshness requirements to actual decision cadence is one of the most expensive mistakes in data engineering.
 
 The latency spectrum runs from real-time streaming (sub-second) through near-real-time (seconds to minutes) to batch (hours to days) to historical analysis (weeks to months). Each point on this spectrum has radically different infrastructure requirements, costs, and failure modes.
 
-The over-engineering trap is assuming everything needs to be real-time. Teams build elaborate streaming pipelines—Kafka clusters, Flink jobs, real-time feature stores—for data that ultimately feeds a weekly dashboard nobody opens until Tuesday. The operational overhead of maintaining that real-time infrastructure vastly exceeded any value it provided. They could have run a simple batch job on Sunday night and achieved the same business outcome at a fraction of the cost and complexity.
+The over-engineering trap is assuming everything needs to be real-time. Teams build elaborate streaming pipelines—Kafka clusters, Flink jobs (the standard open-source machinery for moving and processing events the instant they happen), real-time feature stores—for data that ultimately feeds a weekly dashboard nobody opens until Tuesday. The operational overhead of maintaining that real-time infrastructure vastly exceeded any value it provided. They could have run a simple batch job on Sunday night and achieved the same business outcome at a fraction of the cost and complexity.
 
-Match freshness requirements to actual decision cadence. If your business process runs weekly, daily freshness is probably sufficient. If your model is retrained monthly, real-time features are overkill for training—though you might still need them for inference. Be honest about what your use case actually requires, not what sounds impressive in a design document.
+Match freshness requirements to actual decision cadence. If your business process runs weekly, daily freshness is probably sufficient. If your model is retrained monthly, real-time features are overkill for training—though you might still need them for inference (the model making live predictions on new data). Be honest about what your use case actually requires, not what sounds impressive in a design document.
 
 ### 5.2.5 Validity: Does It Follow the Rules?
 
-Validity means data conforms to defined formats and constraints. Dates are actual dates. Phone numbers have the right number of digits. Foreign keys reference records that actually exist. Amounts are within plausible ranges.
+Validity means data conforms to defined formats and constraints. Dates are actual dates. Phone numbers have the right number of digits. Foreign keys reference records that actually exist. Amounts are within plausible ranges. In pandas, those rules are a boolean mask, and the rows that fail it go to quarantine rather than quietly through:
+
+```python
+valid = (
+    df["amount"].between(0, 1_000_000)
+    & df["phone"].str.fullmatch(r"\d{10}").fillna(False)
+    & df["customer_id"].isin(customers["customer_id"])  # the foreign key exists
+)
+quarantine = df[~valid]   # hold for a human; never let it through silently
+df = df[valid]
+```
 
 The standard lie is "we have a schema!" The questions that matter: is it enforced? Is it current? Is it complete?
 
@@ -148,15 +160,15 @@ Schemas that exist only in documentation are not schemas—they're aspirations. 
 
 Here is the pattern that repeats everywhere: a phone number field that "passes validation" because it matches a regex, but the number belongs to nobody. The format is valid. The content is garbage. Validity checking is a necessary but insufficient condition for data quality. It catches obvious structural errors but can't tell you whether the structurally-correct data actually corresponds to reality.
 
-Validate at ingestion, not at discovery. Reject or quarantine non-conforming records before they enter your data lake. Make schema enforcement a gate, not a report.
+Validate at ingestion, not at discovery. Reject or quarantine non-conforming records before they enter your data lake (the cheap bulk store where raw data lands first; Chapter 8 covers the architecture). Make schema enforcement a gate, not a report.
 
 ### 5.2.6 Uniqueness: Is It Counted Once?
 
-Uniqueness means no unintended duplicates. This sounds simple until you try to implement it in a distributed system with multiple data sources, eventual consistency, and entity resolution challenges.
+Uniqueness means no unintended duplicates. `df.duplicated(subset=["order_id"]).sum()` counts the repeats and `df.drop_duplicates(subset=["order_id"])` removes them; the hard part is deciding which columns define "the same" record. This sounds simple until you try to implement it in a distributed system with multiple data sources, eventual consistency, and entity resolution challenges.
 
 The join explosion is a classic failure mode. You join two tables with a one-to-many relationship, forgetting that each parent record will match multiple child records. Suddenly your aggregation is overcounting by 3x, and your marketing attribution model thinks you have three times the conversions you actually have. Multi-million dollar budget decisions get made on dashboards that were systematically overcounting because nobody caught a join explosion.
 
-Entity resolution—determining whether two records represent the same real-world entity—is genuinely hard. Is "John Smith" at "123 Main Street" the same person as "J. Smith" at "123 Main St"? Probably. Maybe. The challenge is distinguishing true matches from false matches at scale, with acceptable precision and recall, in a way that doesn't require manual review of millions of potential match pairs.
+Entity resolution—determining whether two records represent the same real-world entity—is genuinely hard. Is "John Smith" at "123 Main Street" the same person as "J. Smith" at "123 Main St"? Probably. Maybe. The challenge is distinguishing true matches from false matches at scale, with acceptable precision (the share of the matches you declare that are real) and recall (the share of the real matches you actually find), in a way that doesn't require manual review of millions of potential match pairs.
 
 The critical distinction is between deterministic IDs and probabilistic matching—and knowing which you're using. A deterministic ID (customer_id, SSN, email) gives you certainty about identity but requires that the ID actually propagate correctly through all your systems. Probabilistic matching (name + address similarity, behavioral patterns) handles fuzzy cases but introduces false positive and false negative rates. Both are valid approaches. Using one while thinking you're using the other is a recipe for systematic over- or under-counting.
 
@@ -176,19 +188,19 @@ The scorecard needs teeth. If quality drops below a threshold, what happens? If 
 
 ### 5.3.2 Automated Profiling: Know Your Data Before It Knows You
 
-Automated profiling tools examine your data and report on its statistical properties—distributions, cardinality, null rates, correlations, freshness patterns. The landscape includes Great Expectations for validation and testing, Deequ for Spark-based quality checks, whylogs for lightweight profiling and drift detection, and dozens of others.
+Automated profiling tools examine your data and report on its statistical properties—distributions, cardinality (the number of distinct values in a column), null rates, correlations, freshness patterns. The landscape includes Great Expectations for validation and testing, Deequ for Spark-based quality checks, whylogs for lightweight profiling and drift detection (`why.log(df).view().to_pandas()` is the entire profile), and dozens of others.
 
 The profiling trap is building elaborate profiling pipelines that generate comprehensive reports that nobody reads. Profiling is only valuable if it triggers action. The question isn't "what can we learn about our data?" The question is "what would we do differently if a specific metric changed?"
 
-Start with the profiles that would actually change behavior. If your null rate for a critical feature exceeds 5%, you need to investigate before training. If your cardinality for a categorical variable doubles unexpectedly, something changed upstream. If your distribution shape shifts dramatically from last week, drift is occurring. These are actionable signals. Comprehensive reports on 500 columns, generated nightly and stored in S3 buckets nobody opens, are not actionable signals.
+Start with the profiles that would actually change behavior. If your null rate for a critical feature (a column the model actually learns from) exceeds 5%, you need to investigate before training. If your cardinality for a categorical variable (one that holds labels like region or plan tier, rather than quantities) doubles unexpectedly, something changed upstream. If your distribution shape shifts dramatically from last week, drift is occurring—drift being the data's statistical shape changing over time, so the model is now seeing a world it wasn't trained on. These are actionable signals. Comprehensive reports on 500 columns, generated nightly and stored in S3 buckets nobody opens, are not actionable signals.
 
-The cost-benefit of automated profiling tips positive earlier than most teams think. Even simple profiling—null rates, basic statistics, freshness checks—catches a surprising number of data quality issues before they reach production. You don't need a sophisticated platform to start. You need the discipline to look at what even basic profiling reveals.
+The cost-benefit of automated profiling tips positive earlier than most teams think. Even simple profiling—null rates, basic statistics, freshness checks—catches a surprising number of data quality issues before they reach production. `df.describe(include="all")` and `df.nunique()` are most of a basic profile; the heavier tools add distributions and drift on top. You don't need a sophisticated platform to start. You need the discipline to look at what even basic profiling reveals.
 
 ### 5.3.3 Quality Gates: Stop Bad Data at the Border
 
 Quality gates are checkpoints that block or flag data that fails quality criteria. The philosophy is prevention over detection over remediation. Every issue you prevent from entering your system is an issue you never have to detect, investigate, and fix downstream.
 
-Gates should exist at multiple points in your data pipeline. At the source: validate that incoming data matches expected schemas and constraints before ingestion. At ingestion: apply business rules, check referential integrity, detect obvious anomalies. At transformation: validate that joins behave as expected, that aggregations produce sensible results. At serving: confirm that the data reaching your models or dashboards meets the quality standards those consumers expect.
+Gates should exist at multiple points in your data pipeline. At the source: validate that incoming data matches expected schemas and constraints before ingestion. At ingestion: apply business rules, check referential integrity (every ID points at a record that actually exists), detect obvious anomalies. At transformation: validate that joins behave as expected, that aggregations produce sensible results. At serving: confirm that the data reaching your models or dashboards meets the quality standards those consumers expect.
 
 The distinction between hard gates and soft gates matters. A hard gate blocks data that fails quality checks—it won't proceed until the issue is resolved. A soft gate flags data that fails checks but allows it to proceed, typically with an alert or annotation. The choice depends on the severity of the quality issue and the tolerance of your downstream consumers. Blocked transactions are expensive for a payment system; blocked recommendations are annoying but survivable for a content platform.
 
@@ -198,7 +210,7 @@ The override problem is real. Business pressure will push for exceptions: "We ne
 
 Service Level Agreements for data quality formalize the relationship between data producers and data consumers. They specify what quality standards the producer commits to, what the consumer can expect, and what happens when those standards aren't met.
 
-The dimensions worth SLA-ing include freshness (data will be available within X hours of generation), completeness (null rate for critical fields will not exceed Y%), accuracy (verified through periodic sampling), and availability (the data will be queryable Z% of the time). Be specific. "High quality data" isn't an SLA. "Null rate below 2% for customer_id field, measured daily" is an SLA.
+The dimensions worth SLA-ing include freshness (data will be available within X hours of generation), completeness (null rate for critical fields will not exceed Y%), accuracy (verified through periodic sampling), and availability (the data will be queryable Z% of the time). Be specific. "High quality data" isn't an SLA. "Null rate below 2% for customer_id field, measured daily" is an SLA—and, as code, it is `assert df["customer_id"].isna().mean() < 0.02`, run by the daily job.
 
 Ownership is crucial. Who's responsible when the SLA is violated? In many organizations, "the data team" owns everything data-related, which means nobody owns anything specifically. Effective SLAs assign accountability to specific teams or individuals: the team that produces the data is responsible for its quality at the source, the platform team is responsible for ingestion and transformation, and consuming teams are responsible for validation at their layer.
 
@@ -228,6 +240,19 @@ Schema registries like Confluent Schema Registry or AWS Glue provide a central r
 
 Contract testing extends the schema registry concept with active validation. Consumer-driven contract testing, borrowed from microservices architecture, lets consumers specify their expectations and automatically validates that producers meet them. When a producer's output changes in a way that would break a consumer's expectations, the test fails before the change reaches production.
 
+The schema and quality layers of a contract can be executable rather than aspirational. In pandas-land the usual tool is **pandera**, a library for declaring what a DataFrame must look like and checking real data against the declaration:
+
+```python
+import pandera.pandas as pa
+orders_contract = pa.DataFrameSchema({
+    "order_id": pa.Column(int, unique=True),
+    "customer_id": pa.Column(int, nullable=False),
+    "amount": pa.Column(float, pa.Check.ge(0)),
+    "event_time": pa.Column(pa.DateTime),
+})
+orders_contract.validate(df)   # raises SchemaError on the first violation
+```
+
 Versioning strategies distinguish breaking from non-breaking changes. Adding a new optional field is typically non-breaking—existing consumers can ignore it. Removing a field, changing a type, or modifying semantics is breaking—existing consumers may fail. Contracts should specify versioning policies: how much notice is given before breaking changes, how long deprecated versions are supported, what the upgrade path looks like.
 
 The companies that make data contracts work at scale—across hundreds of internal teams—treat data products like API products, with explicit versioning, documentation requirements, and deprecation policies. Producers can't just change their outputs without following the contract process. Consumers can rely on stability guarantees that let them build without constantly chasing upstream changes.
@@ -252,7 +277,7 @@ Descriptive metadata answers "what is this data?" Names, descriptions, tags, bus
 
 Structural metadata answers "how is this organized?" Schemas, formats, partitioning strategies, physical storage locations. This can often be extracted automatically from data catalogs and schema registries.
 
-Administrative metadata answers "who owns this, and what's its status?" Lineage (where did this come from?), ownership (who's responsible?), access controls (who can use it?), freshness (when was it last updated?), quality metrics (how reliable is it?). This requires integration with operational systems—your orchestration tools, your access management, your monitoring.
+Administrative metadata answers "who owns this, and what's its status?" Lineage (where did this come from?), ownership (who's responsible?), access controls (who can use it?), freshness (when was it last updated?), quality metrics (how reliable is it?). This requires integration with operational systems—your orchestration tools (the schedulers that run your pipelines step by step), your access management, your monitoring.
 
 ### 5.5.3 Metadata Management Systems
 
@@ -288,9 +313,9 @@ Compliance increasingly demands audit trails. Regulations like GDPR, CCPA, and i
 
 ### 5.6.2 Versioning Approaches
 
-Git-based versioning tools like DVC (Data Version Control) and LakeFS treat data like code, with commits, branches, and merges. They're conceptually familiar to engineers who already use Git. DVC works by storing metadata in Git and the actual data in remote storage. LakeFS provides a Git-like interface directly on top of object storage. The tradeoff is that Git semantics don't always translate perfectly to data—"merging" two versions of a dataset is a much more complex operation than merging two versions of a code file.
+Git-based versioning tools like DVC (Data Version Control) and LakeFS treat data like code, with commits, branches, and merges. They're conceptually familiar to engineers who already use Git. DVC works by storing metadata in Git and the actual data in remote storage: `dvc add data/train.parquet` writes a small `.dvc` pointer file you commit with Git, and `dvc push` sends the bytes to the remote. LakeFS provides a Git-like interface directly on top of object storage. The tradeoff is that Git semantics don't always translate perfectly to data—"merging" two versions of a dataset is a much more complex operation than merging two versions of a code file.
 
-Snapshot-based approaches like Delta Lake and Apache Iceberg provide time travel capabilities built into the table format itself. You can query your data "as of" a specific timestamp or version number without maintaining separate snapshot copies. The data lake stores all versions together, and the table format handles version selection at query time. This is powerful but adds complexity to your storage layer and query planning.
+Snapshot-based approaches like Delta Lake and Apache Iceberg provide time travel capabilities built into the table format itself. You can query your data "as of" a specific timestamp or version number without maintaining separate snapshot copies; with the `deltalake` Python package, `DeltaTable("s3://lake/orders", version=3).to_pandas()` reads the table exactly as it stood at version 3. The data lake stores all versions together, and the table format handles version selection at query time. This is powerful but adds complexity to your storage layer and query planning.
 
 Immutable logs take an event-sourcing approach—you never overwrite or delete data, only append new events. The current state of any entity can be reconstructed by replaying its event history. This provides complete auditability and natural versioning but requires different query patterns and can make simple questions (what is the current state?) more expensive than they would be in a mutable datastore.
 
@@ -342,7 +367,7 @@ Lineage capture tags every record with source, timestamp, and batch identifier. 
 
 ### 5.7.3 After Acquisition: Continuous Monitoring
 
-Drift detection watches for distribution changes that signal problems. If your input feature distributions start shifting, your model's predictions may become unreliable even if nothing else changed. Establish baselines, monitor deviations, alert when drift exceeds thresholds.
+Drift detection watches for distribution changes that signal problems. If your input feature distributions start shifting, your model's predictions may become unreliable even if nothing else changed. Establish baselines, monitor deviations, alert when drift exceeds thresholds. The workhorse test is the two-sample Kolmogorov–Smirnov: `scipy.stats.ks_2samp(baseline[col], today[col]).pvalue` compares today's distribution of a column against the baseline's, and a tiny p-value means the shape has moved. Chapter 9 covers drift monitoring properly.
 
 Freshness monitoring confirms data is arriving when expected. If your daily batch hasn't landed by 6 AM, something is wrong upstream. Don't wait for consumers to complain—detect staleness proactively.
 
@@ -358,7 +383,7 @@ Usage tracking answers whether anyone actually uses this data. Acquiring and mai
 
 **Write the metadata entry that doesn't exist (20 min).** Pick your most critical dataset and write down what it is, where it lives, who owns it, what its fields mean, and when anyone last verified any of that. You don't need a catalog to do this. You need a file somewhere the next person will look.
 
-**Profile one table on a schedule (1 hour).** Point whylogs or `ydata-profiling` at it, read the output once, and decide which numbers would alarm you if they moved. Then schedule it daily. An hour today buys you standing visibility into that table forever.
+**Profile one table on a schedule (1 hour).** Point whylogs or `ydata-profiling` at it (`ProfileReport(df).to_file("profile.html")` is the entire ydata-profiling invocation), read the output once, and decide which numbers would alarm you if they moved. Then schedule it daily. An hour today buys you standing visibility into that table forever.
 
 **Sample your most expensive vendor feed (30 min).** Take 200 rows from whatever third-party data you pay the most for and check them by hand against something you trust. Two hundred rows is enough to catch a 20% error rate. It is not enough to prove the feed is good, and that asymmetry is the whole point: this test only ever returns bad news, which is the only kind worth paying for.
 
