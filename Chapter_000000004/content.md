@@ -361,7 +361,7 @@ What teams should monitor:
 - Are there anomalies in the data? ✗
 - Did downstream systems successfully consume? ✗
 
-The distribution question has a one-line start: `scipy.stats.ks_2samp(last_week[col], today[col]).pvalue`, a test of whether two samples plausibly came from the same distribution. A tiny p-value on a column that should be stable is your alarm.
+The distribution question has a one-line start: `scipy.stats.ks_2samp(last_week[col], today[col])`, a test of whether two samples plausibly came from the same distribution. On big daily samples its p-value hits zero for shifts too small to matter, so alarm on the `.statistic` it returns (the largest gap between the two cumulative distributions, 0 to 1) crossing a threshold you chose, not on the p-value.
 
 Example: A job completed successfully every day for 3 weeks. No errors. No alerts. Also, it was producing empty files due to a filter condition that matched nothing.
 

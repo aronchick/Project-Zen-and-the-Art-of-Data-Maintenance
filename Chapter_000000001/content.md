@@ -368,7 +368,7 @@ def get_sensor_data():
     return data, quality_score, metadata
 ```
 
-The pandas version of that `interpolate_missing` line is `data.resample("1min").asfreq().ffill(limit=5)`: put every sensor on a one-minute grid, carry the last reading forward, and refuse to paper over a gap longer than five minutes.
+The pandas version of the forward fill in that block is `data.resample("1min").asfreq().ffill(limit=5)`: put every sensor on a one-minute grid, then repeat the last reading (it does not interpolate between neighbours) for at most five minutes, leaving anything beyond that visibly missing.
 
 ## 1.6 What's Next: The Price of Getting This Wrong
 

@@ -257,6 +257,7 @@ TRUTHY = {"true": True, "t": True, "yes": True, "y": True, "1": True,
           "false": False, "f": False, "no": False, "n": False, "0": False}
 flags = df["is_premium"].astype(str).str.strip().str.lower().map(TRUTHY)
 assert flags.notna().all(), "unmapped boolean value"
+df["is_premium"] = flags.astype(bool)
 ```
 
 ### The Date That Broke Everything
@@ -318,7 +319,7 @@ Dates stored as strings can't be sorted chronologically, can't have durations ca
 
 ### Step 4: Expose Fake Booleans
 
-Check string columns for boolean indicators: "true/false", "yes/no", "y/n", "1/0", "t/f". If a column contains ONLY these values (`df[col].str.lower().isin(["true", "false", "yes", "no", "y", "n", "t", "f", "1", "0"]).all()`), it should be a proper boolean type, not a string.
+Check string columns for boolean indicators: "true/false", "yes/no", "y/n", "1/0", "t/f". If a column contains ONLY these values (`df[col].astype(str).str.lower().isin(["true", "false", "yes", "no", "y", "n", "t", "f", "1", "0"]).all()`), it should be a proper boolean type, not a string.
 
 Remember: the string "false" evaluates to True in a boolean context. This single fact has caused more fraud detection failures than any sophisticated attack.
 
@@ -364,7 +365,7 @@ Your confidence will be appropriately destroyed.
 
 File extensions lie. That ".csv" might be Excel, that ".json" might be malformed XML, and that ".xlsx" might be a ZIP file someone renamed.
 
-Before you try to parse anything, read the first 1024 bytes (`open(path, "rb").read(1024)`) and check the actual file signature. ZIP files (including Excel) start with "PK". PDFs start with "%PDF". PNGs have a distinctive binary header. Parquet files start with "PAR1".
+Before you try to parse anything, read the first 1024 bytes (`with open(path, "rb") as f: head = f.read(1024)`) and check the actual file signature. ZIP files (including Excel) start with "PK". PDFs start with "%PDF". PNGs have a distinctive binary header. Parquet files start with "PAR1".
 
 If the file is text, look for structural clues: curly braces and quotes suggest JSON; commas and newlines suggest CSV; angle brackets suggest XML.
 
