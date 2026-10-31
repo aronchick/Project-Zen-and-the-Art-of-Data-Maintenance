@@ -2,7 +2,7 @@
 
 ## Or: The Model Was Innocent
 
-A payments company had a fraud model it was proud of. It scored every card transaction in real time, and on the held-out test set, it was a monster: 0.94 AUC, precision, and recall all in a range that made the risk team relax for the first time in years. And they shipped it, as you would expect! The offline numbers said they'd catch the overwhelming majority of fraud with a false-positive rate low enough that legitimate customers wouldn't scream.
+A payments company had a fraud model it was proud of. It scored every card transaction in real time, and on the held-out test set—the slice of data kept aside and never shown to the model during training, so it can be scored honestly—it was a monster: 0.94 AUC, precision, and recall all in a range that made the risk team relax for the first time in years. (AUC, the area under the ROC curve, is a 0-to-1 score of how well a model ranks the real fraud above the legitimate transactions; 0.5 is a coin flip. Precision is the share of what it flags that really is fraud. Recall is the share of real fraud it flags.) And they shipped it, as you would expect! The offline numbers said they'd catch the overwhelming majority of fraud with a false-positive rate low enough that legitimate customers wouldn't scream.
 
 In production, it caught maybe half of what the test set promised. Not zero, which would have made things easy and triggered an alarm. But half, which is enough to look like the model was "settling in" and everyone could assume the test set had just been optimistic, enough that the gap got rationalized for an entire quarter while chargebacks climbed and $3.1 million in fraud walked straight through a model that, on paper, should have stopped it.
 
@@ -11,6 +11,8 @@ The model was *innocent*. The problem was a feature called `avg_txn_amount_7d`�
 The training data taught the model what `avg_txn_amount_7d` meant in the warehouse's dialect, and then in production, the model was handed the same feature name speaking a subtly different language. Chapter 6 named the single most expensive habit in machine learning—assuming that something in production is fine until proven otherwise. This is its sibling: assuming a feature means the same thing everywhere just because it has the same name. In this case, the distribution changed, and is a really easy blind spot to miss.
 
 This gap is called **train/serve skew**, and it is the defining disaster of the feature-engineering layer—the reason feature stores exist at all. This chapter is about the infrastructure built specifically to make sure the number you trained on and the number you serve on are, provably, the same number.
+
+Three terms carry the rest of the chapter, so here they are plainly. A **feature** is one input column a model consumes, usually computed from raw data rather than read straight off it—`avg_txn_amount_7d` is a feature; the raw transaction log it was built from is not. **Serving** (also called inference) is running the trained model on live requests to make real decisions, as opposed to **training**, where the model learns from history. And a **feature store** is a system that computes each feature from one definition, keeps the values, and hands them to both training and serving so the two can never disagree about what a feature means. Train/serve skew, then, is any gap between the feature values a model learned from and the ones it is fed in production.
 
 ---
 
@@ -24,9 +26,9 @@ When you *serve*, you need one row, right now. A transaction is happening, and y
 
 No single system is good at both. A warehouse that scans a terabyte in twenty minutes is catastrophic at single-row lookups—ask it for one user's features, and you'll wait hundreds of milliseconds while it does a full-column scan to find a single row, and your authorization has already timed out. Flip it around: a key-value store that returns that row in two milliseconds is useless for training, because reconstructing two years of history out of it means billions of individual key lookups, which is both glacial and absurdly expensive. The access patterns are opposites. Batch wants to scan everything slowly and cheaply; serving wants one thing instantly. Force one engine to do both, and you get a system that's mediocre at training and dangerous at serving.
 
-So the feature store is **two stores behind one logical interface**: an *offline store* (the warehouse/lake, for training and batch scoring) and an *online store* (a low-latency key-value store like Redis, DynamoDB, or Cassandra, for real-time serving). Your offline store holds the full history, and your online store holds the freshest value of each feature per entity, ready for instant lookup.
+So the feature store is **two stores behind one logical interface**: an *offline store* (the warehouse/lake, for training and batch scoring) and an *online store* (a low-latency key-value store like Redis, DynamoDB, or Cassandra, for real-time serving). A key-value store is a database built to do exactly one thing fast: hand it a key, get a row back. Your offline store holds the full history, and your online store holds the freshest value of each feature per entity—the thing a feature describes, such as a cardholder, a merchant, or a device, identified by a key like `cardholder_id`—ready for instant lookup.
 
-The payments team paid to learn the part that matters: **the feature store's whole job is to guarantee that the offline value and the online value are computed by the same logic.** You define the feature once, and the store materializes it in both places. The number you trained on and the number you serve on come from a single definition, so they cannot drift apart in two different codebases—because there are no longer two different codebases.
+The payments team paid to learn the part that matters: **the feature store's whole job is to guarantee that the offline value and the online value are computed by the same logic.** You define the feature once, and the store *materializes* it—runs the computation and writes the resulting values—into both places. The number you trained on and the number you serve on come from a single definition, so they cannot drift apart in two different codebases—because there are no longer two different codebases.
 
 ---
 
@@ -42,11 +44,19 @@ Inside a feature store, you will find four parts, each solving a specific failur
 
 **The serving layer** is the API your model calls. At training time it does a *point-in-time correct* historical fetch (more on that horror in a moment). At inference time it does a sub-millisecond lookup. Same API, two backends, and the model code doesn't know or care which one answered.
 
-The load-bearing phrase in that paragraph is **point-in-time**. When you build training data, you are reconstructing the past, and the past has a strict rule: you may only use information that existed *at that moment*. If you're building a training example for a transaction that happened on March 3rd at 2:14 p.m., every feature for that row must be computed using only data available before 2:14 p.m. on March 3rd. Use anything from 2:15 p.m. onward and you've committed leakage—the exact crime from Chapter 6, except now it's automated across thousands of features.
+The load-bearing phrase in that paragraph is **point-in-time**. When you build training data, you are reconstructing the past, and the past has a strict rule: you may only use information that existed *at that moment*. If you're building a training example for a transaction that happened on March 3rd at 2:14 p.m., every feature for that row must be computed using only data available before 2:14 p.m. on March 3rd. Use anything from 2:15 p.m. onward and you've committed leakage—letting information the model could not have had at prediction time into its training data, the exact crime from Chapter 6, except now it's automated across thousands of features.
 
-The key here is to make it concrete. Say you're predicting whether a customer will churn, and one feature is "number of support tickets this customer has filed." You build your training set by joining each customer's churn label to their ticket count. The naive join grabs the ticket count *as it stands today*—but a customer who churned in January and then filed five furious tickets on their way out the door now looks, in your training data, like a high-ticket customer who churned. The model learns "lots of tickets → churn," which is true but useless: at prediction time, for a customer who hasn't churned yet, those exit tickets don't exist. You've taught the model to read the future. It will score beautifully offline and predict nothing in production, because production only has the past.
+The key here is to make it concrete. Say you're predicting whether a customer will churn (cancel and leave), and one feature is "number of support tickets this customer has filed." You build your training set by joining each customer's churn label to their ticket count. The naive join grabs the ticket count *as it stands today*—but a customer who churned in January and then filed five furious tickets on their way out the door now looks, in your training data, like a high-ticket customer who churned. The model learns "lots of tickets → churn," which is true but useless: at prediction time, for a customer who hasn't churned yet, those exit tickets don't exist. You've taught the model to read the future. It will score beautifully offline and predict nothing in production, because production only has the past.
 
-A naive join cheerfully attaches the value computed *today*, silently including months from each entity's future. A real feature store does point-in-time joins for you—it knows the timestamp of every feature value and assembles each training row from only the values that predate that row's event. It is the dullest feature on the box and the one most likely to save your job.
+A naive join cheerfully attaches the value computed *today*, silently including months from each entity's future. A real feature store does point-in-time joins for you—it knows the timestamp of every feature value and assembles each training row from only the values that predate that row's event. It is the dullest feature on the box and the one most likely to save your job. If you ever have to do it by hand, the pandas version is `pd.merge_asof`, which matches each label to the most recent feature value stamped strictly before it rather than the latest one overall:
+
+```python
+train = pd.merge_asof(
+    labels.sort_values("event_ts"), features.sort_values("event_ts"),
+    on="event_ts", by="cardholder_id",
+    direction="backward", allow_exact_matches=False,
+)
+```
 
 ---
 
@@ -55,6 +65,33 @@ A naive join cheerfully attaches the value computed *today*, silently including 
 The landscape of popular solutions sorts roughly into three options.
 
 **Feast** is the open-source standard. It's a thin, unopinionated layer that sits on top of the infrastructure you already have—your warehouse as the offline store, your Redis or DynamoDB as the online store—and provides the registry, point-in-time joins, and materialization plumbing without trying to own your whole stack. It originated from a collaboration that included engineers at Gojek and Google, and its great virtue is that it doesn't lock you in: it's a coordination layer, not a kingdom. The catch is the catch with all open source: you get the framework and you own the operations. You still run Redis. You still own the 2 a.m. page when materialization falls behind. (Chapter 4's hidden costs are hiding right here, in the word "free.")
+
+In Feast, a feature is declared once as a *feature view*: an entity (the key), a source table with a timestamp column, and a schema.
+
+```python
+from feast import Entity, FeatureView, Field, FileSource, ValueType
+from feast.types import Float32
+cardholder = Entity(name="cardholder", join_keys=["cardholder_id"],
+                    value_type=ValueType.INT64)
+stats = FeatureView(
+    name="cardholder_stats", entities=[cardholder],
+    schema=[Field(name="avg_txn_amount_7d", dtype=Float32)],
+    source=FileSource(path="cardholder_stats.parquet", timestamp_field="event_ts"),
+)
+```
+
+At serving time the model's code asks the store for that same definition by name, and gets the freshest value from the online store:
+
+```python
+from feast import FeatureStore
+store = FeatureStore(repo_path=".")
+store.get_online_features(
+    features=["cardholder_stats:avg_txn_amount_7d"],
+    entity_rows=[{"cardholder_id": 8841}],
+).to_dict()
+```
+
+The training-side call is `store.get_historical_features(entity_df=labels, features=[...]).to_df()`, and it is the point-in-time join from 9.2, done for you against the offline store. One definition, two reads, no second codebase.
 
 **Tecton** is the commercial, fully-managed answer, built by people who had previously built Uber's internal feature platform and decided the world would pay not to build it again. It's opinionated, it handles the streaming and batch transformation machinery for you, and it's aimed at organizations whose problem is "we need real-time features at scale, and we do not want a team babysitting the infrastructure." You pay for that, in dollars and in lock-in, and for a lot of companies, the trade is obviously worth it—a single fraud or recommendation team's salary dwarfs the license.
 
@@ -82,11 +119,11 @@ A feature store solves train/serve skew at the logical level—same definition, 
 
 To distinguish them, let's be explicit. **Data drift** is when the distribution of an input feature changes: the average transaction amount creeps up because of inflation, or a new product launches and suddenly a quarter of your traffic looks nothing like your training set. The feature is computed correctly; the world just changed. **Concept drift** is nastier—it's when the *relationship* between features and the target changes. The features look the same, but what they predict has shifted: a fraud pattern your model learned to catch gets abandoned by fraudsters who've adapted, so the same signals that meant "fraud" last year mean nothing this year. (Chapter 25 takes drift apart in full; here the point is narrower—the feature store is the natural chokepoint to *detect* it, because every feature flows through one place.)
 
-Monitoring for both is less exotic than it sounds. Watch the **freshness** of every feature—the most common production failure is not exotic drift, it's a materialization job that silently died and is now serving values that are six hours stale, or a streaming source that stopped, so the online store is frozen while the world moves on. A model fed yesterday's features makes yesterday's decisions. Watch the **distribution** of each served feature against its training baseline—the energy company from Chapter 6 caught its bimodal disaster with a histogram, and the same instinct, automated and run continuously against your live features, is exactly what would have caught the payments skew on day one instead of day ninety.
+Monitoring for both is less exotic than it sounds. Watch the **freshness** of every feature—the most common production failure is not exotic drift, it's a materialization job that silently died and is now serving values that are six hours stale, or a streaming source that stopped, so the online store is frozen while the world moves on. A model fed yesterday's features makes yesterday's decisions. The check is one line per feature, `pd.Timestamp.now() - features["event_ts"].max()`, alerted when it exceeds the refresh interval that feature promised. Watch the **distribution** of each served feature against its training baseline—the energy company from Chapter 6 caught its bimodal (two-humped) disaster with a histogram, and the same instinct, automated and run continuously against your live features, is exactly what would have caught the payments skew on day one instead of day ninety.
 
-Picture what that check would have shown. The training distribution of `avg_txn_amount_7d` had a mean of, say, $84. The served distribution—because the online path included the current transaction and used a different window—ran a few dollars higher and was noticeably wider, with a mean of $91 and a fatter right tail. A quiet seven-dollar shift in one feature is the kind of thing that's invisible in aggregate model metrics but obvious the instant you lay the two histograms on top of each other. A single chart, generated nightly, that compares served-feature distributions to their training baselines turns a ninety-day mystery into a day-one alert.
+Picture what that check would have shown. The training distribution of `avg_txn_amount_7d` had a mean of, say, $84. The served distribution—because the online path included the current transaction and used a different window—ran a few dollars higher and was noticeably wider, with a mean of $91 and a fatter right tail. A quiet seven-dollar shift in one feature is the kind of thing that's invisible in aggregate model metrics but obvious the instant you lay the two histograms on top of each other. A single chart, generated nightly, that compares served-feature distributions to their training baselines turns a ninety-day mystery into a day-one alert. To turn the eyeball test into a number, the two-sample Kolmogorov–Smirnov test asks whether two samples plausibly came from the same distribution: `scipy.stats.ks_2samp(train_values, served_values)` returns a p-value, and a tiny one on a feature that should be stable is your alert. (At production sample sizes it will flag shifts too small to matter, so keep the histogram next to it and decide what size of shift you actually care about.)
 
-And watch **online-versus-offline consistency directly**: periodically recompute a sample of features both ways and assert they match. Take 100 entities, pull their features from the online store, recompute the same features from the offline store at the same instant, and diff. If they disagree by more than a rounding error, something has drifted between your two code paths. That single check is the smoke detector for the disaster that opened this chapter, and it costs almost nothing to run.
+And watch **online-versus-offline consistency directly**: periodically recompute a sample of features both ways and assert they match. Take 100 entities, pull their features from the online store, recompute the same features from the offline store at the same instant, and diff. In Feast terms that is `get_online_features` versus `get_historical_features` for the same entity rows and timestamp, and the diff is `np.allclose(online, offline, atol=1e-6)`. If they disagree by more than a rounding error, something has drifted between your two code paths. That single check is the smoke detector for the disaster that opened this chapter, and it costs almost nothing to run.
 
 ---
 
@@ -94,7 +131,7 @@ And watch **online-versus-offline consistency directly**: periodically recompute
 
 Teams that build a feature store as a standalone component end up with a beautifully engineered thing that nobody's models actually use. Its value is entirely a function of how cleanly it plugs into the rest of the lifecycle.
 
-Upstream, it sits on the architecture from Chapter 8—pulling from the lake and warehouse for batch features, and tapping the streaming layer (the Kappa-style event pipeline) for real-time ones. The feature store doesn't replace your data platform; it's a serving-and-consistency layer that sits on top of it. Downstream, it wires into the model registry and the training pipeline: a model logs *which features and which versions* it was trained on, so that at serving time the platform fetches exactly those, and so that six months from now, when the model misbehaves, you can reconstruct precisely what it was fed. That's reproducibility (Chapter 6's notebook lecture, finally enforced by infrastructure instead of willpower).
+Upstream, it sits on the architecture from Chapter 8—pulling from the lake and warehouse for batch features, and tapping the streaming layer (the Kappa-style event pipeline) for real-time ones. The feature store doesn't replace your data platform; it's a serving-and-consistency layer that sits on top of it. Downstream, it wires into the model registry—the catalog of trained models, their versions, and what each was built from—and the training pipeline: a model logs *which features and which versions* it was trained on, so that at serving time the platform fetches exactly those, and so that six months from now, when the model misbehaves, you can reconstruct precisely what it was fed. That's reproducibility (Chapter 6's notebook lecture, finally enforced by infrastructure instead of willpower).
 
 The workflow that makes this real is the closed loop: features are defined once, materialized to both stores, consumed by training, logged with the model, and fetched identically at inference—with monitoring watching every hop. When that loop is tight, a data scientist can build a model against features they trust, ship it, and know the production version is running on the same numbers. When the loop is broken—when features are defined in notebooks, computed ad hoc, and re-implemented for serving by a different team under deadline—you get the payments company, every time, no matter how good the model is.
 
