@@ -89,12 +89,16 @@ To start to do this properly, you have to be concrete. Say you're flagging custo
 **Snorkel**, which came out of the Stanford AI Lab, is the framework that made this rigorous. Its key trick is that it learns the *accuracies* of your labeling functions without ground truth, by looking at their agreement structure: a function that constantly disagrees with the consensus is probably unreliable and gets down-weighted; functions that correlate get their shared error discounted instead of double-counted. The output isn't hard labels but probabilistic ones, which you feed to a model that can learn from soft targets (a label like "72% urgent" instead of a flat 1 or 0). A team can stand up a labeled training set over a domain in days instead of the months hand-labeling would take—and, more importantly, when the problem definition changes, you *edit the rules and regenerate*, instead of re-hiring an army to re-label from scratch. That maintainability is what you are actually buying. Your labels become code: versioned, diffable, reviewable, and cheap to rerun. The support-ticket example above, in Snorkel, is a few decorated functions and one model fit:
 
 ```python
+import re
 from snorkel.labeling import labeling_function, PandasLFApplier
 from snorkel.labeling.model import LabelModel
-URGENT, ABSTAIN = 1, -1          # Snorkel's convention: -1 means "this rule has no opinion"
+URGENT, NOT_URGENT, ABSTAIN = 1, 0, -1   # -1 means "this rule has no opinion"
 @labeling_function()
-def lf_outage_words(t):
-    return URGENT if re.search(r"down|outage|can't log in", t.text, re.I) else ABSTAIN
+def lf_outage_words(t): return URGENT if re.search(r"down|outage|can't log in", t.text, re.I) else ABSTAIN
+@labeling_function()
+def lf_enterprise(t): return URGENT if t.tier == "enterprise" else ABSTAIN
+@labeling_function()
+def lf_feature_request(t): return NOT_URGENT if t.tag == "feature_request" else ABSTAIN
 L = PandasLFApplier([lf_outage_words, lf_enterprise, lf_feature_request]).apply(tickets)
 label_model = LabelModel(cardinality=2)
 label_model.fit(L)
