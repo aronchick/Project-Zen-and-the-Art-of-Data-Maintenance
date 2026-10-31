@@ -21,7 +21,7 @@ The model did what any competent model does when you hand it the answer key: it 
 
 In production, none of that transfers. A live impression on a rare placement gets whatever mean was computed from its handful of historical rows, which is a number like 1.0 or 0.5 derived from two observations, and the model treats that number with the same total confidence it learned in training. So the bidder paid up—hard—for inventory it was certain about and wrong about. Live AUC was 0.62. Against a 0.71 baseline the model had replaced.
 
-Eleven weeks and $8.7 million in media spend later, an analyst plotted predicted CTR against realized CTR bucketed by how many times each placement had been seen before, and the whole thing fell out of the chart in about four minutes.
+Eleven weeks and $8.7 million in misdirected media spend later, an analyst plotted predicted CTR against realized CTR bucketed by how many times each placement had been seen before, and the whole thing fell out of the chart in about four minutes.
 
 The fix took a day. Compute the encoding out-of-fold so a row never contributes to its own feature. Smooth every category's average toward the global average in proportion to how little evidence supports it. Bucket everything below a frequency floor into an explicit rare category. Offline AUC dropped to 0.78. Live AUC came in at 0.77.
 
@@ -56,7 +56,7 @@ df["hour_sin"] = np.sin(2 * np.pi * df["hour"] / 24)
 df["hour_cos"] = np.cos(2 * np.pi * df["hour"] / 24)
 ```
 
-You need both. Sine alone maps 3 a.m. and 9 a.m. to nearly the same value, which just moves the collision somewhere less obvious. The pair together gives every hour a unique position on a circle where hour 23 and hour 0 sit next to each other, which is where they belong.
+You need both. Sine alone maps 3 a.m. and 9 a.m. to exactly the same value, which just moves the collision somewhere less obvious. The pair together gives every hour a unique position on a circle where hour 23 and hour 0 sit next to each other, which is where they belong.
 
 One caveat worth internalizing: tree-based models handle cyclical variables tolerably well without this, because a tree can carve out `hour >= 22 OR hour <= 5` given enough depth. Linear models and distance-based models cannot, ever. If you're running k-NN (k-nearest-neighbors, which predicts from whichever training rows sit closest by distance) or a linear model on raw hour-of-day, your model believes midnight and 11 p.m. are maximally different, and it will keep believing that no matter how much data you give it.
 
@@ -88,13 +88,13 @@ model = lgb.LGBMClassifier()
 model.fit(X_train, y_train, categorical_feature=cat_cols)
 ```
 
-That is very nearly the whole intervention. The one catch is that the category dtype carries a code mapping, so serving data has to present the same categories in the same order or the codes shift underneath you—13.5's problem, arriving early. Before you build anything more sophisticated, try this and write down the number.
+That is very nearly the whole intervention. The one catch is that the category dtype carries a code mapping. LightGBM's Python wrapper remembers the training categories and re-applies them to pandas input at predict time, but the moment you hand it integer codes you computed yourself, or use the same trick with a library that doesn't remember, serving data has to present the same categories in the same order or the codes shift underneath you—13.5's problem, arriving early. Before you build anything more sophisticated, try this and write down the number.
 
 ---
 
 ## 13.3 Target-Based Encoding and Regularization
 
-Target encoding replaces a category with a statistic of the target computed over that category: mean CTR per placement, default rate per ZIP, average basket size per store. It is genuinely powerful. It collapses any cardinality to a single dense column, and that column is directly aimed at the thing you're predicting.
+Target encoding—also sold under the name mean encoding; this book uses target encoding throughout—replaces a category with a statistic of the target computed over that category: mean CTR per placement, default rate per ZIP, average basket size per store. It is genuinely powerful. It collapses any cardinality to a single dense column, and that column is directly aimed at the thing you're predicting.
 
 It is also the most reliable way there is to leak your labels into your features, and the leak is invisible in every offline metric you have. That is *target leakage*: information about the label—the thing you are trying to predict—finding its way into the features the model trains on. The model then learns to read the answer instead of predicting it, every offline score inflates, and nothing in production inflates with it.
 
@@ -140,7 +140,7 @@ pre = ColumnTransformer([
     ("num", StandardScaler(), num_cols),
 ])
 pipe = Pipeline([("pre", pre), ("model", LogisticRegression(max_iter=1000))])
-cross_val_score(pipe, X, y, cv=5)
+cross_val_score(pipe, X, y, cv=5, scoring="roc_auc")
 ```
 
 One detail worth internalizing, because it bites people who hand-roll this: the cross-fitting happens in `fit_transform`, not in `fit` followed by `transform`. Calling `fit(X, y).transform(X)` on your training data gives you the leaky version. A `Pipeline` calls `fit_transform` for you, which is one more reason to use one.
@@ -184,7 +184,7 @@ Your encoder was fit on a fixed vocabulary. Production is not fixed. A new merch
 
 **It raises.** `OneHotEncoder` with default settings throws on unknown input. Your inference service returns a 500. This is the *good* outcome, because you find out.
 
-**It silently zeroes.** With `handle_unknown="ignore"`, an unknown value produces a row of all zeros. That is not a neutral outcome; it is the encoder asserting "this record belongs to none of the known categories," which for a linear model means the entire categorical contribution vanishes and the prediction shifts toward the intercept. Worse, if you also dropped a reference level, all-zeros already means that reference level, so the encoder is now asserting the unknown *is* the reference category. Every unknown value gets the same silent, confident, wrong answer. `handle_unknown="infrequent_if_exist"` is usually closer to what you wanted, because it routes unknowns into the infrequent bucket you already trained on, which at least has a learned response. Read that parameter name carefully, though: *if exist*. If you never set `min_frequency` or `max_categories`, there is no infrequent bucket, and the encoder falls back to the all-zeros behavior above without telling you. Two settings, and one of them is silently the other.
+**It silently zeroes.** With `handle_unknown="ignore"`, an unknown value produces a row of all zeros. That is not a neutral outcome; it is the encoder asserting "this record belongs to none of the known categories," which for a linear model means the entire categorical contribution vanishes and the prediction shifts toward the intercept. Worse, if you also dropped a reference level, all-zeros already means that reference level, so the encoder is now asserting the unknown *is* the reference category. Every unknown value gets the same silent, confident, wrong answer. `handle_unknown="infrequent_if_exist"` is usually closer to what you wanted, because it routes unknowns into the infrequent bucket you already trained on, which at least has a learned response. Read that parameter name carefully, though: *if exist*. If you never set `min_frequency` or `max_categories`, there is no infrequent bucket, and the encoder falls back to the all-zeros behavior above with nothing but a Python warning to tell you. Two settings, and one of them is silently the other.
 
 **It gets the global mean.** Target encoders typically fall back to the prior for unseen categories—scikit-learn's `TargetEncoder` uses the training-set target mean, with no setting to change it—which is defensible and still needs to be a decision you made rather than a default you inherited.
 
