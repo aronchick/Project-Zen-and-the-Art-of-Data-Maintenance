@@ -57,11 +57,11 @@ from sklearn.ensemble import HistGradientBoostingClassifier
 from sklearn.model_selection import cross_val_score
 target = df["albumin"].isna().astype(int)
 X = df.drop(columns=["albumin"])
-cross_val_score(HistGradientBoostingClassifier(), X, target,
-                cv=5, scoring="roc_auc").mean()
+clf = HistGradientBoostingClassifier()
+cross_val_score(clf, X, target, cv=5, scoring="roc_auc").mean()
 ```
 
-(`HistGradientBoostingClassifier` takes NaN in its inputs as-is, which matters here because the other columns have holes too.) If it predicts at AUC 0.52, your missingness is unrelated to everything you can observe, and MCAR is at least defensible. If it predicts at 0.85, missingness is systematically tied to your observed data, and more usefully, the feature importances—the model's own ranking of which inputs it leaned on—tell you *exactly what it's tied to*. In the hospital's case that model would have hit the ceiling in about a minute, with "admitted through the ED" and "prior ICU stay" at the top of the list, and somebody would have asked the right question a year earlier.
+(`HistGradientBoostingClassifier` takes NaN in its inputs as-is, which matters here because the other columns have holes too.) If it predicts at AUC 0.52, your missingness is unrelated to everything you can observe, and MCAR is at least defensible. If it predicts at 0.85, missingness is systematically tied to your observed data, and more usefully, the feature importances—a ranking of which inputs the model leaned on—tell you *exactly what it's tied to*. This model has no built-in `feature_importances_` attribute, so ask for the ranking directly: `permutation_importance(clf.fit(X, target), X, target, scoring="roc_auc")` from `sklearn.inspection` shuffles one column at a time and records how far the AUC falls. In the hospital's case that model would have hit the ceiling in about a minute, with "admitted through the ED" and "prior ICU stay" at the top of the list, and somebody would have asked the right question a year earlier.
 
 That diagnostic cannot distinguish MAR from MNAR—nothing can. But it will tell you loudly when you are not in MCAR, which is the assumption most pipelines are silently making.
 
@@ -189,7 +189,7 @@ Everything above concerns the offline world; production, as usual, adds failure 
 
 **Count nulls by column AND by time (15 min).** Everyone runs `df.isnull().sum()`. Almost nobody groups it by month (swap `.dt.date` for `.dt.to_period("M")` in 10.6's one-liner), which is a real shame. A column that went from 2% to 30% missing in March is not a data-quality problem to be imputed away—it's an incident nobody logged, and the date will tell you which upstream change caused it.
 
-**Predict your own missingness (20 min).** For your three most-missing columns, build a quick classifier with `is_missing` as the target and everything else as features. If AUC is near 0.5, relax. If it's 0.8 or higher, read the feature importances and you have just learned the mechanism you were about to assume away.
+**Predict your own missingness (20 min).** For your three most-missing columns, build a quick classifier with `is_missing` as the target and everything else as features. If AUC is near 0.5, relax. If it's 0.8 or higher, read the permutation importances (10.1's call) and you have just learned the mechanism you were about to assume away.
 
 **Add indicators and retrain (30 min).** Take your top five columns by null rate, add a binary was-it-present flag for each, retrain, compare. This is thirty minutes and one line of code, and it either does nothing—fine, now you know—or it moves your metric enough to reframe the project.
 
