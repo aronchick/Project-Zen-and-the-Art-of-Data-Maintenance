@@ -8,13 +8,17 @@ Chapter 1 was philosophy and principles. This chapter is about what data actuall
 
 Data types are like ingredients. You can have the best recipe in the world, but mix up salt and sugar and you're fucked. Unlike cooking, you can't taste-test your model and start over. Well, you can, but it costs $65,000 in compute and your manager starts asking extremely uncomfortable questions about your decision-making process.
 
+So, plainly: a *data type* is the rule a system uses to decide what a value *is* and what you are allowed to do with it. An integer can be added and compared by size. A string can be matched letter by letter but not multiplied. A date can be subtracted from another date to get a duration. A Boolean is a yes or a no. Every column in every table has one, whether somebody chose it deliberately or a tool guessed it from the first few rows, and this whole chapter is about what happens when the type a column *has* disagrees with what its values *mean*.
+
+The companion idea is *structured versus unstructured*. Structured data has a fixed layout of named fields with declared types, like a database table, so a machine can read any value without having to interpret it. Unstructured data (free text, images, audio, scanned forms) carries meaning that something has to extract first. Most real data lives somewhere in between, which is where the trouble starts.
+
 ## 2.1 The Great Data Type Disaster
 
 A major retailer built a demand forecasting model. It was beautiful. A deep transformer, attention layers, the works. It could predict next month's toothpaste sales in Kissimmee, FL at 10 am on Tuesday, down to the tube.
 
 One tiny problem.
 
-Someone, somewhere, decided that product IDs should be treated as continuous variables. The model learned that product 10000 (toilet paper) was exactly twice as much product as product 5000 (diamonds).
+Someone, somewhere, decided that product IDs should be treated as continuous variables—numbers where the gap between two values means something, the way $20 is twice $10. The model learned that product 10000 (toilet paper) was exactly twice as much product as product 5000 (diamonds).
 
 The model started making predictions like "If we run out of product 5000, we should stock twice as much and sell product 10000 instead!"
 
@@ -22,7 +26,7 @@ Mathematically sound. And insane.
 
 This isn't the label quality problem from Chapter 1—those shoes were at least correctly identified as footwear. This is a *structure* problem: the model treated identifiers as quantities.
 
-Because the model had been performing so well on validation data, no one thought to triple-check. One week later, they discovered they'd auto-ordered 50,000 cases of toilet paper for their jewelry department.
+Because the model had been performing so well on validation data (the held-out slice it was scored on before launch), no one thought to triple-check. One week later, they discovered they'd auto-ordered 50,000 cases of toilet paper for their jewelry department.
 
 What's the failure here? In many ways, this is a "happy case"—at least the pipeline didn't crash, the system didn't error out, and nobody woke up at 3 AM to figure out why the website was down.
 
@@ -47,7 +51,7 @@ Perfectly Structured                                                  Complete C
 
 The key insight isn't where your data sits on this spectrum—it's understanding that **structure is a promise that can be broken**.
 
-That CSV file? It promises columns will align. That promise gets broken every time someone opens it in Excel and saves it with "helpful" formatting. That JSON API? It promises consistent schemas. That promise gets broken when the upstream team "just adds a field real quick." That SQL table? It promises type safety. That promise gets broken when someone creates a VARCHAR(MAX) column called "misc_data" because they didn't want to think about schema design.
+That CSV file? It promises columns will align. That promise gets broken every time someone opens it in Excel and saves it with "helpful" formatting. That JSON API? It promises a consistent schema (the declared list of which fields show up and what type each one is). That promise gets broken when the upstream team "just adds a field real quick." That SQL table? It promises type safety. That promise gets broken when someone creates a VARCHAR(MAX) column called "misc_data" because they didn't want to think about schema design.
 
 ## 2.3 The Four Horsemen of "Structured" Data Failure
 
@@ -55,7 +59,7 @@ Data doesn't just fail; it actively conspires against you. The obviously unstruc
 
 No, it's the *clean* data. The data that shows up in a pressed suit, shakes your hand, passes every validation check, and then three months later you discover it's been counting 'California' and 'CA' as two different states THE ENTIRE TIME.
 
-When do these horsemen attack? They strike at every stage of your ML pipeline: during feature engineering (when bad types silently corrupt your transformations), during training (when impossible values teach your model impossible relationships), and during inference (when schema drift causes silent failures in production). Part IV will show you how to build defenses at each stage. For now, learn to recognize the enemy.
+When do these horsemen attack? They strike at every stage of your ML pipeline: during feature engineering (reshaping raw columns into model inputs, when bad types silently corrupt your transformations), during training (when impossible values teach your model impossible relationships), and during inference (running the trained model on live data, when schema drift—the upstream structure changing under you—causes silent failures in production). Part IV will show you how to build defenses at each stage. For now, learn to recognize the enemy.
 
 ### Horseman 1: The Structural Lie (Syntactic Failure)
 
@@ -101,7 +105,7 @@ The model now learns that a user from Beverly Hills (90210) is quantitatively 9x
 
 ### Horseman 3: The Semantic Sinkhole (Value Failure)
 
-You've done it. The structure is perfect. The types have been meticulously cast to `category`, `datetime`, and `bool`. You are a data wizard.
+You've done it. The structure is perfect. The types have been meticulously cast to `category`, `datetime`, and `bool`. (`category` is pandas' type for a column that takes a small fixed set of values: it stores each distinct value once and the rows as small integer codes pointing at it.) You are a data wizard.
 
 And yet, your data pipeline still delivers garbage. Why? Because while the types are correct, the *values themselves* are logically impossible.
 
@@ -118,7 +122,7 @@ And yet, your data pipeline still delivers garbage. Why? Because while the types
 Everything is correctly typed (`datetime`, `int`), but the data is a logical nightmare:
 - **User 201** signed up two years *before* they were born.
 - **User 202** had a negative number of sessions, a physical impossibility.
-- **User 203** has an age of 999, a clear sentinel value that was never cleaned.
+- **User 203** has an age of 999, a clear sentinel value (a placeholder like 999 or -1 that means "unknown" but looks exactly like a measurement) that was never cleaned.
 
 Your types are right, but your data is still telling lies.
 
@@ -159,7 +163,7 @@ This principle challenges the common instinct to immediately structure and norma
 
 A hospital system decided to "modernize" by converting 20 years of medical records into structured data. Budget: $3M. Timeline: 6 months.
 
-**Month 1**: "We'll use OCR!" (Narrator: They would not use OCR.)
+**Month 1**: "We'll use OCR!" (Optical character recognition: software that turns a scanned page into typed text. Narrator: They would not use OCR.)
 
 **Month 2**: Someone discovers doctors don't write, they scribble potential lawsuits.
 
@@ -190,7 +194,7 @@ Before you structure anything, run this calculation:
 | Scanned PDFs         | $$$$         | Weeks           | 50%                | High        |
 | Doctor's Handwriting | $$$$$        | Months          | Prayer             | ∞           |
 
-If the equation doesn't turn out to be ROI positive, it's **perfectly acceptable** - even preferable—to leave data in its raw, unstructured form until you actually need it. Add some metadata about the ingestion and a pointer to the raw form, and you're already on a successful path.
+If the equation doesn't turn out to be ROI positive, it's **perfectly acceptable** - even preferable—to leave data in its raw, unstructured form until you actually need it. Add some metadata about the ingestion (data about the data: where it came from, when, in what format) and a pointer to the raw form, and you're already on a successful path.
 
 ### An E-Commerce Example: Selective Structure
 
@@ -232,11 +236,11 @@ Type conversion failures come in five recognizable patterns. Learn them and you'
 
 The fundamental error: treating identifiers as quantities.
 
-When you load a ZIP code column and let pandas infer the type, it sees five digits and thinks "integer." Mathematically, 90210 is now a number you can add, subtract, multiply, and divide. The model learns that Beverly Hills is 9.02 times "more" than Manhattan (10001). More what? Doesn't matter. The math works, so the model uses it.
+When you load a ZIP code column and let pandas (the Python library most tabular data work happens in) infer the type—guess it from what the values look like—it sees five digits and thinks "integer." Mathematically, 90210 is now a number you can add, subtract, multiply, and divide. The model learns that Beverly Hills is 9.02 times "more" than Manhattan (10001). More what? Doesn't matter. The math works, so the model uses it.
 
-The fix requires understanding what ZIP codes actually ARE: categorical labels that happen to be written with digits. They have no quantitative relationship to each other. 90210 isn't "bigger" than 10001 in any meaningful sense.
+The fix requires understanding what ZIP codes actually ARE: categorical labels—values that name a group rather than measure a quantity—that happen to be written with digits. They have no quantitative relationship to each other. 90210 isn't "bigger" than 10001 in any meaningful sense.
 
-**The prevention:** Any column containing identifiers (ZIP codes, phone numbers, SSNs, product SKUs, user IDs) must be explicitly cast to string or category type BEFORE any analysis. Never trust type inference on columns with "id," "code," "zip," or "sku" in the name.
+**The prevention:** Any column containing identifiers (ZIP codes, phone numbers, SSNs, product SKUs, user IDs) must be explicitly cast to string or category type BEFORE any analysis. Never trust type inference on columns with "id," "code," "zip," or "sku" in the name. The cheapest place to win this fight is at load time, before inference ever runs: `pd.read_csv("customers.csv", dtype={"zip_code": str})`.
 
 ### The Boolean That Wasn't
 
@@ -248,13 +252,20 @@ Your fraud detection model just learned that "is_fraud = false" means definitely
 
 **The prevention:** Avoid casting, particularly with limited categories, to ANYTHING without explicit mapping, and VERY sane defaults. For boolean, for example, build a lookup table that handles every representation in your data: true/false, t/f, yes/no, y/n, 1/0, and their various capitalizations—do NOT rely on upstream to handle this (e.g. "don't worry, we're only going to get handed lower case"). Anything not in your lookup should raise an error, not silently convert. And check your data often on errors!
 
+```python
+TRUTHY = {"true": True, "t": True, "yes": True, "y": True, "1": True,
+          "false": False, "f": False, "no": False, "n": False, "0": False}
+flags = df["is_premium"].astype(str).str.strip().str.lower().map(TRUTHY)
+assert flags.notna().all(), "unmapped boolean value"
+```
+
 ### The Date That Broke Everything
 
 Dates are a special hell because the same string can mean completely different things. "01/02/2025" is January 2nd in the US and February 1st everywhere else. "2025-01-15" is unambiguous ISO 8601, but it lives alongside "Jan 15, 2025", "20250115", Unix timestamps, Excel serial dates, and my personal favorite: "Monday."
 
 The failure mode: your parser tries to be helpful by guessing formats. It guesses wrong on 3% of records. Those 3% silently become NULL or, worse, get parsed as the WRONG date. You don't notice until someone asks why all your European customers appear to have signed up on impossible dates.
 
-**The prevention:** Know your date formats before you parse. If data comes from multiple sources, normalize at ingestion time with explicit format strings. Never use flexible parsing ("infer the format") on production data. When you see a date like "01/02/03", stop and figure out what it means before proceeding.
+**The prevention:** Know your date formats before you parse. If data comes from multiple sources, normalize at ingestion time with explicit format strings. In pandas that is `pd.to_datetime(df["signup_date"], format="%Y-%m-%d")`, which raises on the first value that doesn't match instead of guessing. Never use flexible parsing ("infer the format") on production data. When you see a date like "01/02/03", stop and figure out what it means before proceeding.
 
 ### The Phone Number Massacre
 
@@ -266,13 +277,20 @@ None of these throw. Your contact list is now unusable and nothing in your logs 
 
 **The prevention:** Phone numbers are ALWAYS strings. Period. If you need to validate or normalize them, use a purpose-built library (like `phonenumbers` in Python) that understands international formats. Never let numeric type inference touch a phone column.
 
+```python
+import phonenumbers
+
+number = phonenumbers.parse("020 7946 0958", "GB")
+phonenumbers.format_number(number, phonenumbers.PhoneNumberFormat.E164)  # '+442079460958'
+```
+
 ### The Category Explosion
 
-This one's subtle. You have a "category" column with clean categorical data, so you one-hot encode it for your model. Except the data isn't clean. It contains "Electronics", "electronics", "ELECTRONICS", "Electronic", "Electroncs" (typo), and " Electronics" (leading space).
+This one's subtle. You have a "category" column with clean categorical data, so you one-hot encode it for your model: `pd.get_dummies(df["category"])`, one new 0/1 column per distinct value, because a model can't multiply the word "Electronics." Except the data isn't clean. It contains "Electronics", "electronics", "ELECTRONICS", "Electronic", "Electroncs" (typo), and " Electronics" (leading space).
 
 After encoding, you have six separate binary columns for what should be ONE category. Your model learns that products with leading spaces in their category are completely different from products without. It's fitting noise.
 
-**The prevention:** Normalize categorical values BEFORE encoding. Lowercase everything, strip whitespace, fix common typos, and map variations to canonical values. If you end up with more categories than you expected, investigate before proceeding.
+**The prevention:** Normalize categorical values BEFORE encoding. Lowercase everything, strip whitespace (`df["category"].str.strip().str.lower()` covers both), fix common typos, and map variations to canonical values. If you end up with more categories than you expected (`df["category"].nunique()`), investigate before proceeding.
 
 ## 2.6 The Type Safety Checklist
 
@@ -280,33 +298,33 @@ Run this audit before EVERY model training. Not some of the time. Every. Single.
 
 ### Step 1: Hunt for Misclassified Identifiers
 
-Look at every column currently typed as numeric (int, float). For each one, ask: does this column represent a QUANTITY or a LABEL?
+Look at every column currently typed as numeric (int, float). `df.dtypes` lists every column with its *dtype*, pandas' word for the storage type it has assigned (`int64`, `float64`, `object` or `str` for text, `datetime64[ns]`, `category`, `bool`), and `df.select_dtypes("number").columns` narrows that to the numeric ones. For each one, ask: does this column represent a QUANTITY or a LABEL?
 
 Identifiers masquerading as numbers are the most common type failure. Check for columns with names containing "id," "code," "zip," "phone," "ssn," "isbn," or "sku." If a numeric column has one of these keywords, it's almost certainly wrong.
 
-Also check the uniqueness ratio. If more than 95% of values are unique, you're probably looking at an identifier, not a measurement. Real measurements cluster; identifiers don't.
+Also check the uniqueness ratio: `df.nunique() / len(df)`, one number per column. If more than 95% of values are unique, you're probably looking at an identifier, not a measurement. Real measurements cluster; identifiers don't.
 
 ### Step 2: Find Hidden Numbers in String Columns
 
-Examine every column typed as string/object. Try converting each to numeric. If the conversion succeeds without errors, you've found a number hiding as text.
+Examine every column typed as string/object. Try converting each to numeric. If the conversion succeeds without errors, you've found a number hiding as text. `pd.to_numeric(df[col], errors="coerce")` turns every value that won't parse into NaN, so `.notna().mean()` on the result is the fraction of the column that was secretly numeric: near 1.0 is a number in disguise, near 0 means leave it alone.
 
 This happens constantly with data imported from CSVs or JSON where everything comes in as strings. Revenue figures, quantities, prices—all sitting there as text, unable to be aggregated or compared.
 
 ### Step 3: Identify Dates Stored as Strings
 
-Scan your string columns for date patterns. Look for formats like "2025-01-15", "01/15/2025", or "Jan 15, 2025". If you find them, those columns need to be converted to proper datetime types.
+Scan your string columns for date patterns. Look for formats like "2025-01-15", "01/15/2025", or "Jan 15, 2025"; `df[col].str.match(r"\d{4}-\d{2}-\d{2}").mean()` is a crude but fast detector for the ISO form. If you find them, those columns need to be converted to proper datetime types.
 
 Dates stored as strings can't be sorted chronologically, can't have durations calculated, and will silently fail any time-based analysis.
 
 ### Step 4: Expose Fake Booleans
 
-Check string columns for boolean indicators: "true/false", "yes/no", "y/n", "1/0", "t/f". If a column contains ONLY these values, it should be a proper boolean type, not a string.
+Check string columns for boolean indicators: "true/false", "yes/no", "y/n", "1/0", "t/f". If a column contains ONLY these values (`df[col].str.lower().isin(["true", "false", "yes", "no", "y", "n", "t", "f", "1", "0"]).all()`), it should be a proper boolean type, not a string.
 
 Remember: the string "false" evaluates to True in a boolean context. This single fact has caused more fraud detection failures than any sophisticated attack.
 
 ### Step 5: Validate Value Ranges
 
-For every numeric column, check that values fall within physically possible ranges:
+For every numeric column, check that values fall within physically possible ranges (`df.loc[~df["age"].between(0, 120)]` shows you the rows that fail, which beats a count):
 
 - Ages should be 0-120, not -5 or 999
 - Percentages should be 0-100 (or 0-1), not 150
@@ -318,17 +336,17 @@ Sentinel values (999, -1, 9999-12-31) hiding in your data will corrupt every sta
 
 ### Step 6: Check Categorical Cardinality
 
-For categorical columns, count the unique values. If you expect 5 categories and find 50, something's wrong—probably inconsistent capitalization, leading/trailing spaces, or typos creating phantom categories.
+For categorical columns, count the unique values—the column's *cardinality*. `df["category"].value_counts()` gives you the count and the roster of phantom values in one call. If you expect 5 categories and find 50, something's wrong—probably inconsistent capitalization, leading/trailing spaces, or typos creating phantom categories.
 
 ### The Conversion Strategy
 
 When you find type problems, fix them with intention, not automation. Each type requires a different approach:
 
-**Categorical conversions** (IDs, ZIP codes, SKUs): Always convert through string first to preserve leading zeros and formatting, then to category type for memory efficiency.
+**Categorical conversions** (IDs, ZIP codes, SKUs): Always convert through string first to preserve leading zeros and formatting, then to category type for memory efficiency: `df["zip_code"].astype(str).astype("category")`.
 
-**Numeric conversions** (prices, quantities, measurements): Strip non-numeric characters before conversion. Use error handling that surfaces bad data as NULL rather than crashing—you need to SEE what didn't convert.
+**Numeric conversions** (prices, quantities, measurements): Strip non-numeric characters before conversion. Use error handling that surfaces bad data as NULL rather than crashing—you need to SEE what didn't convert. `pd.to_numeric(df["price"].str.replace(r"[^\d.\-]", "", regex=True), errors="coerce")` does both; then go look at the rows that came back NaN.
 
-**Datetime conversions** (dates, timestamps): Try explicit format strings in order of likelihood for your data source. Only fall back to flexible parsing after explicit formats fail, and log everything that required inference.
+**Datetime conversions** (dates, timestamps): Try explicit format strings in order of likelihood for your data source (`pd.to_datetime(df[col], format="%m/%d/%Y", errors="coerce")` with each candidate format in turn, keeping whatever parsed). Only fall back to flexible parsing after explicit formats fail, and log everything that required inference.
 
 **Boolean conversions** (flags, indicators): Build an explicit mapping for every representation in your data. Anything not in your mapping should error, not silently convert to a default.
 
@@ -346,7 +364,7 @@ Your confidence will be appropriately destroyed.
 
 File extensions lie. That ".csv" might be Excel, that ".json" might be malformed XML, and that ".xlsx" might be a ZIP file someone renamed.
 
-Before you try to parse anything, read the first 1024 bytes and check the actual file signature. ZIP files (including Excel) start with "PK". PDFs start with "%PDF". PNGs have a distinctive binary header. Parquet files start with "PAR1".
+Before you try to parse anything, read the first 1024 bytes (`open(path, "rb").read(1024)`) and check the actual file signature. ZIP files (including Excel) start with "PK". PDFs start with "%PDF". PNGs have a distinctive binary header. Parquet files start with "PAR1".
 
 If the file is text, look for structural clues: curly braces and quotes suggest JSON; commas and newlines suggest CSV; angle brackets suggest XML.
 
@@ -354,11 +372,11 @@ This takes two minutes and saves hours of debugging "why won't this CSV parse" w
 
 **2. Document Your Schema Before You Forget (10 minutes)**
 
-The moment you understand a dataset, write it down. For every column, record: the data type, the number of unique values, the null count and percentage, and either sample values (for strings) or the min/max range (for numbers).
+The moment you understand a dataset, write it down. For every column, record: the data type, the number of unique values, the null count and percentage, and either sample values (for strings) or the min/max range (for numbers). `df.describe(include="all").T` produces most of that table in one call, and `df.isna().mean()` adds the null percentage.
 
 This documentation doesn't need to be fancy. A markdown file is fine. The point is that six months from now, when someone asks "what does the 'status_code' column contain?", you'll have an answer that doesn't require re-analyzing the entire dataset.
 
-The ten minutes you spend documenting now saves hours of archaeology later. And use git/source control/versioning to record your discovery! `json_schema` is your friend.
+The ten minutes you spend documenting now saves hours of archaeology later. And use git/source control/versioning to record your discovery! JSON Schema is your friend: write the column rules down in that format once, and `jsonschema.validate(instance=record, schema=schema)` (from the `jsonschema` library) turns your documentation into a check that actually runs.
 
 ## Your Homework
 
