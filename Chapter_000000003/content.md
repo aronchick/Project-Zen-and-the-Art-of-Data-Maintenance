@@ -8,6 +8,8 @@ Chapter 2 was about data types—the conceptual lie that a ZIP code is a number.
 
 File formats are the shipping containers of the data world. You can have perfect cargo, but put it in the wrong container and it arrives damaged. Put it in the right container with the wrong manifest and nobody knows what they've got. The best data in the world is worthless if it's stored in a format that lies about its contents.
 
+Plainly, then: a *file format* is the agreement about how values are laid out as bytes on disk or on the wire, so that whatever wrote them and whatever reads them agree on where one value ends, where the next begins, and what type each one is. Turning the objects in a program's memory into those bytes is *serialization*; reading them back is *deserialization*. Every format in this chapter makes a different bargain about how much of that agreement gets written down (the *schema*: which fields exist and what type each one is) and how much is left for the reader to guess. Formats that store the schema with the data (Parquet, Avro) are *schema-on-write*; formats that leave it for whoever loads the file to infer (JSON, CSV) are *schema-on-read*, which is a polite name for "the types are whatever pandas decides they are this morning."
+
 ## 3.1 JSON: The Accidental Standard That Ate the World
 
 When Douglas Crockford formalized JSON in 2001, he intended to create a "lightweight data-interchange format" based on a subset of JavaScript. He succeeded beyond anyone's wildest dreams, accidentally creating a format that would become the backbone of modern web APIs despite being fundamentally broken in ways that haunt developers daily.
@@ -44,7 +46,7 @@ The irony? JSON was supposed to be the simple alternative to XML. Crockford's de
 }
 ```
 
-Which of these is the actual price? Trick question—they're ALL prices from real APIs. One system considered `"false"` to mean "price not yet determined." That string `"false"` is truthy in most programming languages, by the way.
+Which of these is the actual price? Trick question—they're ALL prices from real APIs. One system considered `"false"` to mean "price not yet determined." That string `"false"` is truthy in most programming languages, by the way—it counts as true in an `if` statement, because it's a non-empty string.
 
 ### The Enterprise Anti-Pattern Hall of Fame
 
@@ -88,9 +90,11 @@ The Norway example in the opener is real, but it's just the tip of the iceberg. 
 Developer: "It's self-documenting!"
 Me: "I'm self-immolating."
 
+When you have to live with a payload like this, `pd.json_normalize(payload, record_path=["data", "results", "data"])` walks down to the list and flattens each item into one row with dotted column names (`datum.information.data`), which at least puts the nesting where you can see it.
+
 ### The JavaScript Number Disaster
 
-Perhaps JSON's greatest sin is inheriting JavaScript's IEEE 754 floating-point numbers:
+Perhaps JSON's greatest sin is inheriting JavaScript's IEEE 754 floating-point numbers (the standard way computers store decimals, which can only represent whole numbers exactly up to about nine quadrillion):
 
 ```javascript
 // In JavaScript (JSON's birthplace)
@@ -109,7 +113,7 @@ JSON.parse('{"tweet_id": 1457299976568098816}')  // Loss of precision!
 }
 ```
 
-Twitter famously ships both `id` (number) and `id_str` (string) for exactly this reason. Every API that deals with large integers eventually learns this lesson.
+Twitter famously ships both `id` (number) and `id_str` (string) for exactly this reason. Every API that deals with large integers eventually learns this lesson. Python's `json.loads` keeps big integers exact, so the damage is done in JavaScript and in any parser that stores numbers as doubles; you just don't get to choose which parser the next consumer uses.
 
 ### The MongoDB Date Apocalypse
 
@@ -132,11 +136,11 @@ MongoDB's extended JSON created multiple competing date formats:
 {"date": "Wed Jan 01 2025 00:00:00 GMT+0000 (UTC)"}
 ```
 
-Good luck writing a parser that handles all of these. And good luck when someone switches MongoDB versions mid-project.
+Good luck writing a parser that handles all of these. And good luck when someone switches MongoDB versions mid-project. pandas will take either of the first two shapes if you tell it which one you have: `pd.to_datetime(s, utc=True)` for the ISO string, `pd.to_datetime(ms, unit="ms", utc=True)` for the millisecond integer.
 
 ### Surviving JSON in Production
 
-**Always use ISO 8601 dates with timezones:**
+**Always use ISO 8601 dates with timezones** (`datetime.now(timezone.utc).isoformat()` produces one, with `+00:00` where this example has `Z`; both mean UTC):
 ```json
 {"created": "2025-01-15T10:30:00Z"}
 ```
@@ -164,7 +168,7 @@ Not this:
 }
 ```
 
-**Consider JSON streaming for large datasets:**
+**Consider JSON streaming for large datasets** (reading one record at a time instead of loading the whole file; the `ijson` library does this):
 ```python
 import ijson
 
@@ -206,7 +210,7 @@ df.memory_usage(deep=True).sum() / 1024**3  # 1.1 GB
 
 ### Why Parquet is 10x+ Better
 
-**Columnar Storage:** Unlike row-based formats (CSV, JSON), Parquet stores data column by column. This seemingly simple change enables massive optimizations because similar values compress better together, and you only read the columns you need.
+**Columnar Storage:** Unlike row-based formats (CSV, JSON), Parquet stores data column by column. A row-based file keeps each record's values together, one record after the next; a columnar file keeps every value of one column together, then every value of the next. This seemingly simple change enables massive optimizations because similar values compress better together, and you only read the columns you need.
 
 ```python
 import pandas as pd
@@ -229,7 +233,7 @@ df.to_parquet('data.parquet')          # 38 MB on disk (11x smaller!)
 %timeit pd.read_parquet('data.parquet', columns=['user_id', 'value'])  # 0.08 seconds (29x faster!)
 ```
 
-**Predicate Pushdown:** Parquet files contain metadata about each column chunk, including min/max values. Query engines can skip entire chunks without reading them:
+**Predicate Pushdown:** A predicate is just a filter condition, and pushing it down means the file reader applies it before the data leaves disk rather than after it lands in memory. Parquet files contain metadata about each column chunk, including min/max values. Query engines can skip entire chunks without reading them:
 
 ```python
 import pyarrow.parquet as pq
@@ -247,7 +251,7 @@ feb_data = pq.read_table(
 
 ### Real-World Performance: What Actually Changed
 
-Uber's analytics infrastructure shows what Parquet enables at scale. Their second-generation platform [moved from JSON to Parquet](https://www.uber.com/blog/uber-big-data-platform/) specifically so that schema and data traveled together, which removed the standing vulnerability to upstream format changes that had plagued the first generation—the same class of failure Chapter 2 spent a whole section on. They also wrote their own Parquet reader for Presto, and report that it processes data ["anywhere from 2-10x faster compared to when we used the original open source reader"](https://www.uber.com/blog/presto/). That is the difference between analysts waiting on results and getting them before their coffee cools.
+Uber's analytics infrastructure shows what Parquet enables at scale. Their second-generation platform [moved from JSON to Parquet](https://www.uber.com/blog/uber-big-data-platform/) specifically so that schema and data traveled together, which removed the standing vulnerability to upstream format changes that had plagued the first generation—the same class of failure Chapter 2 spent a whole section on. They also wrote their own Parquet reader for Presto (a distributed SQL query engine), and report that it processes data ["anywhere from 2-10x faster compared to when we used the original open source reader"](https://www.uber.com/blog/presto/). That is the difference between analysts waiting on results and getting them before their coffee cools.
 
 The columnar magic works because reading 3 columns from a 200-column dataset means touching 1.5% of the data instead of all of it. On a query engine that bills by bytes scanned, that ratio is your invoice. Treat the compression multipliers you see quoted around Parquet as advertising—they depend entirely on how repetitive your columns are—and measure your own. Exercise 2 at the end of this chapter takes fifteen minutes and gives you a number that is actually about your data.
 
@@ -255,7 +259,7 @@ The columnar magic works because reading 3 columns from a 200-column dataset mea
 
 Parquet shines when you're reading specific columns across millions of rows—the classic analytics pattern. Data warehouses, cloud-native workflows, anything where you write once and query endlessly. The compression alone can cut your S3 bill in half.
 
-But Parquet is immutable. You can't append a row; you rewrite the whole file. Streaming pipelines need Avro. If your analysts live in Excel, they'll revolt—you can't double-click a Parquet file. And for datasets under 100MB? CSV is fine. Don't overcomplicate things.
+But Parquet is immutable. You can't append a row; you rewrite the whole file. Streaming pipelines need Avro, a row-oriented format that stores its schema alongside the data and is built for appending one record at a time. If your analysts live in Excel, they'll revolt—you can't double-click a Parquet file. And for datasets under 100MB? CSV is fine. Don't overcomplicate things.
 
 ### Parquet Optimization Tips
 
@@ -263,7 +267,7 @@ Parquet, like SO MANY projects, has a litany of configuration options.
 
 Compression choice is a speed-versus-size tradeoff. Snappy decompresses fast but compresses modestly—use it when query latency matters more than storage cost. Zstd at level 9 achieves 30-50% smaller files but takes longer to write and read. For cold storage, which you'll query rarely, zstd wins. For hot analytics tables, snappy keeps your dashboards snappy.
 
-Row group size determines your query's minimum read unit. The default (usually 64MB or ~1 million rows) works for most analytics, but if your typical query touches only recent data, smaller row groups (50,000 rows) let Parquet skip more aggressively. The tradeoff: smaller groups mean more metadata overhead and less compression efficiency. Tune based on your actual query patterns, not theoretical optimization.
+Row group size determines your query's minimum read unit: a row group is the chunk of rows Parquet writes as one block, each carrying its own min/max statistics. The default (usually 64MB or ~1 million rows) works for most analytics, but if your typical query touches only recent data, smaller row groups (50,000 rows) let Parquet skip more aggressively. The tradeoff: smaller groups mean more metadata overhead and less compression efficiency. Tune based on your actual query patterns, not theoretical optimization.
 
 Sorting before writing is free performance. When you sort by your most-filtered column (usually timestamp), Parquet's min/max statistics become useful—queries for "last 7 days" can skip row groups whose max timestamp is too old without reading them. Unsorted data scatters your target rows across every group, defeating the skip logic entirely.
 
@@ -320,11 +324,13 @@ table = pq.read_table("data.parquet")
 # Polars, DuckDB, and Spark can all consume this table without re-encoding it.
 ```
 
+The bridge to and from pandas is two calls: `pa.Table.from_pandas(df)` builds an Arrow table from a DataFrame, and `table.to_pandas()` goes back.
+
 ### 3.3.1 The Zero-Copy Revolution
 
-Arrow's most important feature is zero-copy reads. When different processes or languages need to access the same data:
+Arrow's most important feature is zero-copy reads. Zero-copy means the consumer reads the bytes where they already sit instead of receiving its own private copy, so handing a ten-gigabyte table to another tool costs nothing but a pointer. When different processes or languages need to access the same data:
 
-- **Memory mapping**: Data can be memory-mapped directly from disk
+- **Memory mapping**: Data can be memory-mapped directly from disk (`pq.read_table("data.parquet", memory_map=True)`), so the operating system pages it in on demand instead of the program reading it all up front
 - **Shared memory**: Processes can share the same memory pages without copying
 - **Language agnostic**: C++, Python, R, Java, Rust, and Go can all read the same memory layout
 
@@ -334,9 +340,9 @@ This is possible because Arrow defines not just a logical format, but the exact 
 
 Today, Arrow has become the de facto standard for analytical workloads:
 
-- **Pandas 2.0+**: Uses Arrow as an optional backend, offering 2-10x performance improvements
-- **Polars**: Built entirely on Arrow from the ground up
-- **DuckDB**: Queries Arrow tables directly without conversion
+- **Pandas 2.0+**: Uses Arrow as an optional backend (`pd.read_parquet(path, dtype_backend="pyarrow")`), offering 2-10x performance improvements
+- **Polars**: Built entirely on Arrow from the ground up (`pl.from_arrow(table)` takes an existing Arrow table directly)
+- **DuckDB**: Queries Arrow tables directly without conversion (`duckdb.sql("SELECT ... FROM arrow_table")` will read a `pyarrow.Table` sitting in a Python variable of that name)
 - **Apache Spark 3.0+**: Uses Arrow for efficient data exchange with Python
 - **Ray**: Leverages Arrow for distributed data processing
 
@@ -362,21 +368,21 @@ The industry has spent the last decade learning an expensive lesson: no single d
 
 ### 3.4.1 Lakehouse Architecture: The Best of Both Worlds
 
-Data warehouses (Snowflake, BigQuery) and data lakes (S3, ADLS) are merging into "lakehouses" that provide structured queries over unstructured storage. This isn't a marketing trend; it's a survival response to an architectural contradiction that's been bleeding companies dry for a decade.
+Data warehouses (Snowflake, BigQuery: databases built for analytical queries over curated, typed tables) and data lakes (S3, ADLS: cheap object storage holding raw files of every shape) are merging into "lakehouses" that provide structured queries over unstructured storage. This isn't a marketing trend; it's a survival response to an architectural contradiction that's been bleeding companies dry for a decade.
 
-The problem: warehouses give you fast, governed queries but charge by the byte. At scale, bills can hit $120K/month and keep climbing without even breaking a sweat. So companies dump raw data into cheap object storage instead, but then need armies of engineers to make that data queryable, reliable, and not a governance nightmare. Most enterprises ended up running both: a warehouse for the data people actually trusted, a lake for everything else, and a fragile pipeline stitching them together. Double the infrastructure, double the engineering burden, and analysts still couldn't get answers without a three-week ETL request.
+The problem: warehouses give you fast, governed queries but charge by the byte. At scale, bills can hit $120K/month and keep climbing without even breaking a sweat. So companies dump raw data into cheap object storage instead, but then need armies of engineers to make that data queryable, reliable, and not a governance nightmare. Most enterprises ended up running both: a warehouse for the data people actually trusted, a lake for everything else, and a fragile pipeline stitching them together. Double the infrastructure, double the engineering burden, and analysts still couldn't get answers without a three-week ETL request (extract, transform, load: the batch jobs that copy data from one system into another, reshaping it on the way).
 
-Lakehouses collapse this into one layer. Open formats like Iceberg and Hudi add ACID transactions, schema enforcement, and time travel directly on top of S3-priced storage. You get warehouse semantics at lake economics.
+Lakehouses collapse this into one layer. Open formats like Iceberg and Hudi add ACID transactions (writes that land completely or not at all, even with other readers and writers in flight), schema enforcement, and time travel (querying the table as it stood at an earlier moment) directly on top of S3-priced storage. You get warehouse semantics at lake economics.
 
 ### 3.4.2 What This Looks Like in Practice
 
-Airbnb's warehouse upgrade tells the real story. Moving their event-ingestion framework from Hive-on-Tez to Spark 3 with Iceberg, they report [more than 50% compute resource savings and a 40% reduction in job elapsed time](https://medium.com/airbnb-engineering/upgrading-data-warehouse-infrastructure-at-airbnb-a4e18f09b6d5). Worth being precise about what that measures: it is one workload, and the gain comes from the engine and the table format together, not from Iceberg alone. But the cost savings weren't the headline. Iceberg eliminated their Hive Metastore bottleneck, which meant engineers stopped debugging partition overloads at 2am and started building features that actually shipped. Schema changes that used to require costly table rewrites now happen at the metadata level. That's the pattern you see across the industry: the table format migration pays for itself in infrastructure savings, but the real ROI is engineering hours redirected from babysitting pipelines to building product.
+Airbnb's warehouse upgrade tells the real story. Moving their event-ingestion framework from Hive-on-Tez to Spark 3 with Iceberg, they report [more than 50% compute resource savings and a 40% reduction in job elapsed time](https://medium.com/airbnb-engineering/upgrading-data-warehouse-infrastructure-at-airbnb-a4e18f09b6d5). Worth being precise about what that measures: it is one workload, and the gain comes from the engine and the table format together, not from Iceberg alone. But the cost savings weren't the headline. Iceberg eliminated their Hive Metastore bottleneck (the central catalog that tracked where every table partition lived, and which every query had to ask), which meant engineers stopped debugging partition overloads at 2am and started building features that actually shipped. Schema changes that used to require costly table rewrites now happen at the metadata level. That's the pattern you see across the industry: the table format migration pays for itself in infrastructure savings, but the real ROI is engineering hours redirected from babysitting pipelines to building product.
 
 ### 3.4.3 Lance: An Emerging Format for the AI Era
 
 *Note: Lance is young and still maturing. It's here because the problem it targets is real and getting more common, not because it's a settled choice—verify production-readiness for your own use case before betting on it.*
 
-Lance combines columnar storage (like Parquet) with native vector indexing for AI workloads. The problem it solves is real: every company now has embeddings (from OpenAI, Cohere, etc.), and storing vectors in Parquet requires a separate vector database (Pinecone, Weaviate) at significant cost. You end up with your metadata in one system and your embeddings in another, stitched together by application code that inevitably drifts.
+Lance combines columnar storage (like Parquet) with native vector indexing for AI workloads. The problem it solves is real: every company now has embeddings (the long lists of numbers a model produces to represent a text or an image, arranged so that similar things land near each other; OpenAI, Cohere, and the rest will sell you them by the million), and storing vectors in Parquet requires a separate vector database (Pinecone, Weaviate: a store built to find the nearest neighbors of a vector quickly) at significant cost. You end up with your metadata in one system and your embeddings in another, stitched together by application code that inevitably drifts.
 
 Lance unifies these:
 
@@ -395,11 +401,11 @@ dataset = lance.write_dataset(
 # Tabular filters and vector similarity against one dataset, in one query
 ```
 
-Consider Lance if you're building RAG applications, semantic search, or recommendation systems where you need both traditional filtering ("products under $50") and vector similarity ("products similar to this image"). For pure analytics without embeddings, Parquet remains the safer choice.
+Consider Lance if you're building RAG applications (retrieval-augmented generation: look up relevant documents by embedding similarity, then hand them to a language model to answer from), semantic search, or recommendation systems where you need both traditional filtering ("products under $50") and vector similarity ("products similar to this image"). For pure analytics without embeddings, Parquet remains the safer choice.
 
 ### The Polyglot Persistence Pattern
 
-Different access patterns need different storage:
+Polyglot persistence just means running more than one storage system, each chosen for the access pattern it serves. Different access patterns need different storage (a point lookup fetches one record by its key; an analytics scan reads a few columns across every row):
 
 | Access Pattern | Optimal Storage | Suboptimal | What goes wrong |
 |---------------|-----------------|------------|------------------|
@@ -408,11 +414,11 @@ Different access patterns need different storage:
 | Time Series | InfluxDB/TimescaleDB | Plain Postgres | No time partitioning; the index stops helping |
 | Full-Text Search | Elasticsearch | `LIKE '%term%'` | Leading wildcard defeats the index; full scan |
 | Stream Processing | Kafka + Flink | Batch ETL | Latency floor is your batch interval, by construction |
-| Graph Traversal | Neo4j | Recursive CTEs | Each hop is another join over the whole edge table |
+| Graph Traversal | Neo4j | Recursive CTEs (SQL queries that call themselves) | Each hop is another join over the whole edge table |
 
-Shopify's architecture demonstrates polyglot persistence at scale. Their data platform combines [Apache Kafka](https://shopify.engineering/running-apache-kafka-on-kubernetes-at-shopify) for event streaming—billions of events a day across their clusters—with [Vitess-sharded MySQL](https://shopify.engineering/capturing-every-change-shopify-sharded-monolith) for transactional data and Redis for caching. Each technology handles what it's optimized for: Kafka buffers high-volume events without blocking producers, MySQL with Vitess provides ACID transactions with horizontal scaling, and Redis delivers sub-millisecond lookups for session data.
+Shopify's architecture demonstrates polyglot persistence at scale. Their data platform combines [Apache Kafka](https://shopify.engineering/running-apache-kafka-on-kubernetes-at-shopify) for event streaming—billions of events a day across their clusters—with [Vitess-sharded MySQL](https://shopify.engineering/capturing-every-change-shopify-sharded-monolith) (one logical database split across many servers) for transactional data and Redis for caching. Each technology handles what it's optimized for: Kafka buffers high-volume events without blocking producers, MySQL with Vitess provides ACID transactions with horizontal scaling, and Redis delivers sub-millisecond lookups for session data.
 
-The alternative—forcing MySQL to handle event streaming, caching, and OLAP queries—would require either vertical scaling to increasingly expensive hardware or accepting degraded performance across all workloads. Polyglot architectures trade operational complexity for the ability to match each data access pattern to purpose-built infrastructure.
+The alternative—forcing MySQL to handle event streaming, caching, and OLAP queries (online analytical processing: the big aggregating reads that scan millions of rows)—would require either vertical scaling to increasingly expensive hardware or accepting degraded performance across all workloads. Polyglot architectures trade operational complexity for the ability to match each data access pattern to purpose-built infrastructure.
 
 ## 3.5 Format Selection: A Decision Framework
 
@@ -441,7 +447,7 @@ After all the theory, here's what actually matters when choosing formats:
 - Under 100MB → Whatever's convenient
 - 100MB—10GB → Parquet with compression
 - Over 10GB → Parquet with partitioning
-- Over 1TB → Parquet with partitioning AND a data catalog
+- Over 1TB → Parquet with partitioning AND a data catalog (an index of which datasets exist, where they live, and what schema each carries)
 
 **3. How often does the schema change?**
 - Never → Parquet, strict validation

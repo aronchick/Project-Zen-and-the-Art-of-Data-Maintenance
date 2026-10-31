@@ -18,6 +18,8 @@ If you're new to ML, you probably guessed Team B, because it's obvious that's wh
 
 As an aside, I should stress (!), there's nothing wrong with Team A. They're doing everything that we need to move the industry forward. But more often than not, there's a big gap between the latest research and actually using those breakthroughs. And that gap? It's filled with data problems.
 
+One footing before we go on, because this book is written for people who are smart but may not have spent years in this field. A *machine learning model* is a program that works out its own rules from examples instead of having them typed in by a programmer: show it enough photos marked "cat" and "not cat," and it figures out for itself what a cat looks like. The examples it learns from are its *training data*, and the answer attached to each example ("cat," "fraud," "will churn next month") is that example's *label*. Everything else in this book follows from one consequence of that arrangement: the model cannot be smarter than the examples it was shown.
+
 ## 1.1 Andrew Ng's Paradigm Shift: Why "Good Data Beats Big Data"
 
 ### The Day Everything Changed (Or Should Have)
@@ -27,6 +29,8 @@ In March 2021, [Andrew Ng](https://www.andrewng.org/) gave [a talk](https://www.
 And I'm going to be super honest with you: we (the ML community) got drunk on model architectures. It's like we were teenagers who just discovered guitar effects pedals and microphone distortion. "Sure, I can barely play three chords, but check out this SICK SOUND!" Meanwhile, the data—the actual music—sounds like a cat walking across a piano.
 
 Ng's revolutionary insight was basically: "Hey folks, maybe we should tune the guitar first?"
+
+That is the whole of *data-centric AI*, stripped of its branding: hold the model steady and spend your effort systematically improving the data it learns from. *Model-centric* is the reverse, and it was the field's default for a decade: hold the data steady and keep swapping in cleverer models.
 
 The reaction inside large engineering organizations was somewhere between agreement and impatience—a lot of "doesn't everyone already know this?" Teams at Google, Amazon, and Microsoft had been fighting this exact problem for years, mostly without a name for it. But when somebody with Ng's reach decides a message needs a talk and a campaign behind it, that is a reliable signal the rest of the field hasn't caught up.
 
@@ -83,15 +87,15 @@ The CTO asked what magic had been used. The real answer was "Excel and common se
 
 ### The LLM Data Quality Crisis
 
-Here's a fresh example from the GenAI gold rush. In late 2025, a major tech company discovered their customer service LLM was hallucinating product features that didn't exist. Customers were getting excited about capabilities that were pure fiction.
+Here's a fresh example from the GenAI gold rush. In late 2025, a major tech company discovered their customer service LLM (large language model, the kind behind chat assistants) was hallucinating product features that didn't exist. Customers were getting excited about capabilities that were pure fiction.
 
 The investigation revealed:
 - Training data included speculative forum posts marked as "official documentation"
 - Customer wish-lists were mixed with actual feature lists
-- Internal brainstorming documents somehow made it into the "ground truth" dataset
+- Internal brainstorming documents somehow made it into the "ground truth" dataset (the examples the model is told to treat as correct)
 - The model learned to be creatively optimistic rather than factually accurate
 
-The fix? Three engineers spent two weeks cleaning the training data. No model changes, no additional compute. Customer satisfaction scores jumped 40%. The lesson: Even in the age of foundation models, garbage in still equals garbage out—it's just more eloquent garbage now.
+The fix? Three engineers spent two weeks cleaning the training data. No model changes, no additional compute. Customer satisfaction scores jumped 40%. The lesson: Even in the age of foundation models (the giant pretrained models everyone now builds on), garbage in still equals garbage out—it's just more eloquent garbage now.
 
 ## 1.2 The "Garbage In, Garbage Out" Principle: A Modern Horror Story
 
@@ -132,7 +136,7 @@ That's a success rate that makes dating apps look effective.
 
 **The "Clever Hans" Effect**
 
-You know [Clever Hans](https://en.wikipedia.org/wiki/Clever_Hans), the horse that could "count" but was actually just reading body language? These models were doing the same thing. [DeGrave, Janizek, and Lee](https://www.nature.com/articles/s42256-021-00338-7) pulled apart the high-scoring COVID classifiers and found them keying on laterality markers, text burned into the corner of the image, and how the patient had been positioned—everything except the lungs. The Cambridge group found a worse one: several datasets used pediatric scans for the non-COVID class and adult scans for the COVID class, so the only thing the model had really learned was how to tell a child from an adult.
+You know [Clever Hans](https://en.wikipedia.org/wiki/Clever_Hans), the horse that could "count" but was actually just reading body language? These models were doing the same thing. [DeGrave, Janizek, and Lee](https://www.nature.com/articles/s42256-021-00338-7) pulled apart the high-scoring COVID classifiers and found them keying on laterality markers, text burned into the corner of the image, and how the patient had been positioned—everything except the lungs. (A laterality marker is the little L or R stamped on an X-ray to say which side is which.) The Cambridge group found a worse one: several datasets used pediatric scans for the non-COVID class and adult scans for the COVID class, so the only thing the model had really learned was how to tell a child from an adult.
 
 It's like training a food critic AI that gives five stars to any restaurant with a French name.
 
@@ -150,11 +154,11 @@ The terrifying part? The model was doing exactly what we asked it to do: learn f
 
 ### Even ImageNet Is Broken (Sorry, Not Sorry)
 
-ImageNet, the dataset that launched a thousand papers, is kind of a mess. [Northcutt, Athalye, and Mueller](https://arxiv.org/abs/2103.14749) hand-checked the test sets of ten benchmark datasets and found label errors throughout: at least 3.3% on average, and **at least 6% of the ImageNet validation set**.
+ImageNet, the dataset that launched a thousand papers, is kind of a mess. [Northcutt, Athalye, and Mueller](https://arxiv.org/abs/2103.14749) hand-checked the test sets of ten benchmark datasets and found label errors (what the field calls *label noise*) throughout: at least 3.3% on average, and **at least 6% of the ImageNet validation set**.
 
-Sit with that one. The validation set is the scoreboard. If six percent of the answers on the scoreboard are wrong, a model can be marked down for being right, and a model that learned the *mistakes* can outrank one that learned the task. The paper's title says it plainly: pervasive label errors destabilize benchmarks.
+Sit with that one. The validation set is the scoreboard: the held-out examples a model is scored on, which it never sees during training. If six percent of the answers on the scoreboard are wrong, a model can be marked down for being right, and a model that learned the *mistakes* can outrank one that learned the task. The paper's title says it plainly: pervasive label errors destabilize benchmarks.
 
-Every model ever ranked on ImageNet was graded against those errors, and every model fine-tuned from ImageNet weights inherited whatever the *training* set's error rate is—a number nobody has measured as carefully. If you fine-tuned using those data sources as inputs, you're compounding the problem. It's turtles all the way down. The ONLY way to break this cycle is to actually look at your data, understand its flaws, and either fix them or explicitly account for them in your model design (we'll cover both approaches in Chapter 7).
+Every model ever ranked on ImageNet was graded against those errors, and every model fine-tuned from ImageNet weights (started from an ImageNet-trained model and trained a little further) inherited whatever the *training* set's error rate is—a number nobody has measured as carefully. If you fine-tuned using those data sources as inputs, you're compounding the problem. It's turtles all the way down. The ONLY way to break this cycle is to actually look at your data, understand its flaws, and either fix them or explicitly account for them in your model design (we'll cover both approaches in Chapter 7).
 
 ## 1.3 Data-Centric vs Model-Centric: The Middle Path
 
@@ -231,7 +235,7 @@ By the time anyone noticed, the system had generated $340,000 worth of incorrect
 
 The lesson isn't "validate your date formats" (though yes, do that). The lesson is that 847 days of success created a false sense of security. The pipeline had been tested against the data that existed when it was built. Nobody thought to ask: "What happens when something upstream changes?"
 
-**Design for failure, not success.** Every piece of data should be treated as potentially hostile. Save the raw input before you transform it. Add checksums. Build rollback capabilities. Assume that if something CAN go wrong, it eventually WILL—and your job is to make sure you can recover when it does.
+**Design for failure, not success.** Every piece of data should be treated as potentially hostile. Save the raw input before you transform it. Add checksums (`hashlib.sha256(raw_bytes).hexdigest()` is one line, and it catches a file that changed under you). Build rollback capabilities. Assume that if something CAN go wrong, it eventually WILL—and your job is to make sure you can recover when it does.
 
 ### "I Don't Know Where This Number Came From"
 
@@ -241,17 +245,17 @@ A VP at a financial services firm said it out loud during an audit. The auditor 
 
 The audit did not go well.
 
-**Every piece of data should carry its own history.** Not just "what is this value?" but "where did it come from, what happened to it, and why?" This isn't bureaucratic overhead—it's survival. When (not if) something goes wrong, lineage is the difference between a 3-hour fix and a 3-week archaeological expedition.
+**Every piece of data should carry its own history.** Not just "what is this value?" but "where did it come from, what happened to it, and why?" This isn't bureaucratic overhead—it's survival. That recorded trail—where a value came from and every transformation it passed through—is called *lineage*. When (not if) something goes wrong, lineage is the difference between a 3-hour fix and a 3-week archaeological expedition.
 
 ### The Schema That Grew Organically
 
-Somewhere right now, somebody is building a data pipeline with a beautifully strict schema. Every field typed, validated, documented. A work of art.
+Somewhere right now, somebody is building a data pipeline with a beautifully strict *schema*: the declared list of which fields a record has and what type each one must be. Every field typed, validated, documented. A work of art.
 
 It will last about two weeks.
 
 Then the business needs a new field. And another. And a nullable version of an existing field "just for now." And a JSON blob for "miscellaneous attributes we might need later." Within six months the beautiful schema is a Frankenstein's monster of required fields that aren't really required, optional fields that are actually mandatory, and a JSON blob that has become the dumping ground for everything that didn't fit anywhere else.
 
-The opposite approach—no schema at all—is equally disastrous. Teams drown in unstructured data, spending more time parsing than analyzing.
+The opposite approach—no schema at all—is equally disastrous. Teams drown in unstructured data (free text, images, logs, anything with no fixed fields to read from), spending more time parsing than analyzing.
 
 **The answer is schema evolution, not schema perfection.** Start simple. Accept messy data but quarantine it. Add structure incrementally, where it provides value. Your schema should grow like a plant—organically, in response to its environment—not like a building, designed upfront and then stuck with forever.
 
@@ -261,7 +265,7 @@ A retail company had beautiful dashboards. Real-time data, gorgeous visualizatio
 
 The data scientists had learned not to trust the numbers. Too many times, the dashboard showed something alarming, they'd investigate, and discover it was a data quality issue, not a real problem. After enough false alarms, they started ignoring the dashboards entirely. When a real problem finally showed up, nobody noticed for three days.
 
-**Observability isn't about pretty dashboards—it's about trust.** Your monitoring should tell you not just what the numbers are, but whether you should believe them. Track data quality metrics alongside business metrics. Alert on anomalies in the data itself, not just anomalies in the results. Build confidence intervals. Show your work.
+**Observability isn't about pretty dashboards—it's about trust.** Observability is the ability to tell, from the outside, what a system is actually doing on the inside. Your monitoring should tell you not just what the numbers are, but whether you should believe them. Track data quality metrics alongside business metrics. Alert on anomalies in the data itself, not just anomalies in the results. Build confidence intervals. Show your work.
 
 Documentation helps, but running systems tell the truth in a way documentation can't. The best pipelines are self-describing: you can look at the metrics and understand not just what happened, but why.
 
@@ -316,6 +320,8 @@ Solution: Feature engineering
 - Added time-based weights
 ```
 
+Feature engineering, if the term is new: reshaping raw columns into signals a model can actually learn from. Here, that meant turning a pile of undifferentiated clicks into weighted, time-decayed evidence of interest.
+
 **The Lesson**: Raw data is like raw chicken—technically edible, but you're gonna have a bad time.
 
 ### Case Study 2: The Fraud Detection System—A Tale of False Positives
@@ -330,8 +336,8 @@ Timeline of disaster:
 **Day 90**: Project "paused indefinitely"
 
 **Root Cause Analysis:**
-- Class imbalance of 1:100,000 not handled (needed SMOTE or similar, covered in Chapter 21)
-- Only trained on caught fraud (selection bias)
+- Class imbalance of 1:100,000 not handled—one fraud per hundred thousand honest transactions, so the model learns that "not fraud" is nearly always the right answer. It needed SMOTE or similar: Synthetic Minority Over-sampling Technique, which manufactures plausible extra examples of the rare class, `SMOTE().fit_resample(X, y)` from the imbalanced-learn library (covered in Chapter 21)
+- Only trained on caught fraud (selection bias: the training set held only the fraud someone had already noticed, so the model learned to find fraud that looks like fraud you already catch)
 - Time zones not normalized (3am in Tokyo ≠ suspicious)
 - No feedback loop built in
 
@@ -361,6 +367,8 @@ def get_sensor_data():
     data = flag_anomalies(data)
     return data, quality_score, metadata
 ```
+
+The pandas version of the forward fill in that block is `data.resample("1min").asfreq().ffill(limit=5)`: put every sensor on a one-minute grid, then repeat the last reading (it does not interpolate between neighbours) for at most five minutes, leaving anything beyond that visibly missing.
 
 ## 1.6 What's Next: The Price of Getting This Wrong
 
@@ -392,7 +400,7 @@ if agreement < 0.90:
 Find one undocumented transformation in your pipeline. Write 3 sentences about what it does. Save future-you from suffering.
 
 **The Five-Minute Data Stare (5 min)**
-Open a Jupyter notebook. Load 10 random examples from your dataset. Actually look at them. I guarantee you'll find something surprising.
+Open a Jupyter notebook. Load 10 random examples from your dataset (`df.sample(10)` if it's a pandas DataFrame). Actually look at them. I guarantee you'll find something surprising.
 
 ## Your Homework (Yes, There's Homework)
 

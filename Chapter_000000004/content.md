@@ -52,7 +52,7 @@ If a senior data engineer costs $200K+/year (fully loaded, including benefits, i
 
 ### The Compounding Effect
 
-Bad data decisions compound like credit card debt. Here are examples from a variety of companies:
+Bad data decisions compound like credit card debt. Engineers call that *technical debt*: the future cost of a shortcut taken today, accruing interest in the form of every bug, workaround, and rewrite it causes until somebody pays it down. Here are examples from a variety of companies:
 
 **Quarter 1**: "Let's just store everything as strings, we'll fix it later."
 
@@ -71,7 +71,7 @@ Bad data decisions compound like credit card debt. Here are examples from a vari
 **Quarter 4**: "We need to rewrite the whole pipeline."
 - Engineering time: 800 hours
 - Production incidents during migration: 15
-- Customers lost: 3 enterprise accounts ($180K ARR)
+- Customers lost: 3 enterprise accounts ($180K ARR, annual recurring revenue)
 
 Add it up: 920 engineering hours at $150/hour is **$138,000**, plus **$180,000** in lost ARR, for **$318,000**.
 
@@ -159,7 +159,7 @@ Industry research consistently finds that [80% of enterprise data is cold](https
 
 They were paying S3 Standard rates ($0.022/GB) for everything. But only 200 TB of raw videos actually needed fast access for on-demand streaming. The rest? Processing artifacts that should have been deleted after job completion. Thumbnails for videos nobody watches anymore. ML datasets from experiments that never made it to production. The entire "might need later" category—the data equivalent of that box in your garage you haven't opened since 2019.
 
-Optimized with proper tiering:
+Optimized with proper tiering (cheaper storage classes that trade retrieval speed for price):
 
 | Data Type | Size | Right-Sized Tier | Monthly Cost |
 |-----------|------|------------------|--------------|
@@ -174,11 +174,11 @@ Optimized with proper tiering:
 
 Same data. Half the cost. The 100 TB of processing artifacts—intermediate files from video transcoding jobs—had zero business value and should never have been retained past job completion. Deleting them alone saved $2,200/month. Moving rarely-accessed thumbnails to Glacier saved another $700. The "might need later" bucket moved to Deep Archive at $0.001/GB, dropping from $2,200 to $100.
 
-Annual savings: **$70,000**. Implementation time: one afternoon writing lifecycle policies.
+Annual savings: **$70,000**. Implementation time: one afternoon writing lifecycle policies (rules that automatically move or delete objects once they reach a given age).
 
 ### The Bandwidth Nobody Budgets
 
-Cloud egress fees are a tax you never see coming. But the dollar cost isn't even the real problem. It's the latency tax on every decision your system makes.
+Cloud egress fees—what the provider charges to move data out of a region or off its network—are a tax you never see coming. But the dollar cost isn't even the real problem. It's the latency tax on every decision your system makes.
 
 The standard pattern:
 
@@ -186,7 +186,7 @@ The standard pattern:
 2. Run ML training in us-west-2 (GPUs available!)
 3. Serve predictions from eu-west-1 (users are there!)
 
-Every byte crossing regions costs money. AWS charges $0.02/GB for cross-region transfer. A company moving 3 TB daily for model training, syncing feature stores, and aggregating logs burns about $1,800 a month in bandwidth nobody budgeted for.
+Every byte crossing regions costs money. AWS charges $0.02/GB for cross-region transfer. A company moving 3 TB daily for model training, syncing feature stores (the database that serves a model its input features, the computed columns it predicts from, at prediction time), and aggregating logs burns about $1,800 a month in bandwidth nobody budgeted for.
 
 But what doesn't show up on any invoice is the 70-150ms latency penalty every time data crosses regions. When your fraud detection model needs fresh features from a store 3,000 miles away, that round-trip isn't free. When your recommendation engine waits for user signals to traverse the Atlantic, that's not "network overhead." That's degraded predictions. When your real-time bidding system loses auctions because feature retrieval adds 100ms, that's revenue evaporating.
 
@@ -228,7 +228,7 @@ This conversation happens in every company with more than three years of data be
 **Analyst**: "Can we remove it?"
 **Engineer**: "Probably not safe. Something might depend on it."
 
-Every undocumented transformation is a landmine. Every missing piece of metadata is future debugging time.
+What's missing from that exchange is *lineage*—the recorded trail of where each value came from and every transformation it passed through—and *metadata*, the data about the data: who produced a column, when, from what, and what it means. Every undocumented transformation is a landmine. Every missing piece of metadata is future debugging time.
 
 Real cost calculation from a healthcare company:
 
@@ -240,7 +240,7 @@ Real cost calculation from a healthcare company:
 | Compliance audits (extra time due to missing lineage) | 200 | $30,000 |
 | **Total annual cost of missing context** | **1,900 hours** | **$285,000** |
 
-A proper data catalog and lineage system costs maybe $50K/year (tools + maintenance). The ROI is 5.7x.
+A proper data catalog (an index of which datasets exist, where they live, and what schema each carries) and lineage system costs maybe $50K/year (tools + maintenance). The ROI is 5.7x.
 
 ### Compliance Penalties: The Nuclear Option
 
@@ -293,7 +293,7 @@ That's a 6-8x improvement. For a team handling 5 incidents per week, that's:
 
 ### The Domino Effect
 
-Data pipelines are like dominoes. One falls, they all fall.
+Data pipelines—the ETL jobs (extract, transform, load) that move data from where it lands to where it gets used—are like dominoes. One falls, they all fall.
 
 Architecture of a "simple" pipeline for an ecommerce site:
 
@@ -324,18 +324,18 @@ One external API. $180K in 4 hours.
 
 ### Schema Evolution: The Silent Killer
 
-Schemas change. That's life. But unmanaged schema changes are career-ending events.
+Schemas—the declared shape of a record, which fields it has and what type each one is—change. That's life. But unmanaged schema changes are career-ending events.
 
 Timeline of a schema evolution disaster:
 
 **Day 0**: Upstream team adds a new field (helpful!)
 **Day 1**: New field has `null` values (expected)
-**Day 7**: New field starts having data (schema inference changes)
+**Day 7**: New field starts having data (schema inference changes: whatever was guessing the field's type from its values now guesses differently)
 **Day 8**: Your pipeline now expects that field
 **Day 14**: Upstream team renames field (breaking change)
 **Day 15**: Your pipeline crashes
 **Day 16-20**: Investigation and fix
-**Day 21**: Post-mortem reveals: no schema versioning, no contract
+**Day 21**: Post-mortem reveals: no schema versioning, no contract (a data contract is an explicit, versioned schema the producing team and the consuming teams have agreed to, so a rename is a negotiation instead of a surprise)
 
 Cost: 5 engineer-days × $1,200/day = $6,000
 Plus production downtime cost: ~$15,000
@@ -344,7 +344,7 @@ Plus production downtime cost: ~$15,000
 If you have 10 upstream dependencies and they each change quarterly:
 - Annual cost: $840,000
 
-Schema registries cost maybe ~$2K/month. Cheaper if you just use git which, in MOST cases, is probably fine! The math is obvious.
+Schema registries (a shared store where every version of every schema is published, so producers and consumers can check compatibility before a change ships) cost maybe ~$2K/month. Cheaper if you just use git which, in MOST cases, is probably fine! The math is obvious.
 
 ### Monitoring Blind Spots
 
@@ -357,9 +357,11 @@ What teams monitor:
 
 What teams should monitor:
 - Did the output make sense? ✗
-- Did the distribution shift? ✗
+- Did the distribution shift—the statistical shape of a column drifting away from what the model was trained on? ✗
 - Are there anomalies in the data? ✗
 - Did downstream systems successfully consume? ✗
+
+The distribution question has a one-line start: `scipy.stats.ks_2samp(last_week[col], today[col])`, a test of whether two samples plausibly came from the same distribution. On big daily samples its p-value hits zero for shifts too small to matter, so alarm on the `.statistic` it returns (the largest gap between the two cumulative distributions, 0 to 1) crossing a threshold you chose, not on the p-value.
 
 Example: A job completed successfully every day for 3 weeks. No errors. No alerts. Also, it was producing empty files due to a filter condition that matched nothing.
 
@@ -369,7 +371,7 @@ Cost of those 3 weeks:
 - Re-training and validation: $15,000
 - **Total: $253,000**
 
-A data quality check would have caught this on day 1. Great Expectations or similar tools cost virtually nothing in comparison.
+A data quality check would have caught this on day 1. The one that matters here is a single line, `assert len(df) > 0, "pipeline produced no rows"`. Great Expectations or similar tools package hundreds of checks like it, and cost virtually nothing in comparison.
 
 ## 4.6 Data Quality Debt: Compound Interest on Bad Decisions
 
@@ -417,7 +419,7 @@ Root cause: 200 products mislabeled in a single afternoon, four years earlier.
 
 ### Retraining Costs
 
-Every time you retrain a model, you pay:
+Every time you retrain a model—train it again on fresh data so it keeps up with the world—you pay:
 
 | Cost Component | Typical Cost |
 |---------------|--------------|
@@ -443,7 +445,7 @@ Clean data that maintains distribution = fewer retrains = less cost.
 - Model accuracy: 72%
 - Actionable predictions per month: 1,200 customers
 - Retention rate of intervened customers: 45%
-- Average customer LTV: $8,500
+- Average customer LTV (lifetime value, the revenue a customer brings in over the whole relationship): $8,500
 
 Monthly value = 1,200 × 72% × 45% × $8,500 = **$3.3M protected revenue**
 
@@ -540,8 +542,8 @@ Spend here once the basics are covered:
 
 These look shiny, but wait until fundamentals are solid:
 
-**1. Exotic Imputation Methods**
-- Simple methods work for 90% of cases
+**1. Exotic Imputation Methods** (imputation is filling in missing values)
+- Simple methods work for 90% of cases; `SimpleImputer(strategy="median")` from scikit-learn is the whole of a simple method
 - Complex methods require clean metadata to be effective
 - (We'll cover when to graduate from simple imputation in Chapter 10)
 
