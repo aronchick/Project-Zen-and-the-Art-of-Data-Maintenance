@@ -56,7 +56,7 @@ Here's what that looks like in practice:
 
 **Quality compounds, quantity plateaus.** You know that feeling when you're debugging code and you fix one thing and suddenly five other things start working? Data quality is like that, but in reverse for bad data. One mislabeled example teaches your model wrong. Or breaks your pipeline. Or remains hidden for months and months until finally something goes wrong and you go back and question how this ever worked.
 
-Those wrong outcomes affect how it interprets other examples. Those misinterpretations affect your confidence scores. Those confidence scores drive your active learning—the loop where the model nominates the examples it is least sure about for a human to label next—so a confused model asks for the wrong examples. Before you know it, you're in an ML debt spiral, and you're explaining to your VP why the model thinks all dogs are cats on Tuesdays.
+Those wrong outcomes affect how it interprets other examples. Those misinterpretations affect your confidence scores. Those confidence scores affect your active learning. Before you know it, you're in an ML debt spiral, and you're explaining to your VP why the model thinks all dogs are cats on Tuesdays.
 
 > **Figure 1.2**: *The ML Debt Spiral. One mislabeled example teaches wrong patterns → affects confidence scores → corrupts active learning → compounds into systemic bias. Breaking the cycle requires going back to the source.*
 
@@ -68,7 +68,7 @@ There is a formal version of this. ["Beyond neural scaling laws: beating power l
 
 ### A Real Story That Should Make You Laugh (And Cry)
 
-A retailer's product classification model was stuck at poor accuracy. It had to clear 75%, because below that there was no reason to run a model at all—you could hire interns to classify by hand for less. The team had tried everything: ResNet, EfficientNet, even Vision Transformers (three generations of image-recognition architectures, each more fashionable than the last), because who doesn't love transformers for everything these days.
+A retailer's product classification model was stuck at poor accuracy. It had to clear 75%, because below that there was no reason to run a model at all—you could hire interns to classify by hand for less. The team had tried everything: ResNet, EfficientNet, even Vision Transformers, because who doesn't love transformers for everything these days.
 
 Nobody had looked at the data. When somebody finally asked to, the reaction was the one you always get: "The data? But... we need a better model!"
 
@@ -79,7 +79,7 @@ What was in there would make you weep:
 - Product photos included mannequins that were sometimes more prominent than the actual product
 - One enterprising annotator had labeled all blue items "electronics," because electronics are usually blue, right?
 
-Three weeks of cleaning followed. Just cleaning. No fancy algorithms, no TPUs (Tensor Processing Units), no sacrifice to the ML gods. Same ResNet-50 that PyTorch gives you out of the box: `torchvision.models.resnet50(weights="DEFAULT")`, pretrained weights and all.
+Three weeks of cleaning followed. Just cleaning. No fancy algorithms, no TPUs (Tensor Processing Units), no sacrifice to the ML gods. Same ResNet-50 that PyTorch gives you out of the box.
 
 Result? 89% accuracy.
 
@@ -87,7 +87,7 @@ The CTO asked what magic had been used. The real answer was "Excel and common se
 
 ### The LLM Data Quality Crisis
 
-Here's a fresh example from the GenAI gold rush. In late 2025, a major tech company discovered their customer service LLM (large language model, the kind of model behind every chat assistant) was hallucinating—confidently inventing—product features that didn't exist. Customers were getting excited about capabilities that were pure fiction.
+Here's a fresh example from the GenAI gold rush. In late 2025, a major tech company discovered their customer service LLM (large language model, the kind behind chat assistants) was hallucinating product features that didn't exist. Customers were getting excited about capabilities that were pure fiction.
 
 The investigation revealed:
 - Training data included speculative forum posts marked as "official documentation"
@@ -95,7 +95,7 @@ The investigation revealed:
 - Internal brainstorming documents somehow made it into the "ground truth" dataset (the examples the model is told to treat as correct)
 - The model learned to be creatively optimistic rather than factually accurate
 
-The fix? Three engineers spent two weeks cleaning the training data. No model changes, no additional compute. Customer satisfaction scores jumped 40%. The lesson: Even in the age of foundation models (the huge general-purpose models most teams now adapt rather than train from scratch), garbage in still equals garbage out—it's just more eloquent garbage now.
+The fix? Three engineers spent two weeks cleaning the training data. No model changes, no additional compute. Customer satisfaction scores jumped 40%. The lesson: Even in the age of foundation models (the giant pretrained models everyone now builds on), garbage in still equals garbage out—it's just more eloquent garbage now.
 
 ## 1.2 The "Garbage In, Garbage Out" Principle: A Modern Horror Story
 
@@ -103,7 +103,7 @@ The fix? Three engineers spent two weeks cleaning the training data. No model ch
 
 The phrase ["Garbage In, Garbage Out"](https://en.wikipedia.org/wiki/Garbage_in,_garbage_out) shows up in print as early as 1957, in a newspaper piece about Army mathematicians, back when computers were the size of refrigerators and programmers wore ties. Back then, GIGO was simple: put in 2+2=5, get out wrong answers. Today? Not quite so deterministic.
 
-Today's garbage is sneaky. It's like that roommate who seems clean but is secretly leaving dirty dishes in the sink because they are "soaking." Or worse, they are putting them under the bed, and you do not find out about them until the local raccoons are setting up a nest in your attic. Your model looks great, validates beautifully (scores well on the data you held back to test it), and then face-plants in production because it learned that all pictures taken of arctic huskies happen to have snow in the background, so you didn't build a wolf detector, you built a snow detector (true story from ["Why Should I Trust You?" Explaining the Predictions of Any Classifier](https://arxiv.org/pdf/1602.04938)).
+Today's garbage is sneaky. It's like that roommate who seems clean but is secretly leaving dirty dishes in the sink because they are "soaking." Or worse, they are putting them under the bed, and you do not find out about them until the local raccoons are setting up a nest in your attic. Your model looks great, validates beautifully, and then face-plants in production because it learned that all pictures taken of arctic huskies happen to have snow in the background, so you didn't build a wolf detector, you built a snow detector (true story from ["Why Should I Trust You?" Explaining the Predictions of Any Classifier](https://arxiv.org/pdf/1602.04938)).
 
 ### The COVID-19 Diagnosis Disaster: A Masterclass in What Not to Do
 
@@ -136,7 +136,7 @@ That's a success rate that makes dating apps look effective.
 
 **The "Clever Hans" Effect**
 
-You know [Clever Hans](https://en.wikipedia.org/wiki/Clever_Hans), the horse that could "count" but was actually just reading body language? These models were doing the same thing. [DeGrave, Janizek, and Lee](https://www.nature.com/articles/s42256-021-00338-7) pulled apart the high-scoring COVID classifiers and found them keying on laterality markers (the little L or R stamped on an X-ray to say which side is which), text burned into the corner of the image, and how the patient had been positioned—everything except the lungs. The Cambridge group found a worse one: several datasets used pediatric scans for the non-COVID class and adult scans for the COVID class, so the only thing the model had really learned was how to tell a child from an adult.
+You know [Clever Hans](https://en.wikipedia.org/wiki/Clever_Hans), the horse that could "count" but was actually just reading body language? These models were doing the same thing. [DeGrave, Janizek, and Lee](https://www.nature.com/articles/s42256-021-00338-7) pulled apart the high-scoring COVID classifiers and found them keying on laterality markers, text burned into the corner of the image, and how the patient had been positioned—everything except the lungs. (A laterality marker is the little L or R stamped on an X-ray to say which side is which.) The Cambridge group found a worse one: several datasets used pediatric scans for the non-COVID class and adult scans for the COVID class, so the only thing the model had really learned was how to tell a child from an adult.
 
 It's like training a food critic AI that gives five stars to any restaurant with a French name.
 
@@ -154,11 +154,11 @@ The terrifying part? The model was doing exactly what we asked it to do: learn f
 
 ### Even ImageNet Is Broken (Sorry, Not Sorry)
 
-ImageNet, the dataset that launched a thousand papers, is kind of a mess. [Northcutt, Athalye, and Mueller](https://arxiv.org/abs/2103.14749) hand-checked the test sets of ten benchmark datasets—the held-out examples a model is scored on, which it never sees during training—and found label errors (what the field calls *label noise*) throughout: at least 3.3% on average, and **at least 6% of the ImageNet validation set**.
+ImageNet, the dataset that launched a thousand papers, is kind of a mess. [Northcutt, Athalye, and Mueller](https://arxiv.org/abs/2103.14749) hand-checked the test sets of ten benchmark datasets and found label errors (what the field calls *label noise*) throughout: at least 3.3% on average, and **at least 6% of the ImageNet validation set**.
 
-Sit with that one. The validation set is the scoreboard. If six percent of the answers on the scoreboard are wrong, a model can be marked down for being right, and a model that learned the *mistakes* can outrank one that learned the task. The paper's title says it plainly: pervasive label errors destabilize benchmarks.
+Sit with that one. The validation set is the scoreboard: the held-out examples a model is scored on, which it never sees during training. If six percent of the answers on the scoreboard are wrong, a model can be marked down for being right, and a model that learned the *mistakes* can outrank one that learned the task. The paper's title says it plainly: pervasive label errors destabilize benchmarks.
 
-Every model ever ranked on ImageNet was graded against those errors, and every model fine-tuned from ImageNet weights (started from a model already trained on ImageNet, then trained a little more on its own data) inherited whatever the *training* set's error rate is—a number nobody has measured as carefully. If you fine-tuned using those data sources as inputs, you're compounding the problem. It's turtles all the way down. The ONLY way to break this cycle is to actually look at your data, understand its flaws, and either fix them or explicitly account for them in your model design (we'll cover both approaches in Chapter 7).
+Every model ever ranked on ImageNet was graded against those errors, and every model fine-tuned from ImageNet weights (started from an ImageNet-trained model and trained a little further) inherited whatever the *training* set's error rate is—a number nobody has measured as carefully. If you fine-tuned using those data sources as inputs, you're compounding the problem. It's turtles all the way down. The ONLY way to break this cycle is to actually look at your data, understand its flaws, and either fix them or explicitly account for them in your model design (we'll cover both approaches in Chapter 7).
 
 ## 1.3 Data-Centric vs Model-Centric: The Middle Path
 
@@ -205,9 +205,9 @@ while accuracy < target:
 
 - Your data is genuinely clean (hint: it never is—but if there's nothing OBVIOUS, and you really, honestly have already spent time thinking about it)
 - You've hit theoretical limits (you probably haven't)
-- You need specific inductive biases—assumptions baked into the architecture about what kinds of patterns to look for (okay, fair)
+- You need specific inductive biases (okay, fair)
 - You're writing a paper for a conference (we've all been there)
-- Inference speed—how fast the trained model answers in production—is genuinely the bottleneck (not just an excuse)
+- Inference speed is genuinely the bottleneck (not just an excuse)
 
 ### The Balanced Approach: Having Your Cake and Eating It Too
 
@@ -215,9 +215,9 @@ Here's what actually works in practice:
 
 **Start by becoming one with your data.** I mean really get to know it. Take it out for coffee. Ask about its hopes and dreams. Look at random samples until your eyes bleed. (We'll dive deep into this in Chapter 6: Exploratory Data Analysis)
 
-**Use boring, proven models.** ResNet for images and BERT for text (`AutoModel.from_pretrained("bert-base-uncased")` from the Hugging Face `transformers` library) are perfectly fine starting points. Use known data and known models and try to reproduce published results. THEN and ONLY THEN expand into your own data. This by itself will often reveal a number of issues with your pipeline.
+**Use boring, proven models.** ResNet for images and BERT for text are perfectly fine starting points. Use known data and known models and try to reproduce published results. THEN and ONLY THEN expand into your own data. This by itself will often reveal a number of issues with your pipeline.
 
-**Let data guide architecture choices.** If your error analysis shows the model can't handle long-range dependencies (the end of a document depending on something near its start), *then* consider attention mechanisms, the architectural piece that lets a model weigh far-apart inputs against each other. Don't start with a solution looking for a problem.
+**Let data guide architecture choices.** If your error analysis shows the model can't handle long-range dependencies, *then* consider attention mechanisms. Don't start with a solution looking for a problem.
 
 **Iterate on both, but maintain a 1:4 ratio.** For every hour of model fiddling, spend four hours on data. It's like the golden ratio, but for ML.
 
