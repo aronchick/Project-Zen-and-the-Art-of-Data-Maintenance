@@ -20,15 +20,15 @@ No amount of model sophistication can overcome acquisition-layer garbage. You ca
 
 That's the bile you should feel rising. Not because Zillow failed—companies fail all the time—but because they had every advantage except the one that mattered. They had the data scientists, the compute resources, the market position, the capital. What they didn't have was a clear-eyed understanding of where their data actually came from and what that meant for the decisions it was informing.
 
-Chapter 4 showed you what bad data costs. This chapter is about not acquiring bad data in the first place.
+The thing Zillow never looked hard at is something called "data acquisition", where you account for everything that happened to get the data into your hands: who collected it, how, under what agreement, and through which systems it traveled before you ever saw it. Whether that data is fit for the decision you're about to make with it is "data quality"—not "clean" in the abstract, but accurate enough, complete enough, fresh enough, and consistent enough for the specific model or dashboard on the other end. The same file can be high quality for one question and worthless for another, which is why quality is a property of the data *plus* the use, never of the data alone.
 
-Two terms before we start, because the rest of the chapter leans on them. **Data acquisition** is everything that happens to get data into your hands: who collected it, how, under what agreement, and through which systems it traveled before you ever saw it. **Data quality** is how fit that data is for the decision you're about to make with it—not "clean" in the abstract, but accurate enough, complete enough, fresh enough, and consistent enough for the specific model or dashboard on the other end. The same file can be high quality for one question and worthless for another, which is why quality is a property of the data *plus* the use, never of the data alone.
+Chapter 4 showed you what bad data costs. This chapter is about not acquiring bad data in the first place.
 
 ---
 
 ## 5.1 The Acquisition Hierarchy: Where Data Actually Comes From
 
-Before you can assess data quality, you need to understand data provenance. And I don't mean that in some abstract data-governance sense—I mean you need to understand the actual, physical, organizational journey that data takes before it lands in your feature store (the system that serves model-ready inputs; Chapter 9 is all about them). Because every step in that journey is an opportunity for the data to lie to you.
+Before you can assess data quality, you need something called "provenance", where you trace the actual, physical, organizational journey the data took before it landed in your feature store (the system that serves model-ready inputs; Chapter 9 is all about them). Because every step in that journey is an opportunity for the data to lie to you.
 
 ### 5.1.1 First-Party Data: Your Own Exhaust
 
@@ -124,7 +124,7 @@ Quantify missingness patterns, not just rates. `df.isna().groupby(df["segment"])
 
 Consistency means the same entity has the same representation everywhere. This sounds trivial until you realize how many different systems contain overlapping representations of your data—and how rarely those representations actually agree.
 
-The canonical example is the customer who exists in your CRM, your billing system, your support ticketing system, and your product analytics. In the CRM, they're "John Smith." In billing, they're "J. Smith Jr." In support, they're "John A. Smith (Enterprise)." In product analytics, they're user_id_847291. Are these the same person? Probably. Can you prove it programmatically? Often not without heroic entity resolution efforts (matching records that refer to the same real-world thing; more on that in 5.2.6). When the systems do share a key, the check is cheap: `crm.merge(billing, on="customer_id", how="outer", indicator=True)["_merge"].value_counts()` counts how many customers exist in one system but not the other.
+The canonical example is the customer who exists in your CRM, your billing system, your support ticketing system, and your product analytics. In the CRM, they're "John Smith." In billing, they're "J. Smith Jr." In support, they're "John A. Smith (Enterprise)." In product analytics, they're user_id_847291. Are these the same person? Probably. Can you prove it programmatically? Often not without something called "entity resolution", where you match records that describe the same real-world thing across systems that never agreed on an identifier (in this case, four systems, four spellings, one customer), and doing it well is heroic work (more on that in 5.2.6). When the systems do share a key, the check is cheap: `crm.merge(billing, on="customer_id", how="outer", indicator=True)["_merge"].value_counts()` counts how many customers exist in one system but not the other.
 
 Temporal consistency adds another layer of complexity. What does "active user" mean? If the definition changed six months ago—maybe you went from "logged in within 30 days" to "performed a meaningful action within 14 days"—your historical analysis will show a discontinuity that has nothing to do with actual user behavior. Teams lose weeks investigating why engagement "dropped" on a specific date, and find a definition change nobody documented.
 
@@ -198,7 +198,7 @@ The cost-benefit of automated profiling tips positive earlier than most teams th
 
 ### 5.3.3 Quality Gates: Stop Bad Data at the Border
 
-Quality gates are checkpoints that block or flag data that fails quality criteria. The philosophy is prevention over detection over remediation. Every issue you prevent from entering your system is an issue you never have to detect, investigate, and fix downstream.
+By the time anyone looks, the bad rows are already in the warehouse. The fix is something called a "quality gate", where you put a check at the point of entry that blocks or flags rows failing the rules before they land (in this case, a null-rate and range check on every daily load). The philosophy is prevention over detection over remediation. Every issue you prevent from entering your system is an issue you never have to detect, investigate, and fix downstream.
 
 Gates should exist at multiple points in your data pipeline. At the source: validate that incoming data matches expected schemas and constraints before ingestion. At ingestion: apply business rules, check referential integrity (every ID points at a record that actually exists), detect obvious anomalies. At transformation: validate that joins behave as expected, that aggregations produce sensible results. At serving: confirm that the data reaching your models or dashboards meets the quality standards those consumers expect.
 
@@ -220,7 +220,7 @@ Enforcement mechanisms turn SLAs from aspirations into commitments. Automated al
 
 ## 5.4 Data Contracts: The Missing Link
 
-Data contracts are formal agreements between data producers and data consumers. They specify what data will be provided, in what format, with what semantics, at what quality level. They're the mechanism that transforms implicit assumptions into explicit commitments.
+Most of the breakages in this chapter were nobody's fault, because nothing had ever been agreed. The remedy is something called a "data contract", where you and the producing team write down what will be delivered, in what format, with what semantics, at what quality level, and version it (in this case, the schema of the events table, signed by both sides). Implicit assumptions become explicit commitments, and a rename becomes a negotiation.
 
 ### 5.4.1 What Data Contracts Actually Are
 
