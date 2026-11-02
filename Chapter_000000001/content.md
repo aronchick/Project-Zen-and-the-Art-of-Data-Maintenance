@@ -170,6 +170,8 @@ Here's my mental model (pun intended):
 
 **The Model-Centric Approach** (What We've Been Doing)
 
+Every snippet in this book—including this deliberately silly one—runs through uv, and Appendix B, section B.0, has the one-time setup.
+
 ```python
 while accuracy < target:
     model = make_model_more_complex(model)
