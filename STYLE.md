@@ -27,7 +27,15 @@ Write for a reader who is smart but new to the field. The goal of the book is to
 - Do not define words any technical reader already has (mean, column, API, database, CSV).
 - Test for every paragraph: could someone who has never trained a model follow this sentence? If not, define or cut the term.
 
-## 3. Existing conventions
+## 3. No version pins; uv for all Python
+
+The code targets the current release of every library, and the reader runs it without setting up an environment first.
+
+- Never name a specific library or Python version anywhere in the book: no "added in 1.3", no "deprecated in 1.8, gone in 1.10", no "pandas 3.1", no pinned requirements. If a behavior is version-dependent, describe the current behavior and say nothing about older releases.
+- Every Python invocation the reader sees runs through uv: `uv run --with <libs> python script.py`, `uv run --with <libs> python -c "..."`, or `uvx <tool>` for command-line tools such as dvc. Never pip install, bare python, conda, poetry or venv. A script the reader is meant to save carries PEP 723 inline metadata (`# /// script` with a `dependencies = [...]` list, no version specifiers) so plain `uv run script.py` resolves everything.
+- Appendix B, section B.0, is the one place that explains uv; chapters only point there.
+
+## 4. Existing conventions
 
 - No first-person experience claims ("I once saw", "in my experience"). Earlier passes removed these book-wide; do not reintroduce them.
 - Preserve the conversational cold-open voice: every chapter opens with a disaster story, the tone is dry and direct, em-dashes are house style, and the two rules above add to the prose rather than restyle it.
