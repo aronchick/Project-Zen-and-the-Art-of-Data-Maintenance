@@ -35,7 +35,7 @@ Three thousand four hundred features, generated in an afternoon by a tool. Two f
 
 Everything in Part IV was repair. Missing values, outliers, scales, categories—taking the data you were handed and making it safe to model, without lying to the model in the process.
 
-This chapter is the other half of the work, and it is the half where models are actually won. A model can only combine the columns you give it. A gradient-boosted tree is very good at finding interactions, but only within the space your features span. If nobody ever computed "days since the champion logged in," there is no architecture, no hyperparameter, and no amount of data that recovers it. That column does not exist in the world until a human decides it should.
+This chapter is the other half of the work, and it is the half where models are actually won. A model can only combine the columns you give it. A gradient-boosted tree is very good at finding interactions (cases where one feature's effect depends on another's value), but only within the space your features span. If nobody ever computed "days since the champion logged in," there is no architecture, no hyperparameter, and no amount of data that recovers it. That column does not exist in the world until a human decides it should.
 
 Which is why feature creation stays valuable in a period where everything else is getting commoditized. Anyone can download the same model your competitor is using. Nobody else has your operators' intuition about what makes a customer, a claim, or a shipment go bad.
 
@@ -59,7 +59,7 @@ Two other sources are already sitting in your organization and almost nobody min
 
 **Incident postmortems.** When a model was badly wrong and somebody wrote up why, the explanation is nearly always phrased in terms of a factor the model didn't have. That document is a feature request that nobody filed.
 
-Where domain knowledge most often turns into math is **normalization against context**. A raw quantity usually means nothing on its own. A $50,000 transaction is unremarkable for one cardholder and an emergency for another. What carries the signal is the same number expressed relative to something the domain says is the right reference:
+A raw quantity usually means nothing on its own. A $50,000 transaction is unremarkable for one cardholder and an emergency for another. The place domain knowledge most often turns into math is something called "normalization against context", where you express the raw number relative to the reference the domain says matters instead of reading it on its own (in this case, this transaction over this cardholder's own 90-day median, and over their segment's). The same number, a different denominator, and now it carries the signal:
 
 ```python
 df["amt_vs_own_median"] = df["amount"] / df["cardholder_median_90d"]
@@ -86,7 +86,7 @@ df["rate"] = df["numerator"] / df["denominator"].replace(0, np.nan)
 
 Choosing `NaN` over `inf` is deliberate. A `NaN` flows into the missing-data machinery from Chapter 10, where you already have indicators and a policy. An `inf` propagates silently through means and standard deviations and poisons whatever it touches.
 
-**Differences and deltas** encode change, which is frequently what actually matters. Current value versus 30 days ago. Days between events. Change since onboarding. A model handed only the current value has to infer motion from a snapshot.
+**Differences and deltas** encode change, which is frequently what actually matters. Current value versus 30 days ago. Days between events (`df.groupby("account")["ts"].diff().dt.days`). Change since onboarding. A model handed only the current value has to infer motion from a snapshot.
 
 **Log ratios** make growth symmetric. A change from 100 to 200 and from 200 to 100 are the same magnitude in opposite directions, but the raw ratios are 2.0 and 0.5, which no linear model reads as symmetric. `np.log(a / b)` gives you +0.69 and −0.69, and the transformations from 12.3 apply here for the same reason they applied there.
 
@@ -98,7 +98,7 @@ df["z_own"] = (df["value"] - df["entity_mean_90d"]) / df["entity_std_90d"].repla
 
 That column answers "how unusual is this *for them*," which is almost always the question, and which Chapter 11 argued is the difference between an outlier and an error.
 
-**Volatility features.** The rolling standard deviation of a value is a feature in its own right, and it is often more predictive than the value. Accounts whose usage bounces around are behaving differently than accounts with the same average and a flat line.
+**Volatility features.** The rolling standard deviation of a value—`s.shift(1).rolling("30D").std()`, with the shift for the reason 14.3 explains—is a feature in its own right, and it is often more predictive than the value. Accounts whose usage bounces around are behaving differently than accounts with the same average and a flat line.
 
 Polynomial and interaction terms belong to this family too, but they were covered in 12.5 and the combinatorial warning there still applies. Build the products the domain suggests; do not generate all of them and hope.
 
@@ -150,9 +150,9 @@ Last thing on aggregations, and it's an operational point rather than a statisti
 
 ## 14.4 Feature Crosses and Combinations
 
-A cross is the conjunction of two categoricals treated as one: not "country" and "device" as separate signals, but `country=BR AND device=android` as a distinct thing with its own behavior.
+A linear model can learn that Brazil is riskier and that Android is riskier. It has no way to learn that the two together are far riskier than either implies, because a weighted sum cannot represent a conjunction at all. The fix for that blindness is something called a "feature cross", where you treat the combination of two categorical values as one new category with its own behavior (in this case, `country=BR AND device=android` as a distinct thing, rather than "country" and "device" as separate signals). In pandas it is string concatenation, `df["country_device"] = df["country"] + "|" + df["device"]`, and the new column is then encoded like any other categorical. The conjunction becomes a column the model can see.
 
-Crosses matter enormously for linear models, which cannot represent a conjunction at all—a linear model can learn that Brazil is riskier and that Android is riskier, but not that the combination is far riskier than either implies. Tree models get some of this for free by splitting on one feature and then the other, which is why crosses feel less essential in a gradient-boosting workflow. "Less essential" is not "unnecessary": an explicit cross saves the tree the depth it would spend rediscovering the conjunction, and depth is a budget.
+Tree models get some of this for free by splitting on one feature and then the other, which is why crosses feel less essential in a gradient-boosting workflow. "Less essential" is not "unnecessary": an explicit cross saves the tree the depth it would spend rediscovering the conjunction, and depth is a budget.
 
 The cost is cardinality, and it multiplies. Fifty countries crossed with 200 device models is 10,000 levels, most of which will appear a handful of times. You have just created exactly the problem Chapter 13 was about, on purpose, and you inherit the whole toolkit with it: frequency floors, rare bucketing, smoothed target encoding, hashing. Build a cross and you have signed up to encode it properly.
 
@@ -160,11 +160,11 @@ Which crosses should you build? The ones with a mechanism. If you can say a sent
 
 For finding candidates rather than guessing, two practical approaches:
 
-**Read a shallow tree.** Fit a depth-3 or depth-4 tree and look at which features co-occur along paths. The tree has already done interaction detection for you; the paths it found are crosses worth making explicit.
+**Read a shallow tree.** Fit a depth-3 or depth-4 tree and print it—`export_text(DecisionTreeClassifier(max_depth=3).fit(X, y), feature_names=list(X.columns))` from `sklearn.tree`—then look at which features co-occur along paths. The tree has already done interaction detection for you; the paths it found are crosses worth making explicit.
 
-**SHAP interaction values.** More expensive, more rigorous, and it will rank pairs by how much their joint effect exceeds the sum of their individual effects. Use it on a sample; the full computation is quadratic in features.
+**SHAP interaction values.** SHAP values, from the `shap` library, split each individual prediction into one contribution per feature so the pieces add up to the prediction; the interaction form does the same for pairs. `shap.TreeExplainer(model).shap_interaction_values(X_sample)` ranks pairs by how much their joint effect exceeds the sum of their individual effects. More expensive, more rigorous. Use it on a sample; the full computation is quadratic in features.
 
-The principled end of this spectrum is factorization machines and the wide-and-deep family, which learn low-rank representations of every pairwise interaction rather than requiring you to enumerate them. If you have very high cardinality and a lot of data, that machinery is doing what you would otherwise do by hand, better. Most teams don't need it, and the ones that do usually already know.
+The principled end of this spectrum is factorization machines and the wide-and-deep family, which learn a compact representation of every pairwise interaction rather than requiring you to enumerate them. If you have very high cardinality and a lot of data, that machinery is doing what you would otherwise do by hand, better. Most teams don't need it, and the ones that do usually already know.
 
 ---
 
@@ -172,7 +172,7 @@ The principled end of this spectrum is factorization machines and the wide-and-d
 
 Automated feature engineering deserves a fair hearing, because the cold open above is not an argument against it. It's an argument against using it without knowing what it can and cannot do.
 
-Deep feature synthesis, the idea behind Featuretools, works from a declared schema. You describe your tables and the relationships between them, and it applies aggregation primitives across relationships and transform primitives within them, stacking to a chosen depth. `MEAN(sessions.duration)` at depth one; `STD(users.MEAN(sessions.duration))` at depth two. It composes mechanically and it composes fast.
+The idea behind Featuretools is something called "deep feature synthesis", where you declare your tables and the relationships between them and let the tool apply aggregation primitives across relationships and transform primitives within them, stacking to a chosen depth (`MEAN(sessions.duration)` at depth one; `STD(users.MEAN(sessions.duration))` at depth two). It composes mechanically and it composes fast.
 
 ```python
 import featuretools as ft
@@ -181,7 +181,7 @@ fm, defs = ft.dfs(
     entityset=es,
     target_dataframe_name="accounts",
     agg_primitives=["mean", "sum", "count", "std", "trend"],
-    trans_primitives=["day", "month", "weekend"],
+    trans_primitives=["day", "month", "is_weekend"],
     cutoff_time=cutoffs,      # not optional
     max_depth=2,
 )
@@ -209,11 +209,11 @@ The productive posture is to treat automation as a **candidate generator, not a 
 
 A feature is not real because it was clever. It is real when it improves the metric you care about, at the decision horizon you actually have, without leaking.
 
-**Ablation is the only real test.** Train with and without. For a small candidate set, leave-one-out tells you what each feature contributes on the margin. For a large one, add-one-in against a fixed baseline is cheaper and answers the question you're actually asking. Either way you get a number, and the number is frequently zero for features everyone was sure about.
+**Ablation is the only real test.** The name is borrowed from surgery and the procedure is as blunt: you train the same model with the feature and without it, and read the difference in the metric you care about (in this case, the same model and data with and without the two champion columns). One line per candidate, `cross_val_score(model, X.drop(columns=[f]), y, cv=5, scoring="roc_auc").mean()`, compared against the full-set score. For a small candidate set, leave-one-out tells you what each feature contributes on the margin. For a large one, add-one-in against a fixed baseline is cheaper and answers the question you're actually asking. Either way you get a number, and the number is frequently zero for features everyone was sure about.
 
 **Test at the horizon you can act at.** This is the lesson of the cold open and it generalizes far past churn. A model evaluated at "time of renewal" and a model evaluated at "120 days before renewal" are different models with different useful features, and only one of them corresponds to a decision anybody can make. Ask what action the prediction triggers, ask how long that action needs, and evaluate there. A model that is accurate too late is a report, not a model.
 
-**Be careful which importance you read.** Gain-based importance, the default in most gradient-boosting libraries, is biased toward high-cardinality features—a column with many distinct values gets more chances to produce a locally good split, so it accumulates gain whether or not it generalizes. Permutation importance computed on held-out data doesn't have that bias and answers a more useful question: how much worse does the model get when this column is scrambled. SHAP gives you direction and per-row attribution on top of that. None of the three tells you anything about causation, and all three get read as if they do.
+**Be careful which importance you read.** Gain-based importance, what `model.feature_importances_` returns by default in most gradient-boosting libraries, is biased toward high-cardinality features—a column with many distinct values gets more chances to produce a locally good split, so it accumulates gain whether or not it generalizes. Permutation importance computed on held-out data—`permutation_importance(model, X_test, y_test, scoring="roc_auc").importances_mean` from `sklearn.inspection`—doesn't have that bias and answers a more useful question: how much worse does the model get when this column is scrambled. SHAP gives you direction and per-row attribution on top of that. None of the three tells you anything about causation, and all three get read as if they do.
 
 **Run every new feature through the leakage checklist**, in this order, before you get excited:
 
