@@ -8,7 +8,7 @@ Chapter 2 was about data types—the conceptual lie that a ZIP code is a number.
 
 File formats are the shipping containers of the data world. You can have perfect cargo, but put it in the wrong container and it arrives damaged. Put it in the right container with the wrong manifest and nobody knows what they've got. The best data in the world is worthless if it's stored in a format that lies about its contents.
 
-Plainly, then: a *file format* is the agreement about how values are laid out as bytes on disk or on the wire, so that whatever wrote them and whatever reads them agree on where one value ends, where the next begins, and what type each one is. Turning the objects in a program's memory into those bytes is *serialization*; reading them back is *deserialization*. Every format in this chapter makes a different bargain about how much of that agreement gets written down (the *schema*: which fields exist and what type each one is) and how much is left for the reader to guess. Formats that store the schema with the data (Parquet, Avro) are *schema-on-write*; formats that leave it for whoever loads the file to infer (JSON, CSV) are *schema-on-read*, which is a polite name for "the types are whatever pandas decides they are this morning."
+Plainly, then: what the two sides have to share is something called a "file format", where you agree how values are laid out as bytes on disk or on the wire, so whatever wrote them and whatever reads them see the same boundaries and the same types (in this case, where one value ends and the next begins in a CSV). Turning the objects in a program's memory into those bytes is "serialization"; reading them back is "deserialization". Every format in this chapter makes a different bargain about how much of that agreement gets written down (the *schema*: which fields exist and what type each one is) and how much is left for the reader to guess. Formats that store the schema with the data (Parquet, Avro) are *schema-on-write*; formats that leave it for whoever loads the file to infer (JSON, CSV) are *schema-on-read*, which is a polite name for "the types are whatever pandas decides they are this morning."
 
 ## 3.1 JSON: The Accidental Standard That Ate the World
 
@@ -210,7 +210,7 @@ df.memory_usage(deep=True).sum() / 1024**3  # 1.1 GB
 
 ### Why Parquet is 10x+ Better
 
-**Columnar Storage:** Unlike row-based formats (CSV, JSON), Parquet stores data column by column. A row-based file keeps each record's values together, one record after the next; a columnar file keeps every value of one column together, then every value of the next. This seemingly simple change enables massive optimizations because similar values compress better together, and you only read the columns you need.
+**Columnar Storage:** You wanted three columns and you read the whole file. Parquet fixes that with something called "columnar storage", where you keep every value of one column together on disk instead of every value of one row the way CSV and JSON do (in this case, all two million prices in one run of bytes, rather than a price wedged between a timestamp and a SKU on every line). Similar values compress better together, and a query reads only the columns it names.
 
 ```python
 import pandas as pd
@@ -233,7 +233,7 @@ df.to_parquet('data.parquet')          # 38 MB on disk (11x smaller!)
 %timeit pd.read_parquet('data.parquet', columns=['user_id', 'value'])  # 0.08 seconds (29x faster!)
 ```
 
-**Predicate Pushdown:** A predicate is just a filter condition, and pushing it down means the file reader applies it before the data leaves disk rather than after it lands in memory. Parquet files contain metadata about each column chunk, including min/max values. Query engines can skip entire chunks without reading them:
+**Predicate Pushdown:** Parquet files carry metadata about each column chunk, including min and max values, and that lets the reader do something called "predicate pushdown", where you apply the filter (the predicate) before the data leaves disk rather than after it lands in memory (in this case, skipping every chunk whose max date is older than the one you asked for). Most of the file never gets read:
 
 ```python
 import pyarrow.parquet as pq
@@ -382,7 +382,7 @@ Airbnb's warehouse upgrade tells the real story. Moving their event-ingestion fr
 
 *Note: Lance is young and still maturing. It's here because the problem it targets is real and getting more common, not because it's a settled choice—verify production-readiness for your own use case before betting on it.*
 
-Lance combines columnar storage (like Parquet) with native vector indexing for AI workloads. The problem it solves is real: every company now has embeddings (the long lists of numbers a model produces to represent a text or an image, arranged so that similar things land near each other; OpenAI, Cohere, and the rest will sell you them by the million), and storing vectors in Parquet requires a separate vector database (Pinecone, Weaviate: a store built to find the nearest neighbors of a vector quickly) at significant cost. You end up with your metadata in one system and your embeddings in another, stitched together by application code that inevitably drifts.
+Lance combines columnar storage (like Parquet) with native vector indexing for AI workloads. The problem it solves is real: every company now holds something called "embeddings", where you have a model turn a text or an image into a long list of numbers arranged so that similar things land near each other (OpenAI, Cohere, and the rest will sell you them by the million), and storing those vectors in Parquet requires a separate vector database (Pinecone, Weaviate: a store built to find the nearest neighbors of a vector quickly) at significant cost. You end up with your metadata in one system and your embeddings in another, stitched together by application code that inevitably drifts.
 
 Lance unifies these:
 
