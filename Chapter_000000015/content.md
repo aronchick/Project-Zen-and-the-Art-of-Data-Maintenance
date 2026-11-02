@@ -8,7 +8,7 @@ The fab had instrumentation for days. Around two hundred sensor-step channels ac
 
 They had fourteen months of history. 1,200 lots. 72 of them had suffered a real excursion, a base rate of six percent.
 
-So: 4,000 features, 1,200 rows, 72 positives. They did the sensible-looking thing. Rank all 4,000 sensor features by univariate F-score against the excursion label, keep the top 50, fit gradient boosting, and evaluate with ten-fold cross-validation.
+So: 4,000 features, 1,200 rows, 72 positives. They did the sensible-looking thing. Rank all 4,000 sensor features by something called a "univariate F-score", where you score each column on its own by how far the excursion lots' mean sits from the others', ignoring every other column; keep the top 50, fit gradient boosting, and evaluate with ten-fold cross-validation.
 
 **0.91 AUC.**
 
@@ -40,9 +40,9 @@ Four thousand features and a 0.91 that meant nothing. Nine features and a 0.74 t
 
 Chapter 14 handed you a machine for manufacturing features, and the inevitable result of using it is more columns than you can defend. This chapter is about getting back down to a set you can ship, and it has two halves that are frequently confused.
 
-**Selection** keeps a subset of your original columns and discards the rest. What survives still means what it meant—`chamber_7_pressure_std_vs_baseline` is still that, and a human can read it, serve it, and go look at chamber 7.
+**Selection** is where you keep a subset of your original columns and discard the rest (in this case, nine named sensor summaries a technician can walk to). What survives still means what it meant—`chamber_7_pressure_std_vs_baseline` is still that, and a human can read it, serve it, and go look at chamber 7.
 
-**Reduction** replaces your columns with a smaller number of constructed combinations. Those combinations can carry more information per column than any subset of the originals, and they cost you the ability to say what any one of them is.
+**Reduction** is where you replace your columns with a smaller number of constructed mixtures (the 40 components nobody could walk to). Those combinations can carry more information per column than any subset of the originals, and they cost you the ability to say what any one of them is.
 
 Both answer the same pressure and they are not interchangeable. Choosing between them is mostly a question about who reads the output and what they do next.
 
@@ -50,7 +50,7 @@ Both answer the same pressure and they are not interchangeable. Choosing between
 
 ## 15.1 The Curse of Dimensionality: Implications and Solutions
 
-"Curse of dimensionality" gets used as a single phrase for at least four distinct problems. They have different mechanisms, different severity, and different fixes, and lumping them together is how teams end up applying the wrong remedy.
+What ate the fab usually gets filed under something called the "curse of dimensionality", where you have so many columns relative to rows that distances stop meaning anything, noise columns look like signal, and models overfit (in this case, 4,000 columns, 1,200 rows, 72 positives). It is one phrase covering at least four distinct problems. They have different mechanisms, different severity, and different fixes, and lumping them together is how teams end up applying the wrong remedy.
 
 **Problem one: sample sparsity.** The volume of the space grows exponentially with dimension, so a fixed number of points gets exponentially more spread out. Ten points per dimension is dense coverage in 1-D and 10^20 points in 20-D. Any method that relies on having neighbors nearby—kernel density, local regression, k-nearest neighbors—degrades for this reason alone.
 
@@ -60,7 +60,7 @@ Both answer the same pressure and they are not interchangeable. Choosing between
 
 **Problem four: estimator variance.** Once the number of features reaches the number of rows, ordinary least squares no longer has a unique solution, and unregularized models fit the training set perfectly while learning nothing. Short of that, as p merely approaches n, the solution is unique and wildly high-variance, which is bad in a less obvious way. This is the regime where regularization stops being a tuning choice and becomes load-bearing.
 
-The useful counterweight is **intrinsic dimension**. Your data lives in a space with 4,000 axes, but the set of configurations a working fab actually produces is a much lower-dimensional surface inside it—correlated, constrained by physics and by recipe. Ambient dimension is how many columns you have. Intrinsic dimension is how many independent directions your data actually varies in. The curse is a function of the second one, and the gap between the two is the headroom available to every technique in this chapter.
+The useful counterweight is something called **intrinsic dimension**, where you count how many independent directions the data actually varies in, as opposed to how many columns it has. Your data lives in a space with 4,000 axes, but the set of configurations a working fab actually produces is a much lower-dimensional surface inside it—correlated, constrained by physics and by recipe. Ambient dimension is how many columns you have. Intrinsic dimension is how many independent directions your data actually varies in. The curse is a function of the second one, and the gap between the two is the headroom available to every technique in this chapter.
 
 It is worth estimating that gap before you do anything else, because it tells you what to expect. The cheapest estimate is the PCA spectrum: scale your columns, fit PCA, and look at how many components it takes to reach 90 or 95 percent of the variance. If 4,000 columns need 40 components to explain 95 percent of their variance, you have a strong hint about how much real structure is in there.
 
@@ -72,7 +72,7 @@ And underneath all four statistical problems sits the operational one from Chapt
 
 ## 15.2 Filter, Wrapper, and Embedded Selection Methods
 
-The three families are distinguished by how much they know about your model. Filters know nothing. Wrappers treat it as a black box and run it repeatedly. Embedded methods are inside it.
+The three families are distinguished by how much they know about your model. "Filters", where you score each column against the target on its own and cut, know nothing about it (the fab's top-50 F-score cut was a filter). "Wrappers", where you run the model repeatedly on candidate subsets and keep what scores best, treat it as a black box. "Embedded" methods, where the model's own fitting procedure drives some features to nothing, are inside it.
 
 ### Filters
 
@@ -125,7 +125,7 @@ Wrappers also inherit the biases of whatever estimator you handed them. Recursiv
 
 ### Embedded methods
 
-Embedded methods make selection part of fitting. The workhorse is L1 regularization, which penalizes the sum of absolute coefficient values and drives some of them to exactly zero.
+Embedded methods make selection part of fitting. The workhorse is something called "L1 regularization", better known as the "lasso", where you penalize the sum of absolute coefficient sizes so the weakest ones land on exactly zero and leave the model. Selection happens inside the fit.
 
 ```python
 from sklearn.linear_model import LogisticRegressionCV
@@ -188,7 +188,7 @@ scores = cross_val_score(pipe, X, y, cv=10)
 
 This is the same rule as Chapter 10's imputer, Chapter 12's scaler, and Chapter 13's target encoder, and it is the rule the whole back half of this book keeps returning to: **anything estimated from data is a fitted parameter, and fitted parameters belong inside the training split.** A feature ranking is estimated from data. It is a fitted parameter. The fact that it produces a list of column names rather than a vector of numbers does not exempt it.
 
-One more turn of the screw. If you also tune *how many* features to keep, then `k` is a hyperparameter chosen by looking at validation scores, and the best score over a grid is biased upward even when every individual score is honest. Reporting it as your performance estimate is a smaller version of the same error. The fix is nested cross-validation: an inner loop that picks `k`, and an outer loop that never sees the choosing.
+One more turn of the screw. If you also tune *how many* features to keep, then `k` is a hyperparameter chosen by looking at validation scores, and the best score over a grid is biased upward even when every individual score is honest. Reporting it as your performance estimate is a smaller version of the same error. The fix is something called "nested cross-validation", where an inner loop picks `k` and an outer loop that never saw the choosing reports the score (an inner grid over `k` inside each of five outer folds). Twenty-five fits where the naive version costs five.
 
 ```python
 from sklearn.model_selection import GridSearchCV, cross_val_score
@@ -226,7 +226,7 @@ Four things decide whether PCA helps you.
 
 **PCA is unsupervised, so it has never heard of your target.** The direction of greatest variance carries no guarantee of carrying signal, and the direction that separates your classes can have small variance and get dropped. This is not a hypothetical—it is the standard way PCA fails on classification problems. If your reason for reducing is predictive performance, choose the number of components by the downstream cross-validated metric rather than by a variance threshold.
 
-**That makes "keep 95% of the variance" an arbitrary rule.** It is a fine default when the goal is compression or visualization. It is not an answer to "how many components does my classifier want," and the elbow in a scree plot is a judgment call people read very differently from each other. The cross-validated downstream score is the only selection criterion here with a principled claim on being right.
+**That makes "keep 95% of the variance" an arbitrary rule.** It is a fine default when the goal is compression or visualization. It is not an answer to "how many components does my classifier want," and the elbow in a scree plot (the plot of how much variance each successive component explains) is a judgment call people read very differently from each other. The cross-validated downstream score is the only selection criterion here with a principled claim on being right.
 
 **It is a fitted transform.** The components are estimated from data, so they go inside the pipeline and inside the fold, exactly like everything else in 15.2. Fitting PCA on all your data and then cross-validating is a quieter version of the fab's mistake—quieter because PCA never looks at `y`, so it leaks the shape of the validation inputs rather than their labels, but still enough to flatter your estimate.
 
@@ -238,7 +238,7 @@ Note that this is a different argument from Chapter 12's. There, scaling was poi
 
 The variants you will actually reach for:
 
-- **`TruncatedSVD`** for sparse input. It skips the centering step, which is the whole point: centering a sparse matrix makes it dense and can blow up your memory. This is the one to use on TF-IDF, where it goes by the name latent semantic analysis.
+- **`TruncatedSVD`** for sparse input. It skips the centering step, which is the whole point: centering a sparse matrix makes it dense and can blow up your memory. This is the one to use on TF-IDF (the word-count matrix of a text corpus, weighted so common words count less), where it goes by the name latent semantic analysis.
 - **`IncrementalPCA`** when the matrix does not fit in memory, fit in minibatches.
 - **`KernelPCA`** for nonlinear structure, at the cost of an n×n kernel matrix, which puts a hard ceiling on n.
 - **Randomized SVD**, which `svd_solver="auto"` usually picks for large matrices when you ask for a small number of components, and which approximates the top components far faster than a full decomposition.
@@ -281,7 +281,7 @@ Three things in a t-SNE plot that look like information and are not:
 
 - **Distances between well-separated clusters are not meaningful.** Two blobs far apart on the chart are not more different than two blobs close together. The algorithm optimizes local neighborhoods and is explicitly indifferent to the global arrangement.
 - **Cluster sizes are not meaningful.** t-SNE expands sparse regions and contracts dense ones, so apparent blob area says nothing about how many points or how much spread.
-- **The picture depends heavily on perplexity.** The same data at perplexity 5, 30, and 100 can tell visibly different stories. Any claim you make from one t-SNE run should survive several perplexities and several seeds, or you should not make it.
+- **The picture depends heavily on perplexity**, the knob that sets roughly how many neighbors each point pays attention to. The same data at perplexity 5, 30, and 100 can tell visibly different stories. Any claim you make from one t-SNE run should survive several perplexities and several seeds, or you should not make it.
 
 ### UMAP
 
@@ -321,7 +321,7 @@ Selection is not model-agnostic, and most of the bad advice in this area comes f
 
 **Neural networks learn their own representations**, so explicit input selection matters less than in any other family. It is not free either: input dimension drives first-layer parameter count, and parameters need data.
 
-The operating rule: match the selector to the model's inductive bias, and validate every selection decision with the downstream model you actually intend to ship. A feature set selected by lasso and handed to gradient boosting has been filtered by a linear notion of usefulness, which is a defensible shortcut and an assumption you should know you made.
+The operating rule: match the selector to the model's inductive bias (the kind of pattern a model is built to find, linear for lasso, splits for trees), and validate every selection decision with the downstream model you actually intend to ship. A feature set selected by lasso and handed to gradient boosting has been filtered by a linear notion of usefulness, which is a defensible shortcut and an assumption you should know you made.
 
 ---
 
@@ -331,7 +331,7 @@ The operating rule: match the selector to the model's inductive bias, and valida
 
 The lasso's correlated-group behavior from 15.2 has an uncomfortable implication: your feature list is a random variable. Resample your data, rerun your selection, and you get a different list. Teams discover this when last quarter's carefully chosen 30 features and this quarter's carefully chosen 30 features overlap by eighteen, and nobody can explain what changed.
 
-**Stability selection** is the fix and it is cheap. Subsample your data repeatedly, rerun your selection on each subsample, and count how often each feature survives.
+**Stability selection** is the fix and it is cheap: you rerun your selection on many subsamples and report how often each feature survives, not just whether it did (50 half-samples and a frequency next to every name).
 
 ```python
 from collections import Counter
