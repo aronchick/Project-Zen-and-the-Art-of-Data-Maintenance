@@ -14,7 +14,7 @@ The investigation revealed: the network team upgraded fiber optic cables (faster
 
 ## 18.1 The Three Types of Time (Yes, Three)
 
-Everyone thinks there's one timestamp. Everyone is wrong. What actually exists in your data:
+Everyone thinks there's one timestamp. Everyone is wrong. There are three, something called "event time", "ingestion time" and "processing time", where you record when a thing happened, when your system first saw it, and when you actually got around to it. What that looks like in your data:
 
 **Event Time**: When something actually happened in the real world
 - Example: Customer clicked "Buy" at 10:30:00 AM
@@ -35,7 +35,7 @@ I've seen teams debug for WEEKS only to discover their model was training on fil
 
 Many real-world scenarios require aggregated data rather than individual events. Raw event streams can actually mislead your models when normal variance gets misinterpreted as meaningful signals.
 
-A way to approach this situation is through a technique called "Windowing". There are three methods of windowing:
+The way out is something called "windowing", where you group events into bounded chunks of time and compute over each chunk instead of over the raw stream. There are three ways to draw the chunks:
 
 * Tumbling windows
 * Sliding windows
