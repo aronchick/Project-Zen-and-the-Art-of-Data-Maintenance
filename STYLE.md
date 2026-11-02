@@ -27,6 +27,24 @@ Write for a reader who is smart but new to the field. The goal of the book is to
 - Do not define words any technical reader already has (mean, column, API, database, CSV).
 - Test for every paragraph: could someone who has never trained a model follow this sentence? If not, define or cut the term.
 
+**Introducing a concept for the first time.** When a concept enters the book for the first time, the reader is meeting a thing, not recalling a word. Introduce it inside the narrative, in this order:
+
+1. Arrive from the problem. The story or argument has just posed a need, and the concept appears as a response to it: "A common solution for handling this is something called ..."
+2. Name it in quotes, as a thing: something called "one-hot encoding".
+3. Say what you do with it in a plain "where you ..." clause: an action from the practitioner's seat, in everyday words, not a textbook definition.
+4. Give the story's own instance in parentheses: (in this case, the average click-through rate observed for that placement).
+5. Close with the payoff in one short sentence.
+
+Only after that does the term get used as a given. The compressed em-dash appositive ("one-hot encoding—one yes/no column per category—") stays available for minor terms later in a chapter; a chapter's central concepts get the full introduction at their first appearance.
+
+Worked example from the Chapter 13 cold open. Before:
+
+> One-hot encoding 2.3 million categories—one yes/no column per category—was obviously off the table, so an engineer reached for target encoding. Replace each placement with the average click-through rate (CTR) observed for that placement. One column instead of 2.3 million. Directly, obviously informative.
+
+After:
+
+> A common solution for handling this is something called "one-hot encoding", where you give every category its own yes/no column. However, one-hot encoding 2.3 million categories was obviously off the table, so an engineer reached for target encoding, where you replace each category with a number summarizing how that category has behaved (in this case, the average click-through rate observed for that placement). One column instead of 2.3 million, obviously informative.
+
 ## 3. No version pins; uv for all Python
 
 The code targets the current release of every library, and the reader runs it without setting up an environment first.
