@@ -33,7 +33,7 @@ I've seen production systems where 15% of uploaded "JPEGs" were actually:
 - HTML error pages saved by broken crawlers
 - BMP files from ancient systems
 
-The fix is simple but almost nobody does it: check the magic bytes. Every file format starts with specific bytes:
+The fix is simple but almost nobody does it: check something called the "magic bytes", where you read the first few bytes of the file itself, because every format starts with its own signature no matter what the extension claims:
 
 ```python
 # This 4-line check would save you weeks of debugging
@@ -46,7 +46,7 @@ with open(filename, 'rb') as f:
 
 ### 16.2.2 Color Spaces: The Silent Model Killer
 
-RGB(255, 0, 0) doesn't mean "red." It means "maximum value in the first channel of whatever color space this image uses." In sRGB (what monitors use), it's one specific red. In Adobe RGB (what cameras use), it's a different red. In ProPhoto RGB (what photographers use), it's yet another red.
+RGB(255, 0, 0) doesn't mean "red." It means "maximum value in the first channel" of something called a "color space", where the file declares which real-world colors its numbers map to. In sRGB (what monitors use), it's one specific red. In Adobe RGB (what cameras use), it's a different red. In ProPhoto RGB (what photographers use), it's yet another red.
 
 An e-commerce company whose product classification model worked perfectly in testing but failed mysteriously in production. Red dresses were being classified as orange, blue shirts as purple. After weeks of debugging the neural network, they discovered the real problem: their photographers shot in Adobe RGB, the images were saved without color profiles, and the website displayed them as sRGB. Every single product was showing the wrong color. The model was actually working perfectly; it had just learned that their "red" dresses were indeed orange in sRGB space.
 
