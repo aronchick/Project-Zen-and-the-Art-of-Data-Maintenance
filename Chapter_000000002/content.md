@@ -8,9 +8,9 @@ Chapter 1 was philosophy and principles. This chapter is about what data actuall
 
 Data types are like ingredients. You can have the best recipe in the world, but mix up salt and sugar and you're fucked. Unlike cooking, you can't taste-test your model and start over. Well, you can, but it costs $65,000 in compute and your manager starts asking extremely uncomfortable questions about your decision-making process.
 
-So, plainly: a *data type* is the rule a system uses to decide what a value *is* and what you are allowed to do with it. An integer can be added and compared by size. A string can be matched letter by letter but not multiplied. A date can be subtracted from another date to get a duration. A Boolean is a yes or a no. Every column in every table has one, whether somebody chose it deliberately or a tool guessed it from the first few rows, and this whole chapter is about what happens when the type a column *has* disagrees with what its values *mean*.
+So, plainly: every system carries something called a "data type", where you tell it what a value *is* and therefore what you are allowed to do with it (in this case, that a ZIP code is a label to match, not a number to add). An integer can be added and compared by size. A string can be matched letter by letter but not multiplied. A date can be subtracted from another date to get a duration. A Boolean is a yes or a no. Every column in every table has one, whether somebody chose it deliberately or a tool guessed it from the first few rows, and this whole chapter is about what happens when the type a column *has* disagrees with what its values *mean*.
 
-The companion idea is *structured versus unstructured*. Structured data has a fixed layout of named fields with declared types, like a database table, so a machine can read any value without having to interpret it. Unstructured data (free text, images, audio, scanned forms) carries meaning that something has to extract first. Most real data lives somewhere in between, which is where the trouble starts.
+The companion idea is the split between "structured" data, where every value sits in a named, typed field a machine can read without interpreting it (a database table), and "unstructured" data, where something has to extract the meaning first (free text, images, audio, scanned forms). Most real data lives somewhere in between, which is where the trouble starts.
 
 ## 2.1 The Great Data Type Disaster
 
@@ -59,7 +59,7 @@ Data doesn't just fail; it actively conspires against you. The obviously unstruc
 
 No, it's the *clean* data. The data that shows up in a pressed suit, shakes your hand, passes every validation check, and then three months later you discover it's been counting 'California' and 'CA' as two different states THE ENTIRE TIME.
 
-When do these horsemen attack? They strike at every stage of your ML pipeline: during feature engineering (reshaping raw columns into model inputs, when bad types silently corrupt your transformations), during training (when impossible values teach your model impossible relationships), and during inference (running the trained model on live data, when schema drift—the upstream structure changing under you—causes silent failures in production). Part IV will show you how to build defenses at each stage. For now, learn to recognize the enemy.
+When do these horsemen attack? They strike at every stage of your ML pipeline: during feature engineering (reshaping raw columns into model inputs, when bad types silently corrupt your transformations), during training (when impossible values teach your model impossible relationships), and during inference (running the trained model on live data, where the failures are silent). That last one is where you meet something called "schema drift", where the upstream structure changes under you without anyone changing your code (a field renamed or retyped by a team that has never heard of your model). Nothing errors; the numbers just stop meaning what they meant. Part IV will show you how to build defenses at each stage. For now, learn to recognize the enemy.
 
 ### Horseman 1: The Structural Lie (Syntactic Failure)
 
@@ -122,7 +122,7 @@ And yet, your data pipeline still delivers garbage. Why? Because while the types
 Everything is correctly typed (`datetime`, `int`), but the data is a logical nightmare:
 - **User 201** signed up two years *before* they were born.
 - **User 202** had a negative number of sessions, a physical impossibility.
-- **User 203** has an age of 999, a clear sentinel value (a placeholder like 999 or -1 that means "unknown" but looks exactly like a measurement) that was never cleaned.
+- **User 203** has an age of 999, which is something called a "sentinel value", where somebody parks a placeholder in a column to mean "unknown" and it looks exactly like a measurement (999 standing in for "did not say"). Nobody ever cleaned it, and one of these in a mean shifts every customer's age.
 
 Your types are right, but your data is still telling lies.
 
@@ -236,7 +236,7 @@ Type conversion failures come in five recognizable patterns. Learn them and you'
 
 The fundamental error: treating identifiers as quantities.
 
-When you load a ZIP code column and let pandas (the Python library most tabular data work happens in) infer the type—guess it from what the values look like—it sees five digits and thinks "integer." Mathematically, 90210 is now a number you can add, subtract, multiply, and divide. The model learns that Beverly Hills is 9.02 times "more" than Manhattan (10001). More what? Doesn't matter. The math works, so the model uses it.
+When you load a ZIP code column and let pandas (the Python library most tabular data work happens in) do something called "type inference", where you let the library guess each column's type from what the values look like, it sees five digits and thinks "integer." Mathematically, 90210 is now a number you can add, subtract, multiply, and divide. The model learns that Beverly Hills is 9.02 times "more" than Manhattan (10001). More what? Doesn't matter. The math works, so the model uses it.
 
 The fix requires understanding what ZIP codes actually ARE: categorical labels—values that name a group rather than measure a quantity—that happen to be written with digits. They have no quantitative relationship to each other. 90210 isn't "bigger" than 10001 in any meaningful sense.
 
