@@ -134,8 +134,7 @@ from sklearn.preprocessing import StandardScaler
 
 l1_pipe = Pipeline([
     ("scale", StandardScaler()),
-    # l1_ratios=(1.0,) is pure L1. scikit-learn 1.8 deprecated the
-    # older penalty="l1" spelling here; it is gone in 1.10.
+    # l1_ratios=(1.0,) is pure L1.
     ("model", LogisticRegressionCV(
         l1_ratios=(1.0,), solver="saga", Cs=20,
         scoring="roc_auc", max_iter=5000, cv=5,

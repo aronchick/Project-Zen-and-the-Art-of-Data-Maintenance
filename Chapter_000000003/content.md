@@ -340,10 +340,10 @@ This is possible because Arrow defines not just a logical format, but the exact 
 
 Today, Arrow has become the de facto standard for analytical workloads:
 
-- **Pandas 2.0+**: Uses Arrow as an optional backend (`pd.read_parquet(path, dtype_backend="pyarrow")`), offering 2-10x performance improvements
+- **Pandas**: Uses Arrow as an optional backend (`pd.read_parquet(path, dtype_backend="pyarrow")`), offering 2-10x performance improvements
 - **Polars**: Built entirely on Arrow from the ground up (`pl.from_arrow(table)` takes an existing Arrow table directly)
 - **DuckDB**: Queries Arrow tables directly without conversion (`duckdb.sql("SELECT ... FROM arrow_table")` will read a `pyarrow.Table` sitting in a Python variable of that name)
-- **Apache Spark 3.0+**: Uses Arrow for efficient data exchange with Python
+- **Apache Spark**: Uses Arrow for efficient data exchange with Python
 - **Ray**: Leverages Arrow for distributed data processing
 
 ### 3.3.3 The Performance Impact

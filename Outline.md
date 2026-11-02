@@ -357,6 +357,9 @@
 
 ### Appendix B: Code Templates and Implementations
 
+**[Read Appendix B](Appendix_B/content.md)**
+
+- B.0 Running the Code in This Book
 - B.1 Reusable Pipeline Components
 - B.2 Custom Transformers and Estimators
 - B.3 Production-Ready Code Patterns

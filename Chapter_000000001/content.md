@@ -166,6 +166,8 @@ Every model ever ranked on ImageNet was graded against those errors, and every m
 
 Look, I'm not saying models don't matter. That would be like saying syntax doesn't matter in programming. Of course it does. But if your code is syntactically perfect but solves the wrong problem, you've just written a very pretty bug.
 
+Every snippet in this book runs the same way, through uv; Appendix B, section B.0, has the one-time setup.
+
 Here's my mental model (pun intended):
 
 **The Model-Centric Approach** (What We've Been Doing)
