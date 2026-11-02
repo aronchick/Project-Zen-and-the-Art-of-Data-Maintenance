@@ -52,7 +52,7 @@ If a senior data engineer costs $200K+/year (fully loaded, including benefits, i
 
 ### The Compounding Effect
 
-Bad data decisions compound like credit card debt. Engineers call that *technical debt*: the future cost of a shortcut taken today, accruing interest in the form of every bug, workaround, and rewrite it causes until somebody pays it down. Here are examples from a variety of companies:
+Bad data decisions compound like credit card debt, which is why engineers borrowed the name "technical debt", where you take a shortcut today and pay interest on it in every bug, workaround, and rewrite it causes until somebody pays it down. Here are examples from a variety of companies:
 
 **Quarter 1**: "Let's just store everything as strings, we'll fix it later."
 
@@ -178,7 +178,7 @@ Annual savings: **$70,000**. Implementation time: one afternoon writing lifecycl
 
 ### The Bandwidth Nobody Budgets
 
-Cloud egress fees—what the provider charges to move data out of a region or off its network—are a tax you never see coming. But the dollar cost isn't even the real problem. It's the latency tax on every decision your system makes.
+The bill nobody budgets for is something called "egress", where you pay the provider to move data out of a region or off its network, having paid nothing to bring it in. It is a tax you never see coming. But the dollar cost isn't even the real problem. It's the latency tax on every decision your system makes.
 
 The standard pattern:
 
@@ -335,7 +335,7 @@ Timeline of a schema evolution disaster:
 **Day 14**: Upstream team renames field (breaking change)
 **Day 15**: Your pipeline crashes
 **Day 16-20**: Investigation and fix
-**Day 21**: Post-mortem reveals: no schema versioning, no contract (a data contract is an explicit, versioned schema the producing team and the consuming teams have agreed to, so a rename is a negotiation instead of a surprise)
+**Day 21**: Post-mortem reveals: no schema versioning, no contract (a data contract: the producing and consuming teams agree on a versioned schema, so a rename is a negotiation instead of a surprise; Chapter 5 is where they get built)
 
 Cost: 5 engineer-days × $1,200/day = $6,000
 Plus production downtime cost: ~$15,000
