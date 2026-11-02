@@ -18,7 +18,7 @@ If you're new to ML, you probably guessed Team B, because it's obvious that's wh
 
 As an aside, I should stress (!), there's nothing wrong with Team A. They're doing everything that we need to move the industry forward. But more often than not, there's a big gap between the latest research and actually using those breakthroughs. And that gap? It's filled with data problems.
 
-One footing before we go on, because this book is written for people who are smart but may not have spent years in this field. A *machine learning model* is a program that works out its own rules from examples instead of having them typed in by a programmer: show it enough photos marked "cat" and "not cat," and it figures out for itself what a cat looks like. The examples it learns from are its *training data*, and the answer attached to each example ("cat," "fraud," "will churn next month") is that example's *label*. Everything else in this book follows from one consequence of that arrangement: the model cannot be smarter than the examples it was shown.
+One quick footing first. A *machine learning model* is a program that works out its own rules from examples instead of having them typed in by a programmer: show it enough photos marked "cat" and "not cat," and it figures out for itself what a cat looks like. The examples it learns from are its *training data*, and the answer attached to each example ("cat," "fraud," "will churn next month") is that example's *label*. Everything else in this book follows from one consequence of that arrangement: the model cannot be smarter than the examples it was shown.
 
 ## 1.1 Andrew Ng's Paradigm Shift: Why "Good Data Beats Big Data"
 
@@ -156,7 +156,7 @@ The terrifying part? The model was doing exactly what we asked it to do: learn f
 
 ImageNet, the dataset that launched a thousand papers, is kind of a mess. [Northcutt, Athalye, and Mueller](https://arxiv.org/abs/2103.14749) hand-checked the test sets of ten benchmark datasets and found label errors (what the field calls *label noise*) throughout: at least 3.3% on average, and **at least 6% of the ImageNet validation set**.
 
-Sit with that one. The validation set is the scoreboard: the held-out examples a model is scored on, which it never sees during training. If six percent of the answers on the scoreboard are wrong, a model can be marked down for being right, and a model that learned the *mistakes* can outrank one that learned the task. The paper's title says it plainly: pervasive label errors destabilize benchmarks.
+Sit with that one. Those six percent live in something called the "validation set", where you hold back a slice of labeled examples the model never trains on and grade it against them (in this case, the 50,000 ImageNet images every published result is scored on). It is the scoreboard. If six percent of the answers on the scoreboard are wrong, a model can be marked down for being right, and a model that learned the *mistakes* can outrank one that learned the task. The paper's title says it plainly: pervasive label errors destabilize benchmarks.
 
 Every model ever ranked on ImageNet was graded against those errors, and every model fine-tuned from ImageNet weights (started from an ImageNet-trained model and trained a little further) inherited whatever the *training* set's error rate is—a number nobody has measured as carefully. If you fine-tuned using those data sources as inputs, you're compounding the problem. It's turtles all the way down. The ONLY way to break this cycle is to actually look at your data, understand its flaws, and either fix them or explicitly account for them in your model design (we'll cover both approaches in Chapter 7).
 
@@ -251,7 +251,7 @@ The audit did not go well.
 
 ### The Schema That Grew Organically
 
-Somewhere right now, somebody is building a data pipeline with a beautifully strict *schema*: the declared list of which fields a record has and what type each one must be. Every field typed, validated, documented. A work of art.
+Somewhere right now, somebody is building a data pipeline around something called a "schema", where you write down every field a record carries and the type each one must be, and reject anything that doesn't match. Theirs is beautifully strict: every field typed, validated, documented. A work of art.
 
 It will last about two weeks.
 
@@ -267,7 +267,7 @@ A retail company had beautiful dashboards. Real-time data, gorgeous visualizatio
 
 The data scientists had learned not to trust the numbers. Too many times, the dashboard showed something alarming, they'd investigate, and discover it was a data quality issue, not a real problem. After enough false alarms, they started ignoring the dashboards entirely. When a real problem finally showed up, nobody noticed for three days.
 
-**Observability isn't about pretty dashboards—it's about trust.** Observability is the ability to tell, from the outside, what a system is actually doing on the inside. Your monitoring should tell you not just what the numbers are, but whether you should believe them. Track data quality metrics alongside business metrics. Alert on anomalies in the data itself, not just anomalies in the results. Build confidence intervals. Show your work.
+**Observability isn't about pretty dashboards—it's about trust.** The defense against "the numbers look fine and the data is lying" is something called "observability", where you instrument the pipeline so you can tell from the outside what it is actually doing on the inside (in this case, null rates and value ranges tracked right next to the business metrics). Your monitoring should tell you not just what the numbers are, but whether you should believe them. Alert on anomalies in the data itself, not just anomalies in the results. Build confidence intervals. Show your work.
 
 Documentation helps, but running systems tell the truth in a way documentation can't. The best pipelines are self-describing: you can look at the metrics and understand not just what happened, but why.
 
@@ -322,7 +322,7 @@ Solution: Feature engineering
 - Added time-based weights
 ```
 
-Feature engineering, if the term is new: reshaping raw columns into signals a model can actually learn from. Here, that meant turning a pile of undifferentiated clicks into weighted, time-decayed evidence of interest.
+What they did there is something called "feature engineering", where you reshape raw columns into signals a model can actually learn from (in this case, turning a pile of undifferentiated clicks into weighted, time-decayed evidence of interest). Chapter 14 is all about it.
 
 **The Lesson**: Raw data is like raw chicken—technically edible, but you're gonna have a bad time.
 
