@@ -35,7 +35,7 @@ Write for a reader who is smart but new to the field. The goal of the book is to
 4. Give the story's own instance in parentheses: (in this case, the average click-through rate observed for that placement).
 5. Close with the payoff in one short sentence.
 
-Only after that does the term get used as a given. The compressed em-dash appositive ("one-hot encoding—one yes/no column per category—") stays available for minor terms later in a chapter; a chapter's central concepts get the full introduction at their first appearance.
+Only after that does the term get used as a given. The compressed em-dash appositive ("one-hot encoding—one yes/no column per category—") stays available for minor terms later in a chapter. A concept gets the full introduction once, in its home chapter (the chapter that is about it). An earlier chapter that needs the word gives it a short gloss and points forward ("Chapter 13 covers this"); a later chapter points back. Every concept introduced this way also gets an entry in the glossary appendix at the end of the book, one or two sentences, so a reader who meets the word out of order has somewhere to look.
 
 Worked example from the Chapter 13 cold open. Before:
 
