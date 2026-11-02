@@ -126,7 +126,7 @@ Read `m` as "how many observations of evidence I demand before I start believing
 
 CatBoost's ordered target statistics are the most rigorous version of this idea: it draws a random permutation of the data and encodes each row using only rows that came before it, which gets you out-of-fold behavior without a fold structure. That permutation is random unless you set `has_time=True`, so it respects your ordering only if you tell it to. If you're already using CatBoost, you're getting this for free and should not hand-roll a replacement. For any other model, `ce.CatBoostEncoder(cols=cat_cols)` applies the same ordered scheme as a standalone transformer; it walks the rows in the order you give it, so shuffle first—or sort by time, if time matters—before you fit.
 
-Scikit-learn shipped a `TargetEncoder` in version 1.3 that does the cross-fitting internally—cross-fitting being scikit-learn's name for exactly the out-of-fold computation above—which removed most people's excuse for the naive version:
+Scikit-learn's `TargetEncoder` does the cross-fitting internally—cross-fitting being scikit-learn's name for exactly the out-of-fold computation above—which removes most people's excuse for the naive version:
 
 ```python
 from sklearn.preprocessing import TargetEncoder, StandardScaler
