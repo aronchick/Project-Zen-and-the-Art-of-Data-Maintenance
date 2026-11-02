@@ -53,13 +53,13 @@ uv run snippet.py
 
 No `--with` flags, no environment, no requirements file. The script carries its own shopping list. Every script in this book that you are meant to save has this header.
 
-**Command-line tools.** Some of what the book uses is a program rather than a library—DVC in Chapter 5, for example. `uvx` runs a tool in a throwaway environment of its own:
+**Command-line tools.** Some of what the book uses is a program rather than a library. `uvx` runs a tool in a throwaway environment of its own. Here it prints a Parquet file's schema and row counts:
 
 ```bash
-uvx dvc add data/train.parquet
+uvx parquet-tools inspect data/train.parquet
 ```
 
-Read `uvx dvc` as "run dvc, fetching it if necessary." Nothing is installed globally and nothing is left behind.
+Read `uvx parquet-tools` as "run parquet-tools, fetching it if necessary." Nothing is installed globally and nothing is left behind. DVC in Chapter 5 runs the same way, as `uvx dvc`.
 
 **Notebooks.** If you would rather work in a notebook, uv runs Jupyter the same way:
 
