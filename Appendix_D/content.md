@@ -138,6 +138,8 @@ Every concept this book introduces gets its full introduction once, in the chapt
 
 **Selection and reduction.** Two ways to have fewer columns: selection keeps a subset of the originals and discards the rest; reduction replaces them with a smaller number of constructed mixtures nobody can walk to. Chapter 15.
 
+**Serving.** Running the trained model on live requests to make real decisions, as opposed to training, where it learns from history. Also called inference. Chapter 9.
+
 **Sentinel value.** A placeholder parked in a column to mean "unknown" that looks exactly like a measurement, such as an age of 999. One of these in a mean shifts every customer's age. Chapter 2.
 
 **SHAP values.** Splitting each individual prediction into one contribution per feature so the pieces add up to the prediction. Interaction values do the same for pairs. Chapter 14.
