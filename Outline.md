@@ -376,10 +376,10 @@
 
 ### Appendix D: Glossary and Terminology
 
-- D.1 Technical Terms and Definitions
-- D.2 Industry-Specific Vocabulary
-- D.3 Acronyms and Abbreviations
-- D.4 Data-Centric AI Terminology
+**[Read Appendix D](Appendix_D/content.md)**
+
+- D.1 Terms and Definitions (every concept the book introduces, with its home chapter)
+- D.2 Acronyms and Abbreviations
 
 ### Appendix E: Learning Resources and Community
 
