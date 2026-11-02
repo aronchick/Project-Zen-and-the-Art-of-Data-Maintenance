@@ -43,7 +43,7 @@ Worked example from the Chapter 13 cold open. Before:
 
 After:
 
-> A common solution for handling this is something called "one-hot encoding", where you force a code path or machine learning model to make a constrained categorization within a small set of choices. However, one-hot encoding 2.3 million categories was obviously off the table, so an engineer reached for target encoding, where you replace each placement with information about the category to aid placement (in this case, the average click-through rate observed for that placement). One column instead of 2.3 million, obviously informative.
+> A common solution for handling this is something called "one-hot encoding", where you give every category its own yes/no column. However, one-hot encoding 2.3 million categories was obviously off the table, so an engineer reached for target encoding, where you replace each category with a number summarizing how that category has behaved (in this case, the average click-through rate observed for that placement). One column instead of 2.3 million, obviously informative.
 
 ## 3. No version pins; uv for all Python
 
